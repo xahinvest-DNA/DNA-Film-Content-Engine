@@ -1,6 +1,6 @@
 ﻿# DNA Film Content Engine Project Brain
 
-## Purpose
+## Purpose / navigation rule
 
 This file is the main navigation entry point into the DNA Film Content Engine project.
 
@@ -60,9 +60,9 @@ It owns navigation only. It must not restate live project state or the active Co
 - `05_CODEX/CODEX_WORKLOG.md`
 - `05_CODEX/TASKS.md`
 
-## Planned document map
+## Planned document map (planning only, not proof of existence/completion)
 
-Planning only. The paths below are part of the intended repository map and are not proof that the documents already exist or are completed.
+The paths below are part of the intended repository map and are not proof that the documents already exist or are completed.
 
 ### Planned modules
 - `03_MODULES/FILM_INGEST.md`

@@ -1,7 +1,7 @@
 ﻿# Codex Tasks
 
 Last updated: 2026-04-06
-Current focus: render/export schema and downstream output-boundary fixation
+Current focus: F-005 render/export schema and downstream output-boundary fixation
 
 ## Working rule
 Tasks should be bounded, product-visible, and small enough to preserve continuity without turning the repository into micro-slice overload.
@@ -11,6 +11,7 @@ Tasks should be bounded, product-visible, and small enough to preserve continuit
 ### F-005
 - Status: active
 - Module: render/export schema and downstream output-boundary fixation
+- Packet title: `Render/Export Schema and Downstream Output-Boundary Fixation`
 - Goal: define the first stable downstream render/export schema boundaries and output-module contracts without drifting into runtime backend implementation.
 - Input documents: `00_INDEX.md`, `01_MASTER/CURRENT_STATE.md`, `01_MASTER/DECISIONS.md`, `01_MASTER/ROADMAP.md`, `01_MASTER/SSOT_MAP.md`, `05_CODEX/NEXT_TASK.md`, `04_TECH/DATA_SCHEMA.md`, `04_TECH/PROJECT_FILE_FORMAT.md`, `04_TECH/ASSET_PIPELINE.md`
 - Expected result: `04_TECH/RENDER_EXPORT_SCHEMA.md`, `03_MODULES/LONG_VIDEO_BUILDER.md`, `03_MODULES/SHORTS_REELS_BUILDER.md`, `03_MODULES/CAROUSEL_BUILDER.md`, `03_MODULES/PACKAGING_ENGINE.md`

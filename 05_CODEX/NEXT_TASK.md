@@ -4,6 +4,7 @@ Last updated: 2026-04-06
 Status: ready
 Task ID: F-005
 Task type: product-architecture
+Packet title: Render/Export Schema and Downstream Output-Boundary Fixation
 
 ## Goal
 
@@ -11,7 +12,7 @@ Create one bounded render/export schema and downstream output-boundary packet so
 
 ## Why this is next
 
-The repository now has product flows, MVP interface specifications, the core domain model, module boundaries, stable data structures, local project-file boundaries, and asset classifications. The strongest next need is to define how downstream output-oriented structures should be represented and handed off before any implementation packet begins.
+The repository now has product flows, MVP interface specifications, the core domain model, module boundaries, stable data structures, local project-file boundaries, and asset classifications. After the approved domain/model layer and persistence-facing structure layer, the strongest next need is to fix downstream output contracts before any runtime implementation packet begins.
 
 ## What should change
 
@@ -22,7 +23,14 @@ The repository now has product flows, MVP interface specifications, the core dom
 5. Add `03_MODULES/PACKAGING_ENGINE.md`.
 6. Synchronize `CURRENT_STATE.md`, `TASKS.md`, and `CODEX_WORKLOG.md` if the packet is completed.
 
-## What must stay unchanged
+## In scope
+
+* downstream output units
+* export-ready structures
+* render/export-facing schema boundaries
+* module boundaries for long-form, shorts/reels, carousel, and packaging outputs
+
+## Out of scope
 
 * no runtime backend implementation
 * no automatic film downloading
@@ -39,6 +47,7 @@ Validate that the resulting packet defines:
 * module contracts for long-form, shorts, carousel, and packaging output layers
 * continuity from approved timecode/scene-reference artifacts into output-ready structures
 * clear separation between schema-level architecture and runtime/backend implementation
+* bounded docs created, state synchronized, and no runtime drift
 
 ## Required handoff format
 

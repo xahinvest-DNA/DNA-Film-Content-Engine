@@ -1,5 +1,22 @@
 ﻿# Codex Worklog
 
+## 2026-04-06 - Correction pass for post-F-004 state synchronization
+
+### Completed
+- corrected the previous incorrect no-change verification;
+- reasserted `F-004` as completed in live-state language;
+- made `F-005` explicit as the active bounded packet in `CURRENT_STATE.md` and `NEXT_TASK.md`;
+- tightened `00_INDEX.md` into the required navigation format with an explicit planning-only section;
+- synchronized task and worklog wording with the active post-`F-004` frontier.
+
+### Repository effect
+- repository is now explicitly aligned to real post-`F-004` state rather than relying on implicit wording;
+- `F-005` is now the clearly stated next active packet across the state layer;
+- navigation clarity is stronger at the project entry point.
+
+### Recommended next step
+Execute `F-005 Render/Export Schema and Downstream Output-Boundary Fixation`
+
 ## 2026-04-06 - F-004 completed and persistence-facing structure fixed
 
 ### Completed

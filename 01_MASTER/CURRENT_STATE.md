@@ -2,9 +2,9 @@
 
 Last updated: 2026-04-06
 Status: active
-Current stage: data schema and project file format fixation is completed
-Active module: render/export schema and downstream output-boundary fixation
-Active question: how to define the first stable downstream render/export schema boundaries that connect approved data structures to later output stages without drifting into runtime backend implementation too early
+Current stage: F-004 data schema and project file format fixation is completed
+Active module: F-005 render/export schema and downstream output-boundary fixation
+Active question: how to define the first stable render/export-facing schema and downstream output contracts that connect approved data structures to later output stages without drifting into runtime backend implementation too early
 
 ## Where the project is now
 
@@ -17,12 +17,13 @@ At this point:
 - interface-first product framing is completed through `USER_FLOWS.md`, `SCREEN_MAP.md`, `UX_PRINCIPLES.md`, `CONTENT_OUTPUT_SPEC.md`, and `PLATFORM_RULES.md`;
 - MVP desktop interface specification is completed through `MVP_DESKTOP_INTERFACE.md`, `SCREEN_STATES.md`, and `NAVIGATION_BEHAVIOR.md`;
 - domain model and module-boundary fixation are completed through `DOMAIN_MODEL.md`, `PROJECT_INTAKE.md`, `DNA_SEMANTIC_ENGINE.md`, and `SCENE_MATCHING.md`;
-- data schema, project file format, and asset-pipeline boundaries are now completed through `DATA_SCHEMA.md`, `PROJECT_FILE_FORMAT.md`, and `ASSET_PIPELINE.md`;
+- data schema, project file format, and asset-pipeline boundaries are completed through `DATA_SCHEMA.md`, `PROJECT_FILE_FORMAT.md`, and `ASSET_PIPELINE.md`;
 - the main MVP operating surface remains fixed as `Semantic Map Workspace`;
 - the meaning-first architecture is now explicit across product, domain, schema, and local project-package layers;
 - the project now uses a manager-led execution model;
 - ChatGPT owns strongest-next-step selection;
 - Codex owns repository execution and state synchronization;
+- the current active frontier is now `F-005 Render/Export Schema and Downstream Output-Boundary Fixation`;
 - the next practical implementation frontier is downstream render/export schema fixation, not runtime backend implementation.
 
 ## Accepted boundaries right now
@@ -40,13 +41,13 @@ At this point:
 
 ## Open items
 
-- downstream render/export schema boundaries;
-- output-assembly module boundaries for long-form, shorts, carousel, and packaging;
-- first bounded implementation lane after technical architecture fixation.
+- downstream render/export-facing schema boundaries;
+- output-module boundaries for long-form, shorts/reels, carousel, and packaging;
+- export-ready structure boundaries before runtime/backend implementation.
 
 ## Next step
 
-Open one bounded packet for render/export schema and downstream output-boundary fixation.
+Execute one bounded packet for `F-005 Render/Export Schema and Downstream Output-Boundary Fixation`.
 
 ## What must not be lost in a new chat
 
@@ -57,4 +58,4 @@ Open one bounded packet for render/export schema and downstream output-boundary 
 - MVP desktop interface package is fixed.
 - domain model and module boundaries are fixed.
 - schema and local project-package boundaries are fixed.
-- the next strong step is render/export schema and downstream output-boundary fixation, not runtime backend depth.
+- the next strong step is `F-005 Render/Export Schema and Downstream Output-Boundary Fixation`, not runtime backend depth.
