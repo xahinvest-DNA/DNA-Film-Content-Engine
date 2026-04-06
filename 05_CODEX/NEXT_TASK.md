@@ -2,36 +2,44 @@
 
 Last updated: 2026-04-06
 Status: ready
-Task ID: F-001
+Task ID: F-002
 Task type: product-design
 
 ## Goal
-Create one bounded interface-first product packet so the repository fixes the first usable desktop screen architecture and user workflow for DNA Film Content Engine before deeper engine implementation begins.
+
+Create one bounded MVP desktop interface specification packet so DNA Film Content Engine can move from approved product-layer structure to a concrete first desktop operating surface without drifting into engine implementation too early.
 
 ## Why this is next
-The repository is newly initialized. The strongest current need is not engine depth but product clarity: the project needs user flows, screen hierarchy, navigation logic, and screen responsibilities so later technical work attaches to a stable user-facing operating model.
+
+The repository now has user flows, screen map, UX principles, output definitions, and platform rules. The strongest next need is to turn that product layer into a concrete MVP desktop interface package centered on the Semantic Map Workspace.
 
 ## What should change
-1. Add `02_PRODUCT/USER_FLOWS.md`.
-2. Add `02_PRODUCT/SCREEN_MAP.md`.
-3. Add `02_PRODUCT/UX_PRINCIPLES.md`.
-4. Add `02_PRODUCT/CONTENT_OUTPUT_SPEC.md`.
-5. Add `02_PRODUCT/PLATFORM_RULES.md`.
-6. Synchronize `CURRENT_STATE.md`, `TASKS.md`, and `CODEX_WORKLOG.md` if the packet is completed.
+
+1. Add `02_PRODUCT/MVP_DESKTOP_INTERFACE.md`.
+2. Add `02_PRODUCT/SCREEN_STATES.md`.
+3. Add `02_PRODUCT/NAVIGATION_BEHAVIOR.md`.
+4. Synchronize `CURRENT_STATE.md`, `TASKS.md`, and `CODEX_WORKLOG.md` if the packet is completed.
 
 ## What must stay unchanged
-- no rendering-engine implementation
-- no automatic film downloading
-- no social-platform publishing layer
-- no mobile/sync/team workflow expansion
-- no speculative AI-quality scoring subsystem
+
+* no engine implementation
+* no automatic film downloading
+* no scene-matching runtime
+* no export/render backend
+* no mobile/sync/team workflow expansion
+* no generic timeline-editor drift
 
 ## Recommended validation
-Validate that the resulting product layer defines:
-- a coherent desktop-first user flow,
-- a clear screen hierarchy,
-- responsibilities for each screen,
-- output definitions that match the intended product loop.
+
+Validate that the resulting interface package defines:
+
+* the main MVP desktop layout
+* Semantic Map Workspace zones
+* object visibility per screen
+* screen and workflow states
+* navigation rules between stages
+* bounded placeholder behavior for later-phase screens
 
 ## Required handoff format
+
 Use `05_CODEX/HANDOFF_TEMPLATE.md` exactly.

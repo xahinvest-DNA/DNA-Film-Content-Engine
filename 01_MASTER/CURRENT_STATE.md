@@ -2,21 +2,24 @@
 
 Last updated: 2026-04-06
 Status: active
-Current stage: repository initialization and project-brain synchronization
-Active module: repository structure and interface-first product framing
-Active question: how to define the first usable desktop-first user interface and navigation system for DNA Film Content Engine without drifting into rendering/AI pipeline implementation too early
+Current stage: interface-first product framing is completed
+Active module: desktop-first screen architecture and workflow fixation
+Active question: how to turn the approved product layer into a bounded MVP desktop interface package without drifting into engine implementation too early
 
 ## Where the project is now
 
-The repository is newly created and is being synchronized as a source-of-truth project system.
+The repository is initialized and synchronized as a source-of-truth project system.
 
 At this point:
 
 - the repository is initialized as a Project Brain rather than as an unstructured empty code folder;
 - the project is defined as a desktop-first Communication DNA content engine centered on film analysis to multi-format content production;
-- the current strongest starting lane is interface-first product design, not immediate pipeline coding;
-- the first practical implementation frontier is to fix the user-facing screen map, navigation, workflow sequence, and screen responsibilities before heavy technical implementation;
-- the project must preserve strong anti-drift rules from the Trader Trainer repository, while avoiding excessive micro-slicing and document bloat.
+- interface-first product framing is completed through `USER_FLOWS.md`, `SCREEN_MAP.md`, `UX_PRINCIPLES.md`, `CONTENT_OUTPUT_SPEC.md`, and `PLATFORM_RULES.md`;
+- the main MVP operating surface is fixed as `Semantic Map Workspace`;
+- the project now uses a manager-led execution model;
+- ChatGPT owns strongest-next-step selection;
+- Codex owns repository execution and state synchronization;
+- the next practical implementation frontier is a bounded MVP desktop interface specification, not immediate engine coding.
 
 ## Accepted boundaries right now
 
@@ -25,24 +28,25 @@ At this point:
 - Live project state is owned by this file.
 - The active implementation packet is owned by `05_CODEX/NEXT_TASK.md`.
 - The project starts desktop-first.
-- UI/UX architecture must be fixed before heavy engine implementation.
-- The first implementation lane must not drift into automatic film downloading, full render automation, platform publishing, or speculative AI quality scoring.
+- MVP is centered on project creation, source intake, semantic blocks, and semantic-map review.
+- manager-led execution model is now fixed.
+- The next implementation lane must not drift into automatic film downloading, full render automation, platform publishing, or speculative AI quality scoring.
 
 ## Open items
 
-- Final user-facing workflow from project creation to export.
-- Screen map and navigation hierarchy.
-- Product boundary for MVP versus later phases.
-- Domain model for film, analysis text, semantic blocks, scenes, matches, cuts, and content assets.
-- Technical direction for desktop shell, media pipeline, and local project storage.
+- concrete MVP desktop surface specification;
+- domain model for film, analysis text, semantic blocks, scenes, matches, cuts, and content assets;
+- module boundaries for intake / semantic engine / matching prep;
+- technical direction for desktop shell / media pipeline / local storage.
 
 ## Next step
 
-Open one bounded packet for interface-first project framing: user flows, screen map, UX principles, and MVP desktop surface.
+Open one bounded packet for MVP desktop interface specification.
 
 ## What must not be lost in a new chat
 
 - The project is not just a video editor; it is a meaning-to-media engine.
 - The correct logic is `analysis text -> semantic blocks -> scene matching -> timecodes -> rough cut -> shorts/carousel/package`.
-- The project should inherit SSOT discipline from Trader Trainer, but with lower task granularity and stronger product-design emphasis.
-- The first strong implementation lane is interface architecture, not rendering or automation depth.
+- manager-led execution model is fixed.
+- MVP main surface is `Semantic Map Workspace`.
+- the next strong step is deeper MVP desktop interface specification, not engine depth.

@@ -49,3 +49,21 @@ The project adopts anti-drift discipline from Trader Trainer, but does not inher
 - Work should move in bounded product slices.
 - Task packets should map to real user-visible gains.
 - The repository should stay resumable without turning into task-history overload.
+
+## D-006 Manager-led execution model
+
+The project is run through a manager-led execution model.
+
+### Definition
+- ChatGPT is the project manager and decision layer.
+- Codex is the implementation and repository execution layer.
+
+### Consequences
+- strongest-next-step selection belongs to ChatGPT;
+- bounded task packets are issued by ChatGPT;
+- Codex executes packets and synchronizes the repository;
+- Codex must not independently redefine project direction;
+- repository state must remain resumable through synchronized state files.
+
+### Why
+This model reduces noise, improves decision quality, preserves project coherence, and prevents repository drift caused by mixing strategic and operational roles.
