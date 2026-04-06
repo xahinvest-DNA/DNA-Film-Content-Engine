@@ -25,6 +25,7 @@ ALLOWED_REVIEW_STATES = (
 )
 ALLOWED_REORDER_DIRECTIONS = ("up", "down")
 ALLOWED_MERGE_DIRECTIONS = ("up", "down")
+ALLOWED_OUTPUT_SUITABILITY = ("candidate", "strong", "weak", "not_suitable")
 
 
 APPROVAL_READY_REASON = "Semantic map is ready for approval."
@@ -33,6 +34,7 @@ REOPEN_BLOCK_EDIT_REASON = "Approval was reopened because a semantic block chang
 REOPEN_REORDER_REASON = "Approval was reopened because semantic block order changed after approval."
 REOPEN_SOURCE_REASON = "Approval was reopened because the analysis source was replaced after approval."
 REOPEN_STRUCTURE_REASON = "Approval was reopened because semantic block boundaries changed after approval."
+REOPEN_SUITABILITY_REASON = "Approval was reopened because output suitability changed after approval."
 SEVERE_WARNING_FLAGS = {"missing_title", "missing_semantic_role", "very_short_content"}
 
 
@@ -91,6 +93,22 @@ def describe_warning_flags(flags: list[str]) -> list[str]:
     return [labels.get(flag, flag.replace("_", " ")) for flag in flags]
 
 
+def normalize_output_suitability(output_suitability: dict | None) -> dict:
+    base = {
+        "long_video": "candidate",
+        "shorts_reels": "candidate",
+        "carousel": "candidate",
+        "packaging": "candidate",
+    }
+    if not output_suitability:
+        return base
+    normalized = dict(base)
+    for key, value in output_suitability.items():
+        if key in normalized and value in ALLOWED_OUTPUT_SUITABILITY:
+            normalized[key] = value
+    return normalized
+
+
 def derive_warning_flags(block: dict) -> list[str]:
     flags: list[str] = []
     title = block.get("title", "").strip()
@@ -121,6 +139,7 @@ def normalize_semantic_blocks(semantic_blocks: list[dict]) -> list[dict]:
     for index, block in enumerate(semantic_blocks, start=1):
         current = dict(block)
         current["sequence"] = index
+        current["output_suitability"] = normalize_output_suitability(current.get("output_suitability"))
         current["warning_flags"] = derive_warning_flags(current)
         normalized.append(current)
     return normalized
@@ -349,6 +368,7 @@ class ProjectSliceStore:
         title: str,
         semantic_role: str,
         notes: str,
+        output_suitability: dict | None = None,
     ) -> ProjectSlice:
         clean_title = title.strip()
         clean_role = semantic_role.strip()
@@ -356,29 +376,42 @@ class ProjectSliceStore:
             raise ValueError("Block title is required.")
         if clean_role not in ALLOWED_SEMANTIC_ROLES:
             raise ValueError("Semantic role is invalid for this MVP slice.")
+        normalized_suitability = normalize_output_suitability(output_suitability)
+        if output_suitability is not None and set(output_suitability) - {"long_video", "shorts_reels", "carousel", "packaging"}:
+            raise ValueError("Output suitability keys are invalid for this MVP slice.")
 
         project = self.load_project(project_dir)
         now = utc_now()
         updated = False
+        suitability_changed = False
+        metadata_changed = False
         semantic_blocks: list[dict] = []
         for block in project.semantic_blocks:
             current = dict(block)
             if current["record_id"] == block_id:
+                if current.get("title") != clean_title or current.get("semantic_role") != clean_role or current.get("notes", "") != notes.strip():
+                    metadata_changed = True
+                if current.get("output_suitability") != normalized_suitability:
+                    suitability_changed = True
                 current["title"] = clean_title
                 current["semantic_role"] = clean_role
                 current["notes"] = notes.strip()
+                current["output_suitability"] = normalized_suitability
                 updated = True
             semantic_blocks.append(current)
 
         if not updated:
             raise ValueError("Selected semantic block was not found.")
 
+        reopen_reason = REOPEN_BLOCK_EDIT_REASON
+        if suitability_changed and not metadata_changed:
+            reopen_reason = REOPEN_SUITABILITY_REASON
         return self._persist_semantic_update(
             project_dir,
             project,
             semantic_blocks,
             now,
-            REOPEN_BLOCK_EDIT_REASON,
+            reopen_reason,
         )
 
     def reorder_semantic_block(self, project_dir: Path, block_id: str, direction: str) -> ProjectSlice:

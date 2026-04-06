@@ -1,21 +1,27 @@
 ﻿# Codex Tasks
 
 Last updated: 2026-04-06
-Current focus: F-012 semantic output suitability review controls
+Current focus: F-013 semantic review filters and focus cues
 
 ## Working rule
 Tasks should be bounded, product-visible, and small enough to preserve continuity without turning the repository into micro-slice overload.
 
 ## Active task
 
-### F-012
+### F-013
 - Status: active
-- Module: semantic output suitability review controls
-- Goal: extend the semantic workspace with one minimal selected-block output-suitability review surface without drifting into matching, backend, or downstream execution.
+- Module: semantic review filters and focus cues
+- Goal: extend the semantic workspace with one minimal filter or focus cue so editors can isolate blocks that need attention without drifting into matching, backend, or downstream execution.
 - Input documents: `00_INDEX.md`, `01_MASTER/CURRENT_STATE.md`, `01_MASTER/DECISIONS.md`, `01_MASTER/ROADMAP.md`, `01_MASTER/SSOT_MAP.md`, `05_CODEX/NEXT_TASK.md`, `02_PRODUCT/MVP_DESKTOP_INTERFACE.md`, `02_PRODUCT/NAVIGATION_BEHAVIOR.md`, `03_MODULES/DNA_SEMANTIC_ENGINE.md`
-- Expected result: one minimal semantic workspace update where output suitability can be reviewed and persisted without scope explosion.
+- Expected result: one minimal semantic workspace update where review focus is easier without scope explosion.
 
 ## Completed tasks
+
+### F-012
+- Status: completed
+- Module: semantic output suitability review controls
+- Goal: extend the semantic workspace with one minimal selected-block output-suitability review surface without drifting into matching, backend, or downstream execution.
+- Outcome: exposed the existing output-suitability field as four bounded inspector controls, persisted local suitability edits on semantic blocks, surfaced lightweight suitability summaries in the semantic list and inspector, kept approved-map reopen behavior coherent after suitability edits, added reload-stable validation coverage, and kept the packet intentionally narrow.
 
 ### F-011
 - Status: completed

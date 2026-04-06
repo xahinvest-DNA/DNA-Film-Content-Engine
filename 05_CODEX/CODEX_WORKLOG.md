@@ -1,5 +1,22 @@
 # Codex Worklog
 
+## 2026-04-06 - F-012 completed and output suitability became reviewable
+
+### Completed
+- completed the semantic output suitability review controls packet as one bounded follow-up to the issue-visible semantic workspace;
+- exposed the existing semantic-block `output_suitability` field as four minimal inspector controls for long video, shorts/reels, carousel, and packaging review;
+- persisted suitability edits inside the existing semantic block record and kept those values stable through reload;
+- surfaced lightweight suitability summaries in the semantic list and selected-block inspector without creating a downstream-output planning surface;
+- kept approved-map reopen behavior coherent after suitability changes and verified that through local tests alongside prior packet regressions;
+- synchronized the repository state layer after real implementation progress.
+
+### Repository effect
+- the repository now contains an editor-facing semantic suitability review surface rather than a documentation-only suitability field;
+- suitability review remains local-first, file-based, bounded, and clearly separate from downstream generation or output planning;
+- the implementation remains intentionally narrow and does not open matching, backend, or downstream-output execution work.
+
+### Recommended next step
+Execute `F-013 Semantic Review Filters and Focus Cues`
 ## 2026-04-06 - F-011 completed and semantic review clarity became legible
 
 ### Completed

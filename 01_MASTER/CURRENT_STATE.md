@@ -2,10 +2,10 @@
 
 Last updated: 2026-04-06
 Status: active
-Current stage: F-011 semantic completeness cues and issue visibility is completed
-Active module: F-012 semantic output suitability review controls
-Active frontier: F-012 Semantic Output Suitability Review Controls
-Active question: how to add one minimal output-suitability review surface to the local-first semantic workspace so editors can mark semantic blocks as more or less suitable for long video, shorts/reels, carousel, and packaging without opening downstream execution scope
+Current stage: F-012 semantic output suitability review controls are completed
+Active module: F-013 semantic review filters and focus cues
+Active frontier: F-013 Semantic Review Filters and Focus Cues
+Active question: how to add one minimal filtering and focus-cue layer to the local-first semantic workspace so editors can quickly isolate weak, suitability-specific, or review-ready blocks without turning the workspace into a dashboard or workflow engine
 
 ## Where the project is now
 
@@ -21,14 +21,14 @@ At this point:
 - data schema, project file format, and asset-pipeline boundaries are completed through `DATA_SCHEMA.md`, `PROJECT_FILE_FORMAT.md`, and `ASSET_PIPELINE.md`;
 - render/export-facing schema and downstream output boundaries are completed through `RENDER_EXPORT_SCHEMA.md`, `LONG_VIDEO_BUILDER.md`, `SHORTS_REELS_BUILDER.md`, `CAROUSEL_BUILDER.md`, and `PACKAGING_ENGINE.md`;
 - the first bounded MVP implementation slice is real through a local-first runtime that can create a project, accept analysis text, derive semantic blocks, persist them on disk, and inspect them in a desktop-facing semantic workspace;
-- the semantic workspace now supports persisted selected-block editing, project-level review state, persisted ordering, approval-readiness visibility, one approval guardrail, explicit reopened-after-change visibility that survives reload, persisted semantic boundary editing through minimal split/merge controls, and deterministic completeness / issue visibility across the project and selected-block inspector;
+- the semantic workspace now supports persisted selected-block editing, project-level review state, persisted ordering, approval-readiness visibility, one approval guardrail, explicit reopened-after-change visibility that survives reload, persisted semantic boundary editing through minimal split/merge controls, deterministic completeness / issue visibility across the project and selected-block inspector, and persisted output-suitability review controls for long video, shorts/reels, carousel, and packaging;
 - the main MVP operating surface remains fixed as `Semantic Map Workspace`;
 - the meaning-first architecture is now explicit across product, domain, schema, project-package, asset, downstream output, and implementation layers;
 - the project now uses a manager-led execution model;
 - ChatGPT owns strongest-next-step selection;
 - Codex owns repository execution and state synchronization;
-- F-011 is completed and no longer the active frontier;
-- the current active frontier is now `F-012 Semantic Output Suitability Review Controls`.
+- F-012 is completed and no longer the active frontier;
+- the current active frontier is now `F-013 Semantic Review Filters and Focus Cues`.
 
 ## Accepted boundaries right now
 
@@ -45,13 +45,13 @@ At this point:
 
 ## Open items
 
-- add one minimal output-suitability review control inside Semantic Map Workspace;
-- persist selected-block suitability adjustments in the local project package;
-- keep suitability visibility readable without opening downstream output generation or broader editor redesign.
+- add one minimal semantic-map filter or focus control inside Semantic Map Workspace;
+- let the editor quickly isolate blocks with issues, review readiness, or selected suitability signals;
+- keep filtering local-first and readable without turning the workspace into a dashboard-heavy planning surface.
 
 ## Next step
 
-Open and execute one bounded packet for `F-012 Semantic Output Suitability Review Controls`.
+Open and execute one bounded packet for `F-013 Semantic Review Filters and Focus Cues`.
 
 ## What must not be lost in a new chat
 
@@ -60,5 +60,5 @@ Open and execute one bounded packet for `F-012 Semantic Output Suitability Revie
 - manager-led execution model is fixed.
 - MVP main surface is `Semantic Map Workspace`.
 - product, domain, schema, project-file, asset, and downstream output-boundary layers are fixed.
-- F-011 is completed with deterministic warning flags, project-level semantic completeness cues, lightweight issue visibility in the semantic list and inspector, and reload-stable review clarity persisted in the local project package.
-- the next strong step is `F-012 Semantic Output Suitability Review Controls`, not broad runtime/backend depth.
+- F-012 is completed with persisted selected-block output-suitability review controls, lightweight suitability visibility in the semantic list and inspector, and coherent reopen-after-suitability-change behavior in the local project package.
+- the next strong step is `F-013 Semantic Review Filters and Focus Cues`, not broad runtime/backend depth.

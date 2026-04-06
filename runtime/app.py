@@ -5,6 +5,7 @@ from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 
 from runtime.project_slice import (
+    ALLOWED_OUTPUT_SUITABILITY,
     ALLOWED_REVIEW_STATES,
     ALLOWED_SEMANTIC_ROLES,
     ProjectSlice,
@@ -50,6 +51,10 @@ class DNAFilmApp:
         self.split_sentence_var = tk.StringVar(value="1")
         self.block_status_var = tk.StringVar(value="Select a semantic block to inspect, reorder, split, merge, and edit it here.")
         self.block_issues_text = tk.StringVar(value="Block issues: none")
+        self.long_video_var = tk.StringVar(value=ALLOWED_OUTPUT_SUITABILITY[0])
+        self.shorts_reels_var = tk.StringVar(value=ALLOWED_OUTPUT_SUITABILITY[0])
+        self.carousel_var = tk.StringVar(value=ALLOWED_OUTPUT_SUITABILITY[0])
+        self.packaging_var = tk.StringVar(value=ALLOWED_OUTPUT_SUITABILITY[0])
 
         self._build_layout()
         self._switch_view("Project Home")
@@ -90,7 +95,7 @@ class DNAFilmApp:
         inspector = ttk.Frame(self.root, padding=12)
         inspector.grid(row=1, column=2, sticky="nsew")
         inspector.columnconfigure(0, weight=1)
-        inspector.rowconfigure(13, weight=1)
+        inspector.rowconfigure(16, weight=1)
         ttk.Label(inspector, text="Block Detail / Inspector", font=("Segoe UI", 12, "bold")).grid(row=0, column=0, sticky="w")
         ttk.Label(inspector, textvariable=self.block_status_var, wraplength=320).grid(row=1, column=0, sticky="w", pady=(4, 6))
         ttk.Label(inspector, textvariable=self.block_issues_text, wraplength=320).grid(row=2, column=0, sticky="w", pady=(0, 10))
@@ -124,14 +129,31 @@ class DNAFilmApp:
         self.block_role_combo = ttk.Combobox(inspector, textvariable=self.block_role_var, values=ALLOWED_SEMANTIC_ROLES, state="readonly")
         self.block_role_combo.grid(row=10, column=0, sticky="ew", pady=(0, 10))
         ttk.Label(inspector, text="Notes").grid(row=11, column=0, sticky="w")
-        self.notes_text = tk.Text(inspector, height=8, wrap="word")
+        self.notes_text = tk.Text(inspector, height=6, wrap="word")
         self.notes_text.grid(row=12, column=0, sticky="nsew")
-        ttk.Label(inspector, text="Full block text").grid(row=13, column=0, sticky="w", pady=(10, 0))
-        self.content_text = tk.Text(inspector, height=10, wrap="word")
-        self.content_text.grid(row=14, column=0, sticky="nsew", pady=(0, 10))
+        ttk.Label(inspector, text="Output suitability").grid(row=13, column=0, sticky="w", pady=(10, 0))
+        suitability = ttk.Frame(inspector)
+        suitability.grid(row=14, column=0, sticky="ew", pady=(4, 10))
+        suitability.columnconfigure(1, weight=1)
+        suitability.columnconfigure(3, weight=1)
+        ttk.Label(suitability, text="Long video").grid(row=0, column=0, sticky="w")
+        self.long_video_combo = ttk.Combobox(suitability, textvariable=self.long_video_var, values=ALLOWED_OUTPUT_SUITABILITY, state="readonly")
+        self.long_video_combo.grid(row=0, column=1, sticky="ew", padx=(8, 12))
+        ttk.Label(suitability, text="Shorts/reels").grid(row=0, column=2, sticky="w")
+        self.shorts_reels_combo = ttk.Combobox(suitability, textvariable=self.shorts_reels_var, values=ALLOWED_OUTPUT_SUITABILITY, state="readonly")
+        self.shorts_reels_combo.grid(row=0, column=3, sticky="ew")
+        ttk.Label(suitability, text="Carousel").grid(row=1, column=0, sticky="w", pady=(8, 0))
+        self.carousel_combo = ttk.Combobox(suitability, textvariable=self.carousel_var, values=ALLOWED_OUTPUT_SUITABILITY, state="readonly")
+        self.carousel_combo.grid(row=1, column=1, sticky="ew", padx=(8, 12), pady=(8, 0))
+        ttk.Label(suitability, text="Packaging").grid(row=1, column=2, sticky="w", pady=(8, 0))
+        self.packaging_combo = ttk.Combobox(suitability, textvariable=self.packaging_var, values=ALLOWED_OUTPUT_SUITABILITY, state="readonly")
+        self.packaging_combo.grid(row=1, column=3, sticky="ew", pady=(8, 0))
+        ttk.Label(inspector, text="Full block text").grid(row=15, column=0, sticky="w", pady=(10, 0))
+        self.content_text = tk.Text(inspector, height=8, wrap="word")
+        self.content_text.grid(row=16, column=0, sticky="nsew", pady=(0, 10))
         self.content_text.configure(state="disabled")
-        self.save_block_button = ttk.Button(inspector, text="Save Block Changes", command=self.save_selected_block)
-        self.save_block_button.grid(row=15, column=0, sticky="ew")
+        self.save_block_button = ttk.Button(inspector, text="Save Block Review", command=self.save_selected_block)
+        self.save_block_button.grid(row=17, column=0, sticky="ew")
 
         self.views: dict[str, ttk.Frame] = {}
         self.views["Project Home"] = self._build_home_view(main)
@@ -283,6 +305,12 @@ class DNAFilmApp:
             messagebox.showerror("Semantic map", "Select a semantic block first.")
             return
         notes = self.notes_text.get("1.0", "end").strip()
+        output_suitability = {
+            "long_video": self.long_video_var.get(),
+            "shorts_reels": self.shorts_reels_var.get(),
+            "carousel": self.carousel_var.get(),
+            "packaging": self.packaging_var.get(),
+        }
         try:
             project = self.store.update_semantic_block(
                 self.project.project_dir,
@@ -290,14 +318,15 @@ class DNAFilmApp:
                 self.block_title_var.get(),
                 self.block_role_var.get(),
                 notes,
+                output_suitability=output_suitability,
             )
         except ValueError as exc:
             messagebox.showerror("Semantic map", str(exc))
             return
         self._load_project_into_ui(project, select_block_id=self.selected_block_id)
         self._switch_view("Semantic Map")
-        self.block_status_var.set("Block changes saved to the local project package.")
-        messagebox.showinfo("Semantic map", "Selected block changes were saved.")
+        self.block_status_var.set("Block review changes saved to the local project package.")
+        messagebox.showinfo("Semantic map", "Selected block review changes were saved.")
 
     def reorder_selected_block(self, direction: str) -> None:
         if self.project is None or self.selected_block_id is None:
@@ -384,8 +413,9 @@ class DNAFilmApp:
         self.reopen_text.set(f"Reopen state: {reopened} | reason: {reopen_reason}")
         warnings = project.intake_record.get("intake_warnings", [])
         warning_text = f"Warnings: {', '.join(warnings)}" if warnings else "Warnings: none"
+        suitability_summary = self._project_suitability_summary(project)
         self.summary_text.set(
-            f"Project status: {project.project_record['project_status']} | Intake: {project.intake_record['intake_readiness']} | Semantic blocks: {len(project.semantic_blocks)} | Review: {project.semantic_review_record['review_status']} | Completeness: {completeness_label} | Readiness: {readiness} | {warning_text}"
+            f"Project status: {project.project_record['project_status']} | Intake: {project.intake_record['intake_readiness']} | Semantic blocks: {len(project.semantic_blocks)} | Review: {project.semantic_review_record['review_status']} | Completeness: {completeness_label} | Readiness: {readiness} | Suitability: {suitability_summary} | {warning_text}"
         )
 
         self.analysis_text.delete("1.0", "end")
@@ -395,9 +425,10 @@ class DNAFilmApp:
 
         self.semantic_list.delete(0, "end")
         for block in project.semantic_blocks:
-            preview = block["content"][:72].replace("\n", " ")
+            preview = block["content"][:56].replace("\n", " ")
             issue_suffix = f" | issues:{len(block.get('warning_flags', []))}" if block.get("warning_flags") else ""
-            self.semantic_list.insert("end", f"{block['sequence']:02d}. {block['title']} [{block['semantic_role']}] - {preview}{issue_suffix}")
+            suitability_suffix = f" | {self._suitability_summary(block)}"
+            self.semantic_list.insert("end", f"{block['sequence']:02d}. {block['title']} [{block['semantic_role']}] - {preview}{issue_suffix}{suitability_suffix}")
 
         if project.semantic_blocks:
             target_block_id = select_block_id or project.semantic_blocks[0]["record_id"]
@@ -416,6 +447,11 @@ class DNAFilmApp:
         self.block_role_var.set(block["semantic_role"])
         self.notes_text.delete("1.0", "end")
         self.notes_text.insert("1.0", block.get("notes", ""))
+        suitability = block.get("output_suitability", {})
+        self.long_video_var.set(suitability.get("long_video", ALLOWED_OUTPUT_SUITABILITY[0]))
+        self.shorts_reels_var.set(suitability.get("shorts_reels", ALLOWED_OUTPUT_SUITABILITY[0]))
+        self.carousel_var.set(suitability.get("carousel", ALLOWED_OUTPUT_SUITABILITY[0]))
+        self.packaging_var.set(suitability.get("packaging", ALLOWED_OUTPUT_SUITABILITY[0]))
         self.content_text.configure(state="normal")
         self.content_text.delete("1.0", "end")
         self.content_text.insert("1.0", block["content"])
@@ -431,7 +467,7 @@ class DNAFilmApp:
         status_suffix = f" | reopen reason: {reopen_note}" if reopen_note else ""
         issue_labels = describe_warning_flags(block.get("warning_flags", []))
         issue_text = ", ".join(issue_labels) if issue_labels else "none"
-        self.block_issues_text.set(f"Block issues: {issue_text}")
+        self.block_issues_text.set(f"Block issues: {issue_text} | suitability: {self._suitability_summary(block)}")
         self.block_status_var.set(
             f"Editing {block['record_id']} | sequence: {block['sequence']} | review state: {self.project.semantic_review_record['review_status']} | issues: {len(block.get('warning_flags', []))}{status_suffix}"
         )
@@ -461,6 +497,10 @@ class DNAFilmApp:
         self.block_title_entry.configure(state=entry_state)
         self.block_role_combo.configure(state=combo_state)
         self.notes_text.configure(state=text_state)
+        self.long_video_combo.configure(state=combo_state)
+        self.shorts_reels_combo.configure(state=combo_state)
+        self.carousel_combo.configure(state=combo_state)
+        self.packaging_combo.configure(state=combo_state)
         self.save_block_button.configure(state=button_state)
 
     def _set_structure_enabled(
@@ -482,6 +522,10 @@ class DNAFilmApp:
         self.block_title_var.set("")
         self.block_role_var.set(ALLOWED_SEMANTIC_ROLES[0])
         self.split_sentence_var.set("1")
+        self.long_video_var.set(ALLOWED_OUTPUT_SUITABILITY[0])
+        self.shorts_reels_var.set(ALLOWED_OUTPUT_SUITABILITY[0])
+        self.carousel_var.set(ALLOWED_OUTPUT_SUITABILITY[0])
+        self.packaging_var.set(ALLOWED_OUTPUT_SUITABILITY[0])
         self.notes_text.configure(state="normal")
         self.notes_text.delete("1.0", "end")
         self.notes_text.configure(state="disabled")
@@ -503,6 +547,35 @@ class DNAFilmApp:
             return "reopened_after_change"
         completeness_label, _, _ = semantic_completeness(project.intake_record, project.semantic_blocks)
         return {"Incomplete": "premature", "Mixed": "mixed"}.get(completeness_label, "plausibly_reasonable")
+
+    def _suitability_summary(self, block: dict) -> str:
+        short = {
+            "long_video": "LV",
+            "shorts_reels": "SR",
+            "carousel": "CA",
+            "packaging": "PK",
+        }
+        value_short = {
+            "candidate": "cand",
+            "strong": "strong",
+            "weak": "weak",
+            "not_suitable": "no",
+        }
+        parts: list[str] = []
+        for key in ("long_video", "shorts_reels", "carousel", "packaging"):
+            value = block.get("output_suitability", {}).get(key, "candidate")
+            if value != "candidate":
+                parts.append(f"{short[key]}:{value_short[value]}")
+        return "suit: all-candidate" if not parts else "suit: " + ", ".join(parts)
+
+    def _project_suitability_summary(self, project: ProjectSlice) -> str:
+        counts = {"strong": 0, "weak": 0, "not_suitable": 0}
+        for block in project.semantic_blocks:
+            for value in block.get("output_suitability", {}).values():
+                if value in counts:
+                    counts[value] += 1
+        visible = [f"{key}:{value}" for key, value in counts.items() if value]
+        return "all candidate" if not visible else ", ".join(visible)
 
     def _next_action_label(self, project: ProjectSlice) -> str:
         if not project.analysis_source_record:

@@ -86,6 +86,76 @@ class ProjectSliceStoreTests(unittest.TestCase):
             self.assertIn('"semantic_completeness": "Plausibly ready for review"', status_payload)
             self.assertIn('"semantic_issue_count": 0', status_payload)
 
+    def test_output_suitability_edit_persists_after_reload(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = store.create_project("Suitability Map", film_title="Demo Film", language="en")
+            project = store.save_analysis_text(project.project_dir, SAMPLE_ANALYSIS)
+            first_block = project.semantic_blocks[0]
+
+            project = store.update_semantic_block(
+                project.project_dir,
+                first_block["record_id"],
+                first_block["title"],
+                first_block["semantic_role"],
+                first_block["notes"],
+                output_suitability={
+                    "long_video": "strong",
+                    "shorts_reels": "weak",
+                    "carousel": "candidate",
+                    "packaging": "not_suitable",
+                },
+            )
+
+            updated = project.semantic_blocks[0]["output_suitability"]
+            self.assertEqual(updated["long_video"], "strong")
+            self.assertEqual(updated["shorts_reels"], "weak")
+            self.assertEqual(updated["packaging"], "not_suitable")
+
+            reloaded = store.load_project(project.project_dir)
+            self.assertEqual(reloaded.semantic_blocks[0]["output_suitability"]["long_video"], "strong")
+            self.assertEqual(reloaded.semantic_blocks[0]["output_suitability"]["packaging"], "not_suitable")
+
+    def test_suitability_edit_reopens_approved_map(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = store.create_project("Suitability Reopen", film_title="Demo Film", language="en")
+            project = store.save_analysis_text(project.project_dir, SAMPLE_ANALYSIS)
+            for block in list(project.semantic_blocks):
+                project = store.update_semantic_block(
+                    project.project_dir,
+                    block["record_id"],
+                    block["title"],
+                    block["semantic_role"],
+                    "Editor clarification added.",
+                    output_suitability={
+                        "long_video": "candidate",
+                        "shorts_reels": "candidate",
+                        "carousel": "candidate",
+                        "packaging": "candidate",
+                    },
+                )
+            project = store.update_semantic_review_status(project.project_dir, "ready_for_review")
+            project = store.update_semantic_review_status(project.project_dir, "approved")
+            first_block = project.semantic_blocks[0]
+
+            reopened = store.update_semantic_block(
+                project.project_dir,
+                first_block["record_id"],
+                first_block["title"],
+                first_block["semantic_role"],
+                first_block["notes"],
+                output_suitability={
+                    "long_video": "strong",
+                    "shorts_reels": "candidate",
+                    "carousel": "candidate",
+                    "packaging": "candidate",
+                },
+            )
+
+            self.assertTrue(reopened.semantic_review_record["reopened_after_change"])
+            self.assertIn("output suitability changed after approval", reopened.semantic_review_record["reopen_reason"])
+
     def test_blocked_approval_persists_reason(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             store = ProjectSliceStore(Path(temp_dir))
@@ -243,6 +313,37 @@ class DNAFilmAppTests(unittest.TestCase):
                 self.assertIn("Semantic completeness: Incomplete", app.completeness_text.get())
                 self.assertIn("Block issues:", app.block_issues_text.get())
                 self.assertIn("very short content", app.block_issues_text.get())
+            finally:
+                root.destroy()
+
+    def test_app_surfaces_suitability_controls_and_persistence(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Suitability Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+                    first_block_id = app.project.semantic_blocks[0]["record_id"]
+                    app._select_block_by_id(first_block_id)
+                    app.long_video_var.set("strong")
+                    app.shorts_reels_var.set("weak")
+                    app.packaging_var.set("not_suitable")
+                    app.save_selected_block()
+
+                self.assertIn("LV:strong", app.semantic_list.get(0))
+                self.assertIn("suitability:", app.block_issues_text.get())
+                reloaded = app.store.load_project(app.project.project_dir)
+                self.assertEqual(reloaded.semantic_blocks[0]["output_suitability"]["long_video"], "strong")
+                self.assertEqual(reloaded.semantic_blocks[0]["output_suitability"]["packaging"], "not_suitable")
             finally:
                 root.destroy()
 
