@@ -33,6 +33,7 @@ REOPEN_BLOCK_EDIT_REASON = "Approval was reopened because a semantic block chang
 REOPEN_REORDER_REASON = "Approval was reopened because semantic block order changed after approval."
 REOPEN_SOURCE_REASON = "Approval was reopened because the analysis source was replaced after approval."
 REOPEN_STRUCTURE_REASON = "Approval was reopened because semantic block boundaries changed after approval."
+SEVERE_WARNING_FLAGS = {"missing_title", "missing_semantic_role", "very_short_content"}
 
 
 def utc_now() -> str:
@@ -79,6 +80,73 @@ def split_sentences(content: str) -> list[str]:
     return sentences or [normalized]
 
 
+def describe_warning_flags(flags: list[str]) -> list[str]:
+    labels = {
+        "missing_title": "missing title",
+        "weak_title": "weak title",
+        "missing_semantic_role": "missing semantic role",
+        "very_short_content": "very short content",
+        "notes_recommended": "notes recommended",
+    }
+    return [labels.get(flag, flag.replace("_", " ")) for flag in flags]
+
+
+def derive_warning_flags(block: dict) -> list[str]:
+    flags: list[str] = []
+    title = block.get("title", "").strip()
+    role = block.get("semantic_role", "").strip()
+    content = block.get("content", "").strip()
+    notes = block.get("notes", "").strip()
+    content_words = len(content.split())
+
+    if not title:
+        flags.append("missing_title")
+    elif title.lower() == "untitled block" or len(title.split()) < 3:
+        flags.append("weak_title")
+
+    if not role:
+        flags.append("missing_semantic_role")
+
+    if content_words < 12:
+        flags.append("very_short_content")
+
+    if not notes and content_words >= 12:
+        flags.append("notes_recommended")
+
+    return flags
+
+
+def normalize_semantic_blocks(semantic_blocks: list[dict]) -> list[dict]:
+    normalized: list[dict] = []
+    for index, block in enumerate(semantic_blocks, start=1):
+        current = dict(block)
+        current["sequence"] = index
+        current["warning_flags"] = derive_warning_flags(current)
+        normalized.append(current)
+    return normalized
+
+
+def semantic_completeness(intake_record: dict, semantic_blocks: list[dict]) -> tuple[str, int, int]:
+    if intake_record.get("intake_readiness") != "ready" or not semantic_blocks:
+        return ("Incomplete", 0, 0)
+    issue_count = sum(len(block.get("warning_flags", [])) for block in semantic_blocks)
+    blocks_with_issues = sum(1 for block in semantic_blocks if block.get("warning_flags"))
+    has_severe = any(any(flag in SEVERE_WARNING_FLAGS for flag in block.get("warning_flags", [])) for block in semantic_blocks)
+    if has_severe:
+        return ("Incomplete", issue_count, blocks_with_issues)
+    if issue_count:
+        return ("Mixed", issue_count, blocks_with_issues)
+    return ("Plausibly ready for review", 0, 0)
+
+
+def completeness_readiness_hint(completeness_label: str) -> str:
+    if completeness_label == "Incomplete":
+        return "premature"
+    if completeness_label == "Mixed":
+        return "mixed"
+    return "plausibly_reasonable"
+
+
 def build_semantic_blocks(project_id: str, source_record_id: str, analysis_text: str) -> list[dict]:
     paragraphs = [chunk.strip() for chunk in re.split(r"\n\s*\n", analysis_text) if chunk.strip()]
     blocks: list[dict] = []
@@ -105,7 +173,7 @@ def build_semantic_blocks(project_id: str, source_record_id: str, analysis_text:
                 "warning_flags": [],
             }
         )
-    return blocks
+    return normalize_semantic_blocks(blocks)
 
 
 @dataclass
@@ -200,6 +268,7 @@ class ProjectSliceStore:
             semantic_review_record = self._default_review_record(manifest["project_id"], timestamp)
 
         semantic_blocks = read_json(semantic_record_path)["blocks"] if semantic_record_path.exists() else []
+        semantic_blocks = normalize_semantic_blocks(semantic_blocks)
         return ProjectSlice(
             project_dir=project_dir,
             manifest=manifest,
@@ -241,6 +310,7 @@ class ProjectSliceStore:
             intake_warnings.append("Film title remains optional and is still empty.")
 
         analysis_record_ref = f"records/intake/{ANALYSIS_RECORD_FILENAME}"
+        semantic_blocks = normalize_semantic_blocks(semantic_blocks)
         manifest = dict(project.manifest)
         manifest["primary_analysis_source"] = analysis_record_ref
         manifest["updated_at"] = now
@@ -548,6 +618,7 @@ class ProjectSliceStore:
         semantic_review_record: dict,
         semantic_blocks: list[dict],
     ) -> None:
+        semantic_blocks = normalize_semantic_blocks(semantic_blocks)
         write_json(project_dir / "project.manifest", manifest)
         write_json(project_dir / "project.meta" / "status.json", self._status_payload(project_record, intake_record, semantic_review_record, semantic_blocks))
         write_json(project_dir / "records" / "project" / "project.json", project_record)
@@ -564,6 +635,7 @@ class ProjectSliceStore:
         semantic_review_record: dict,
         semantic_blocks: list[dict],
     ) -> dict:
+        completeness_label, issue_count, blocks_with_issues = semantic_completeness(intake_record, semantic_blocks)
         return {
             "project_status": project_record["project_status"],
             "current_readiness_summary": project_record["current_readiness_summary"],
@@ -571,6 +643,9 @@ class ProjectSliceStore:
             "semantic_block_count": len(semantic_blocks),
             "semantic_map_status": semantic_review_record["review_status"],
             "semantic_review_approved": semantic_review_record["approved"],
+            "semantic_completeness": completeness_label,
+            "semantic_issue_count": issue_count,
+            "blocks_with_issues": blocks_with_issues,
             "approval_readiness": self._approval_readiness_label(intake_record, semantic_blocks, semantic_review_record),
             "approval_block_reason": semantic_review_record.get("approval_block_reason", ""),
             "approval_transition_message": semantic_review_record.get("approval_transition_message", ""),
@@ -593,19 +668,21 @@ class ProjectSliceStore:
 
         review_status = semantic_review_record["review_status"]
         block_count = len(semantic_blocks)
+        completeness_label, issue_count, blocks_with_issues = semantic_completeness(intake_record, semantic_blocks)
         readiness = self._approval_readiness_label(intake_record, semantic_blocks, semantic_review_record)
+        issue_summary = f"Completeness: {completeness_label}. Issues: {issue_count} across {blocks_with_issues} block(s)."
         if review_status == "approved":
             project_record["project_status"] = "semantic_map_approved"
-            project_record["current_readiness_summary"] = f"{block_count} semantic blocks approved for later matching prep."
+            project_record["current_readiness_summary"] = f"{block_count} semantic blocks approved for later matching prep. {issue_summary}"
         elif semantic_review_record.get("reopened_after_change"):
             project_record["project_status"] = "semantic_map_reopened"
-            project_record["current_readiness_summary"] = f"{block_count} semantic blocks reopened after change. Readiness: {readiness}."
+            project_record["current_readiness_summary"] = f"{block_count} semantic blocks reopened after change. Readiness: {readiness}. {issue_summary}"
         elif review_status == "ready_for_review":
             project_record["project_status"] = "semantic_map_ready_for_review"
-            project_record["current_readiness_summary"] = f"{block_count} semantic blocks ready for approval review. Readiness: {readiness}."
+            project_record["current_readiness_summary"] = f"{block_count} semantic blocks ready for approval review. Readiness: {readiness}. {issue_summary}"
         else:
             project_record["project_status"] = "semantic_map_under_edit"
-            project_record["current_readiness_summary"] = f"{block_count} semantic blocks under edit in Semantic Map Workspace. Readiness: {readiness}."
+            project_record["current_readiness_summary"] = f"{block_count} semantic blocks under edit in Semantic Map Workspace. Readiness: {readiness}. {issue_summary}"
 
     def _approval_readiness_label(
         self,
@@ -621,10 +698,8 @@ class ProjectSliceStore:
             return "ready_for_approval"
         if semantic_review_record.get("reopened_after_change"):
             return "reopened_after_change"
-        complete_blocks = all(block.get("title", "").strip() and block.get("semantic_role", "").strip() for block in semantic_blocks)
-        if complete_blocks:
-            return "editable_but_complete"
-        return "under_edit"
+        completeness_label, _, _ = semantic_completeness(intake_record, semantic_blocks)
+        return completeness_readiness_hint(completeness_label)
 
     def _mark_reopened_if_needed(self, semantic_review_record: dict, reopen_reason: str) -> None:
         if semantic_review_record.get("review_status") == "approved":

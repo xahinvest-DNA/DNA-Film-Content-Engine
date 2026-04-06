@@ -2,25 +2,25 @@
 
 Last updated: 2026-04-06
 Status: ready
-Task ID: F-011
+Task ID: F-012
 Task type: implementation
-Title: Semantic Completeness Cues and Issue Visibility
+Title: Semantic Output Suitability Review Controls
 
 ## Goal
 
-Extend the semantic workspace with lightweight completeness cues and clearer issue visibility without drifting into matching, backend, or downstream execution work.
+Extend the local-first semantic workspace with one bounded output-suitability review surface so the editor can adjust how suitable each semantic block looks for downstream long video, shorts/reels, carousel, and packaging use without opening downstream generation scope.
 
 ## Why this is next
 
-The repository now has clearer approval guardrails, explicit reopened-after-change visibility, and real semantic boundary editing inside the local-first semantic workspace. The strongest next step is to make the semantic map more self-explanatory by surfacing lightweight completeness cues and issue visibility before any broader workflow or matching-facing work begins.
+The repository now has a real editable semantic workspace with project creation, intake, block persistence, selected-block editing, reorder, split/merge, approval clarity, and lightweight completeness / issue visibility. The next strongest bounded step is to expose the already-defined output-suitability field as a minimal review control inside the existing inspector, rather than moving into matching, backend, or downstream automation.
 
 ## In scope
 
-- one bounded follow-up packet on top of the completed F-010 runtime slice
-- lightweight completeness cues for semantic blocks or project-level semantic state
-- clearer visibility for small semantic issues that affect approval confidence
-- summary and inspector updates required to keep those cues readable
-- only the runtime and persistence touches required to improve semantic review clarity
+- one bounded follow-up packet on top of the completed F-011 runtime slice
+- minimal selected-block output-suitability review controls inside the existing inspector
+- persisted local updates to the existing output-suitability structure
+- lightweight suitability visibility in the semantic list or summary where needed for clarity
+- local tests covering suitability edits, reload persistence, and interaction with existing approval-reopen semantics where applicable
 
 ## Out of scope
 
@@ -28,17 +28,17 @@ The repository now has clearer approval guardrails, explicit reopened-after-chan
 - scene-matching automation
 - downstream output generation
 - backend or API design
-- generalized validation engine
+- generalized metadata framework
 - broad navigation expansion
-- packet expansion beyond semantic completeness cues and issue visibility
+- packet expansion beyond semantic output-suitability review controls
 
 ## Recommended validation
 
 Validate that the resulting packet delivers:
 
-- visible completeness or issue cues inside the desktop-facing semantic workspace
-- persisted visibility that survives reload where required by the new cues
-- clearer understanding of why the semantic map is complete or still weak
+- one clear selected-block suitability review control in the desktop-facing semantic workspace
+- persisted suitability changes that survive reload
+- readable suitability visibility without redesigning the workspace into a dashboard
 - no scope explosion into matching, backend, or downstream-output implementation
 
 ## Required handoff format

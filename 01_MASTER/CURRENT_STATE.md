@@ -2,10 +2,10 @@
 
 Last updated: 2026-04-06
 Status: active
-Current stage: F-010 semantic block boundary editing and structural review completion is completed
-Active module: F-011 semantic completeness cues and issue visibility
-Active frontier: F-011 Semantic Completeness Cues and Issue Visibility
-Active question: how to make semantic-map completeness and lightweight issue visibility clearer inside the local-first semantic workspace after structural editing is available, without broadening into matching, backend, or downstream execution
+Current stage: F-011 semantic completeness cues and issue visibility is completed
+Active module: F-012 semantic output suitability review controls
+Active frontier: F-012 Semantic Output Suitability Review Controls
+Active question: how to add one minimal output-suitability review surface to the local-first semantic workspace so editors can mark semantic blocks as more or less suitable for long video, shorts/reels, carousel, and packaging without opening downstream execution scope
 
 ## Where the project is now
 
@@ -21,14 +21,14 @@ At this point:
 - data schema, project file format, and asset-pipeline boundaries are completed through `DATA_SCHEMA.md`, `PROJECT_FILE_FORMAT.md`, and `ASSET_PIPELINE.md`;
 - render/export-facing schema and downstream output boundaries are completed through `RENDER_EXPORT_SCHEMA.md`, `LONG_VIDEO_BUILDER.md`, `SHORTS_REELS_BUILDER.md`, `CAROUSEL_BUILDER.md`, and `PACKAGING_ENGINE.md`;
 - the first bounded MVP implementation slice is real through a local-first runtime that can create a project, accept analysis text, derive semantic blocks, persist them on disk, and inspect them in a desktop-facing semantic workspace;
-- the semantic workspace now supports persisted selected-block editing, project-level review state, persisted ordering, approval-readiness visibility, one approval guardrail, explicit reopened-after-change visibility that survives reload, and persisted semantic boundary editing through minimal split/merge controls;
+- the semantic workspace now supports persisted selected-block editing, project-level review state, persisted ordering, approval-readiness visibility, one approval guardrail, explicit reopened-after-change visibility that survives reload, persisted semantic boundary editing through minimal split/merge controls, and deterministic completeness / issue visibility across the project and selected-block inspector;
 - the main MVP operating surface remains fixed as `Semantic Map Workspace`;
 - the meaning-first architecture is now explicit across product, domain, schema, project-package, asset, downstream output, and implementation layers;
 - the project now uses a manager-led execution model;
 - ChatGPT owns strongest-next-step selection;
 - Codex owns repository execution and state synchronization;
-- F-010 is completed and no longer the active frontier;
-- the current active frontier is now `F-011 Semantic Completeness Cues and Issue Visibility`.
+- F-011 is completed and no longer the active frontier;
+- the current active frontier is now `F-012 Semantic Output Suitability Review Controls`.
 
 ## Accepted boundaries right now
 
@@ -45,13 +45,13 @@ At this point:
 
 ## Open items
 
-- surface lightweight completeness cues for semantic blocks and project-level semantic state;
-- show issue visibility more clearly without turning the semantic workspace into a large warning engine;
-- keep the runtime slice local-first and narrow while improving editor confidence after structural editing is available.
+- add one minimal output-suitability review control inside Semantic Map Workspace;
+- persist selected-block suitability adjustments in the local project package;
+- keep suitability visibility readable without opening downstream output generation or broader editor redesign.
 
 ## Next step
 
-Open and execute one bounded packet for `F-011 Semantic Completeness Cues and Issue Visibility`.
+Open and execute one bounded packet for `F-012 Semantic Output Suitability Review Controls`.
 
 ## What must not be lost in a new chat
 
@@ -60,5 +60,5 @@ Open and execute one bounded packet for `F-011 Semantic Completeness Cues and Is
 - manager-led execution model is fixed.
 - MVP main surface is `Semantic Map Workspace`.
 - product, domain, schema, project-file, asset, and downstream output-boundary layers are fixed.
-- F-010 is completed with persisted split/merge boundary editing, stable resequencing, and explicit reopen-after-structure-change visibility persisted in the local project package.
-- the next strong step is `F-011 Semantic Completeness Cues and Issue Visibility`, not broad runtime/backend depth.
+- F-011 is completed with deterministic warning flags, project-level semantic completeness cues, lightweight issue visibility in the semantic list and inspector, and reload-stable review clarity persisted in the local project package.
+- the next strong step is `F-012 Semantic Output Suitability Review Controls`, not broad runtime/backend depth.

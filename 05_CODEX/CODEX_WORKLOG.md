@@ -1,5 +1,22 @@
 # Codex Worklog
 
+## 2026-04-06 - F-011 completed and semantic review clarity became legible
+
+### Completed
+- completed the semantic completeness cues and issue visibility packet as one bounded follow-up to the boundary-editable semantic workspace;
+- added deterministic warning-flag derivation for semantic blocks without introducing AI scoring or a generalized diagnostics engine;
+- surfaced one project-level semantic completeness cue plus lightweight issue visibility in the semantic list and selected-block inspector;
+- made approval-readiness legibility clearer by tying under-edit review messaging to visible completeness and issue cues without adding new blocking workflow rules;
+- updated local validation so issue derivation, completeness cues, UI visibility, reload stability, and prior split/merge/approval flows are verified together;
+- synchronized the repository state layer after real implementation progress.
+
+### Repository effect
+- the repository now contains a more legible semantic workspace where editors can see whether the map looks incomplete, mixed, or plausibly reviewable;
+- warning cues remain local-first, deterministic, file-based, and narrowly derived from stored semantic block state;
+- the implementation remains intentionally narrow and does not open matching, backend, or downstream-output execution work.
+
+### Recommended next step
+Execute `F-012 Semantic Output Suitability Review Controls`
 ## 2026-04-06 - F-010 completed and semantic boundary editing became real
 
 ### Completed

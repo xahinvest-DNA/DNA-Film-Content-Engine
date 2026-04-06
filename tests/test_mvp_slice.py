@@ -18,6 +18,12 @@ Because the mother keeps translating danger into ritual, the essay reveals how o
 However, the final section suggests that the film does not stay inside despair. It shows a transition from passive inheritance toward a more conscious refusal to repeat the same emotional pattern.
 """.strip()
 
+SHORT_AND_MIXED_ANALYSIS = """
+Tiny thought.
+
+This second paragraph is long enough to keep the intake accepted while still leaving the first semantic block obviously too short for confident review.
+""".strip()
+
 
 class ProjectSliceStoreTests(unittest.TestCase):
     def test_create_project_and_build_semantic_map(self) -> None:
@@ -39,6 +45,46 @@ class ProjectSliceStoreTests(unittest.TestCase):
             self.assertEqual(len(updated.semantic_blocks), 3)
             self.assertTrue((updated.project_dir / "sources" / "analysis" / "analysis.txt").exists())
             self.assertTrue((updated.project_dir / "records" / "semantic" / "semantic_blocks.json").exists())
+
+    def test_issue_flags_and_incomplete_completeness_persist_after_reload(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = store.create_project("Weak Map", film_title="Demo Film", language="en")
+            project = store.save_analysis_text(project.project_dir, SHORT_AND_MIXED_ANALYSIS)
+
+            first_block = project.semantic_blocks[0]
+            self.assertIn("very_short_content", first_block["warning_flags"])
+            self.assertIn("weak_title", first_block["warning_flags"])
+            self.assertEqual(store._approval_readiness_label(project.intake_record, project.semantic_blocks, project.semantic_review_record), "premature")
+
+            status_payload = (project.project_dir / "project.meta" / "status.json").read_text(encoding="utf-8")
+            self.assertIn('"semantic_completeness": "Incomplete"', status_payload)
+            self.assertIn('"blocks_with_issues": 2', status_payload)
+
+            reloaded = store.load_project(project.project_dir)
+            self.assertIn("very_short_content", reloaded.semantic_blocks[0]["warning_flags"])
+            self.assertIn("weak_title", reloaded.semantic_blocks[0]["warning_flags"])
+
+    def test_completeness_can_become_plausibly_ready_after_fixing_notes(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = store.create_project("Readyish Map", film_title="Demo Film", language="en")
+            project = store.save_analysis_text(project.project_dir, SAMPLE_ANALYSIS)
+
+            for block in list(project.semantic_blocks):
+                project = store.update_semantic_block(
+                    project.project_dir,
+                    block["record_id"],
+                    block["title"],
+                    block["semantic_role"],
+                    "Editor clarification added.",
+                )
+
+            self.assertTrue(all(not block["warning_flags"] for block in project.semantic_blocks))
+            self.assertEqual(store._approval_readiness_label(project.intake_record, project.semantic_blocks, project.semantic_review_record), "plausibly_reasonable")
+            status_payload = (project.project_dir / "project.meta" / "status.json").read_text(encoding="utf-8")
+            self.assertIn('"semantic_completeness": "Plausibly ready for review"', status_payload)
+            self.assertIn('"semantic_issue_count": 0', status_payload)
 
     def test_blocked_approval_persists_reason(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -135,7 +181,7 @@ class ProjectSliceStoreTests(unittest.TestCase):
 
             self.assertEqual(reloaded.semantic_blocks[0]["record_id"], second_block_id)
             status_payload = (reloaded.project_dir / "project.meta" / "status.json").read_text(encoding="utf-8")
-            self.assertIn('"approval_readiness": "editable_but_complete"', status_payload)
+            self.assertIn('"approval_readiness": "mixed"', status_payload)
 
             reloaded = store.update_semantic_review_status(reloaded.project_dir, "ready_for_review")
             self.assertEqual(reloaded.project_record["project_status"], "semantic_map_ready_for_review")
@@ -172,7 +218,31 @@ class DNAFilmAppTests(unittest.TestCase):
                     app.save_review_status()
 
                 self.assertIn("Approve is blocked", app.approval_reason_text.get())
-                self.assertEqual(app.readiness_text.get(), "Approval readiness: editable_but_complete")
+                self.assertEqual(app.readiness_text.get(), "Approval readiness: mixed")
+            finally:
+                root.destroy()
+
+    def test_app_surfaces_issue_visibility_in_list_and_inspector(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Issues Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SHORT_AND_MIXED_ANALYSIS)
+                    app.save_analysis_text()
+
+                self.assertIn("issues:", app.semantic_list.get(0))
+                self.assertIn("Semantic completeness: Incomplete", app.completeness_text.get())
+                self.assertIn("Block issues:", app.block_issues_text.get())
+                self.assertIn("very short content", app.block_issues_text.get())
             finally:
                 root.destroy()
 
