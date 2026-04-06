@@ -16,7 +16,7 @@ class DNAFilmApp:
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
         self.root.title("DNA Film Content Engine - Semantic Review Workspace")
-        self.root.geometry("1380x840")
+        self.root.geometry("1400x860")
 
         self.workspace_root = Path.cwd() / "runtime_projects"
         self.workspace_root.mkdir(exist_ok=True)
@@ -31,6 +31,9 @@ class DNAFilmApp:
         self.summary_text = tk.StringVar(value="No semantic map yet.")
         self.review_status_text = tk.StringVar(value="Semantic review: under_edit")
         self.readiness_text = tk.StringVar(value="Approval readiness: not_ready")
+        self.approval_message_text = tk.StringVar(value="Approval message: Semantic map remains under edit.")
+        self.approval_reason_text = tk.StringVar(value="Approval reason: Approve is blocked until semantic review is moved to ready_for_review.")
+        self.reopen_text = tk.StringVar(value="Reopen state: none")
         self.placeholder_text = tk.StringVar(value="Available after semantic-map approval in a later bounded packet.")
 
         self.project_name_var = tk.StringVar()
@@ -59,6 +62,9 @@ class DNAFilmApp:
         ttk.Label(header, textvariable=self.header_status, wraplength=980).grid(row=2, column=0, sticky="w")
         ttk.Label(header, textvariable=self.next_action, foreground="#0b5cad").grid(row=3, column=0, sticky="w")
         ttk.Label(header, textvariable=self.readiness_text).grid(row=4, column=0, sticky="w")
+        ttk.Label(header, textvariable=self.approval_message_text, wraplength=980).grid(row=5, column=0, sticky="w")
+        ttk.Label(header, textvariable=self.approval_reason_text, wraplength=980).grid(row=6, column=0, sticky="w")
+        ttk.Label(header, textvariable=self.reopen_text, wraplength=980).grid(row=7, column=0, sticky="w")
 
         nav = ttk.Frame(self.root, padding=(12, 8))
         nav.grid(row=1, column=0, sticky="nsw")
@@ -132,6 +138,9 @@ class DNAFilmApp:
         ttk.Label(frame, textvariable=self.summary_text, wraplength=700).grid(row=6, column=0, columnspan=2, sticky="w", pady=(6, 0))
         ttk.Label(frame, textvariable=self.review_status_text, wraplength=700).grid(row=7, column=0, columnspan=2, sticky="w", pady=(8, 0))
         ttk.Label(frame, textvariable=self.readiness_text, wraplength=700).grid(row=8, column=0, columnspan=2, sticky="w", pady=(4, 0))
+        ttk.Label(frame, textvariable=self.approval_message_text, wraplength=700).grid(row=9, column=0, columnspan=2, sticky="w", pady=(4, 0))
+        ttk.Label(frame, textvariable=self.approval_reason_text, wraplength=700).grid(row=10, column=0, columnspan=2, sticky="w", pady=(4, 0))
+        ttk.Label(frame, textvariable=self.reopen_text, wraplength=700).grid(row=11, column=0, columnspan=2, sticky="w", pady=(4, 0))
         return frame
 
     def _build_intake_view(self, parent: ttk.Frame) -> ttk.Frame:
@@ -166,6 +175,9 @@ class DNAFilmApp:
         self.semantic_list.grid(row=2, column=0, sticky="nsew", pady=(0, 12))
         self.semantic_list.bind("<<ListboxSelect>>", self.on_block_selected)
         ttk.Label(frame, textvariable=self.summary_text, wraplength=760).grid(row=3, column=0, sticky="w")
+        ttk.Label(frame, textvariable=self.approval_message_text, wraplength=760).grid(row=4, column=0, sticky="w")
+        ttk.Label(frame, textvariable=self.approval_reason_text, wraplength=760).grid(row=5, column=0, sticky="w")
+        ttk.Label(frame, textvariable=self.reopen_text, wraplength=760).grid(row=6, column=0, sticky="w")
         return frame
 
     def _switch_view(self, name: str) -> None:
@@ -280,7 +292,10 @@ class DNAFilmApp:
         current_block_id = self.selected_block_id
         self._load_project_into_ui(project, select_block_id=current_block_id)
         self._switch_view("Semantic Map")
-        messagebox.showinfo("Semantic review", "Project-level semantic review status was saved.")
+        if project.semantic_review_record.get("approval_block_reason") and project.semantic_review_record["review_status"] != "approved":
+            messagebox.showinfo("Semantic review", project.semantic_review_record["approval_block_reason"])
+        else:
+            messagebox.showinfo("Semantic review", "Project-level semantic review status was saved.")
 
     def _load_project_into_ui(self, project: ProjectSlice, select_block_id: str | None = None) -> None:
         self.project = project
@@ -293,6 +308,12 @@ class DNAFilmApp:
         self.review_status_text.set(f"Semantic review: {project.semantic_review_record['review_status']}")
         readiness = self._approval_readiness(project)
         self.readiness_text.set(f"Approval readiness: {readiness}")
+        self.approval_message_text.set(f"Approval message: {project.semantic_review_record.get('approval_transition_message', '')}")
+        block_reason = project.semantic_review_record.get('approval_block_reason', '') or 'none'
+        self.approval_reason_text.set(f"Approval reason: {block_reason}")
+        reopen_reason = project.semantic_review_record.get('reopen_reason', '') or 'none'
+        reopened = 'reopened' if project.semantic_review_record.get('reopened_after_change') else 'not_reopened'
+        self.reopen_text.set(f"Reopen state: {reopened} | reason: {reopen_reason}")
         warnings = project.intake_record.get("intake_warnings", [])
         warning_text = f"Warnings: {', '.join(warnings)}" if warnings else "Warnings: none"
         self.summary_text.set(
@@ -333,8 +354,10 @@ class DNAFilmApp:
         can_move_up = current_index > 0
         can_move_down = current_index < len(self.project.semantic_blocks) - 1
         self._set_reorder_enabled(can_move_up, can_move_down)
+        reopen_note = self.project.semantic_review_record.get('reopen_reason', '')
+        status_suffix = f" | reopen reason: {reopen_note}" if reopen_note else ""
         self.block_status_var.set(
-            f"Editing {block['record_id']} | sequence: {block['sequence']} | review state: {self.project.semantic_review_record['review_status']}"
+            f"Editing {block['record_id']} | sequence: {block['sequence']} | review state: {self.project.semantic_review_record['review_status']}{status_suffix}"
         )
         self._set_editor_enabled(True)
 
@@ -386,6 +409,8 @@ class DNAFilmApp:
             return "approved"
         if review_status == "ready_for_review":
             return "ready_for_approval"
+        if project.semantic_review_record.get("reopened_after_change"):
+            return "reopened_after_change"
         return "editable_but_complete"
 
     def _next_action_label(self, project: ProjectSlice) -> str:
@@ -397,6 +422,8 @@ class DNAFilmApp:
             return "Next action: Matching prep will unlock in a later packet"
         if readiness == "ready_for_approval":
             return "Next action: Approve semantic map"
+        if readiness == "reopened_after_change":
+            return "Next action: Re-approve semantic map after reviewing reopened changes"
         return "Next action: Reorder and refine semantic blocks"
 
 
@@ -404,7 +431,7 @@ def main() -> None:
     root = tk.Tk()
     ttk.Style().theme_use("clam")
     DNAFilmApp(root)
-    root.minsize(1180, 740)
+    root.minsize(1200, 760)
     root.mainloop()
 
 

@@ -2,10 +2,10 @@
 
 Last updated: 2026-04-06
 Status: active
-Current stage: F-008 semantic map ordering and approval readiness are completed
-Active module: F-009 semantic approval guardrails and reopen clarity
-Active frontier: F-009 Semantic Approval Guardrails and Reopen Clarity
-Active question: how to make semantic approval transitions clearer and safer inside the local-first semantic workspace without broadening into matching, backend, or downstream execution
+Current stage: F-009 semantic approval guardrails and reopen clarity are completed
+Active module: F-010 semantic completeness cues and issue visibility
+Active frontier: F-010 Semantic Completeness Cues and Issue Visibility
+Active question: how to make semantic-map completeness and lightweight issue visibility clearer inside the local-first semantic workspace without broadening into matching, backend, or downstream execution
 
 ## Where the project is now
 
@@ -21,14 +21,14 @@ At this point:
 - data schema, project file format, and asset-pipeline boundaries are completed through `DATA_SCHEMA.md`, `PROJECT_FILE_FORMAT.md`, and `ASSET_PIPELINE.md`;
 - render/export-facing schema and downstream output boundaries are completed through `RENDER_EXPORT_SCHEMA.md`, `LONG_VIDEO_BUILDER.md`, `SHORTS_REELS_BUILDER.md`, `CAROUSEL_BUILDER.md`, and `PACKAGING_ENGINE.md`;
 - the first bounded MVP implementation slice is real through a local-first runtime that can create a project, accept analysis text, derive semantic blocks, persist them on disk, and inspect them in a desktop-facing semantic workspace;
-- the semantic workspace is now minimally editable through persisted selected-block editing, one project-level semantic review control, persisted block ordering, and clearer approval-readiness visibility that survives reload;
+- the semantic workspace now supports persisted selected-block editing, project-level review state, persisted ordering, approval-readiness visibility, one approval guardrail, and explicit reopened-after-change visibility that survives reload;
 - the main MVP operating surface remains fixed as `Semantic Map Workspace`;
 - the meaning-first architecture is now explicit across product, domain, schema, project-package, asset, downstream output, and implementation layers;
 - the project now uses a manager-led execution model;
 - ChatGPT owns strongest-next-step selection;
 - Codex owns repository execution and state synchronization;
-- F-008 is completed and no longer the active frontier;
-- the current active frontier is now `F-009 Semantic Approval Guardrails and Reopen Clarity`.
+- F-009 is completed and no longer the active frontier;
+- the current active frontier is now `F-010 Semantic Completeness Cues and Issue Visibility`.
 
 ## Accepted boundaries right now
 
@@ -45,13 +45,13 @@ At this point:
 
 ## Open items
 
-- make approval and reopen transitions clearer inside the semantic workspace without creating a new workflow engine;
-- surface why the semantic map is approved, under edit, or reopened after changes more explicitly;
-- keep the runtime slice local-first and narrow while improving semantic review trust and clarity.
+- surface lightweight completeness cues for semantic blocks and project-level semantic state;
+- show issue visibility more clearly without turning the semantic workspace into a large warning engine;
+- keep the runtime slice local-first and narrow while improving editor confidence before matching-facing work.
 
 ## Next step
 
-Open and execute one bounded packet for `F-009 Semantic Approval Guardrails and Reopen Clarity`.
+Open and execute one bounded packet for `F-010 Semantic Completeness Cues and Issue Visibility`.
 
 ## What must not be lost in a new chat
 
@@ -60,5 +60,5 @@ Open and execute one bounded packet for `F-009 Semantic Approval Guardrails and 
 - manager-led execution model is fixed.
 - MVP main surface is `Semantic Map Workspace`.
 - product, domain, schema, project-file, asset, and downstream output-boundary layers are fixed.
-- F-008 is completed with persisted semantic block ordering and clearer approval-readiness visibility.
-- the next strong step is `F-009 Semantic Approval Guardrails and Reopen Clarity`, not broad runtime/backend depth.
+- F-009 is completed with one approval guardrail and explicit reopen-after-change visibility persisted in the local project package.
+- the next strong step is `F-010 Semantic Completeness Cues and Issue Visibility`, not broad runtime/backend depth.

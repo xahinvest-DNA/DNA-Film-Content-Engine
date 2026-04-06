@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
-PROJECT_FORMAT_VERSION = "0.3"
+PROJECT_FORMAT_VERSION = "0.4"
 ANALYSIS_RECORD_FILENAME = "analysis_source.json"
 REVIEW_RECORD_FILENAME = "semantic_review.json"
 ALLOWED_SEMANTIC_ROLES = (
@@ -24,6 +24,13 @@ ALLOWED_REVIEW_STATES = (
     "approved",
 )
 ALLOWED_REORDER_DIRECTIONS = ("up", "down")
+
+
+APPROVAL_READY_REASON = "Semantic map is ready for approval."
+APPROVAL_BLOCK_REASON = "Approve is blocked until semantic review is moved to ready_for_review."
+REOPEN_BLOCK_EDIT_REASON = "Approval was reopened because a semantic block changed after approval."
+REOPEN_REORDER_REASON = "Approval was reopened because semantic block order changed after approval."
+REOPEN_SOURCE_REASON = "Approval was reopened because the analysis source was replaced after approval."
 
 
 def utc_now() -> str:
@@ -238,8 +245,7 @@ class ProjectSliceStore:
         intake_record["updated_at"] = now
 
         semantic_review_record = dict(project.semantic_review_record)
-        semantic_review_record["review_status"] = "under_edit"
-        semantic_review_record["approved"] = False
+        self._mark_reopened_if_needed(semantic_review_record, REOPEN_SOURCE_REASON)
         semantic_review_record["updated_at"] = now
 
         self._apply_project_summary(project_record, intake_record, semantic_blocks, semantic_review_record)
@@ -299,9 +305,7 @@ class ProjectSliceStore:
             analysis_source_record["updated_at"] = now
 
         semantic_review_record = dict(project.semantic_review_record)
-        if semantic_review_record["review_status"] == "approved":
-            semantic_review_record["review_status"] = "under_edit"
-            semantic_review_record["approved"] = False
+        self._mark_reopened_if_needed(semantic_review_record, REOPEN_BLOCK_EDIT_REASON)
         semantic_review_record["updated_at"] = now
 
         self._apply_project_summary(project_record, intake_record, semantic_blocks, semantic_review_record)
@@ -351,9 +355,7 @@ class ProjectSliceStore:
             analysis_source_record["updated_at"] = now
 
         semantic_review_record = dict(project.semantic_review_record)
-        if semantic_review_record["review_status"] == "approved":
-            semantic_review_record["review_status"] = "under_edit"
-            semantic_review_record["approved"] = False
+        self._mark_reopened_if_needed(semantic_review_record, REOPEN_REORDER_REASON)
         semantic_review_record["updated_at"] = now
 
         self._apply_project_summary(project_record, intake_record, semantic_blocks, semantic_review_record)
@@ -389,8 +391,30 @@ class ProjectSliceStore:
             analysis_source_record = dict(analysis_source_record)
             analysis_source_record["updated_at"] = now
         semantic_review_record = dict(project.semantic_review_record)
+        readiness = self._approval_readiness_label(project.intake_record, project.semantic_blocks, project.semantic_review_record)
+        if clean_status == "approved" and readiness != "ready_for_approval":
+            semantic_review_record["approval_block_reason"] = APPROVAL_BLOCK_REASON
+            semantic_review_record["approval_transition_message"] = "Approval remains blocked until the map is explicitly ready for review."
+            semantic_review_record["updated_at"] = now
+            self._apply_project_summary(project_record, intake_record, project.semantic_blocks, semantic_review_record)
+            self._write_project_state(
+                project_dir,
+                manifest,
+                project_record,
+                intake_record,
+                analysis_source_record,
+                semantic_review_record,
+                project.semantic_blocks,
+            )
+            return self.load_project(project_dir)
+
         semantic_review_record["review_status"] = clean_status
         semantic_review_record["approved"] = clean_status == "approved"
+        semantic_review_record["approval_block_reason"] = ""
+        semantic_review_record["approval_transition_message"] = "Semantic map approved." if clean_status == "approved" else APPROVAL_READY_REASON if clean_status == "ready_for_review" else "Semantic map remains under edit."
+        if clean_status != "approved":
+            semantic_review_record["reopened_after_change"] = False
+            semantic_review_record["reopen_reason"] = ""
         semantic_review_record["updated_at"] = now
 
         self._apply_project_summary(project_record, intake_record, project.semantic_blocks, semantic_review_record)
@@ -439,6 +463,10 @@ class ProjectSliceStore:
             "semantic_map_status": semantic_review_record["review_status"],
             "semantic_review_approved": semantic_review_record["approved"],
             "approval_readiness": self._approval_readiness_label(intake_record, semantic_blocks, semantic_review_record),
+            "approval_block_reason": semantic_review_record.get("approval_block_reason", ""),
+            "approval_transition_message": semantic_review_record.get("approval_transition_message", ""),
+            "reopened_after_change": semantic_review_record.get("reopened_after_change", False),
+            "reopen_reason": semantic_review_record.get("reopen_reason", ""),
             "updated_at": project_record["updated_at"],
         }
 
@@ -460,6 +488,9 @@ class ProjectSliceStore:
         if review_status == "approved":
             project_record["project_status"] = "semantic_map_approved"
             project_record["current_readiness_summary"] = f"{block_count} semantic blocks approved for later matching prep."
+        elif semantic_review_record.get("reopened_after_change"):
+            project_record["project_status"] = "semantic_map_reopened"
+            project_record["current_readiness_summary"] = f"{block_count} semantic blocks reopened after change. Readiness: {readiness}."
         elif review_status == "ready_for_review":
             project_record["project_status"] = "semantic_map_ready_for_review"
             project_record["current_readiness_summary"] = f"{block_count} semantic blocks ready for approval review. Readiness: {readiness}."
@@ -479,10 +510,26 @@ class ProjectSliceStore:
             return "approved"
         if semantic_review_record["review_status"] == "ready_for_review":
             return "ready_for_approval"
+        if semantic_review_record.get("reopened_after_change"):
+            return "reopened_after_change"
         complete_blocks = all(block.get("title", "").strip() and block.get("semantic_role", "").strip() for block in semantic_blocks)
         if complete_blocks:
             return "editable_but_complete"
         return "under_edit"
+
+    def _mark_reopened_if_needed(self, semantic_review_record: dict, reopen_reason: str) -> None:
+        if semantic_review_record.get("review_status") == "approved":
+            semantic_review_record["review_status"] = "under_edit"
+            semantic_review_record["approved"] = False
+            semantic_review_record["reopened_after_change"] = True
+            semantic_review_record["reopen_reason"] = reopen_reason
+            semantic_review_record["approval_transition_message"] = "Semantic approval was reopened after a change."
+            semantic_review_record["approval_block_reason"] = APPROVAL_BLOCK_REASON
+        else:
+            semantic_review_record.setdefault("reopened_after_change", False)
+            semantic_review_record.setdefault("reopen_reason", "")
+            if semantic_review_record.get("review_status") == "under_edit":
+                semantic_review_record["approval_transition_message"] = semantic_review_record.get("approval_transition_message") or "Semantic map remains under edit."
 
     def _default_review_record(self, project_id: str, timestamp: str) -> dict:
         return {
@@ -491,6 +538,10 @@ class ProjectSliceStore:
             "record_type": "semantic_review_state",
             "review_status": "under_edit",
             "approved": False,
+            "approval_block_reason": APPROVAL_BLOCK_REASON,
+            "approval_transition_message": "Semantic map remains under edit.",
+            "reopened_after_change": False,
+            "reopen_reason": "",
             "created_at": timestamp,
             "updated_at": timestamp,
         }

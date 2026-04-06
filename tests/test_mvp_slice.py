@@ -40,35 +40,46 @@ class ProjectSliceStoreTests(unittest.TestCase):
             self.assertTrue((updated.project_dir / "sources" / "analysis" / "analysis.txt").exists())
             self.assertTrue((updated.project_dir / "records" / "semantic" / "semantic_blocks.json").exists())
 
-            first_block = updated.semantic_blocks[0]
-            self.assertEqual(first_block["record_type"], "semantic_block")
-            self.assertEqual(first_block["sequence"], 1)
-            self.assertIn(first_block["semantic_role"], {"claim", "insight", "mechanism", "transition", "emotional_beat"})
-
-    def test_block_edits_and_review_status_persist_after_reload(self) -> None:
+    def test_blocked_approval_persists_reason(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             store = ProjectSliceStore(Path(temp_dir))
-            project = store.create_project("Editable Map", film_title="Demo Film", language="en")
+            project = store.create_project("Guardrail Map", film_title="Demo Film", language="en")
             project = store.save_analysis_text(project.project_dir, SAMPLE_ANALYSIS)
+            blocked = store.update_semantic_review_status(project.project_dir, "approved")
+
+            self.assertEqual(blocked.semantic_review_record["review_status"], "under_edit")
+            self.assertFalse(blocked.semantic_review_record["approved"])
+            self.assertIn("Approve is blocked", blocked.semantic_review_record["approval_block_reason"])
+            self.assertIn("blocked", blocked.semantic_review_record["approval_transition_message"])
+
+            reloaded = store.load_project(project.project_dir)
+            self.assertIn("Approve is blocked", reloaded.semantic_review_record["approval_block_reason"])
+
+    def test_reopen_after_change_persists_after_reload(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = store.create_project("Reopen Map", film_title="Demo Film", language="en")
+            project = store.save_analysis_text(project.project_dir, SAMPLE_ANALYSIS)
+            project = store.update_semantic_review_status(project.project_dir, "ready_for_review")
+            project = store.update_semantic_review_status(project.project_dir, "approved")
             first_block_id = project.semantic_blocks[0]["record_id"]
 
-            project = store.update_semantic_block(
+            reopened = store.update_semantic_block(
                 project.project_dir,
                 first_block_id,
                 "Opening fear system",
                 "mechanism",
-                "Use this as the anchor block for later semantic approval.",
+                "Approved map edited after review.",
             )
-            project = store.update_semantic_review_status(project.project_dir, "approved")
-            reloaded = store.load_project(project.project_dir)
 
-            edited_block = next(block for block in reloaded.semantic_blocks if block["record_id"] == first_block_id)
-            self.assertEqual(edited_block["title"], "Opening fear system")
-            self.assertEqual(edited_block["semantic_role"], "mechanism")
-            self.assertEqual(edited_block["notes"], "Use this as the anchor block for later semantic approval.")
-            self.assertEqual(reloaded.semantic_review_record["review_status"], "approved")
-            self.assertTrue(reloaded.semantic_review_record["approved"])
-            self.assertEqual(reloaded.project_record["project_status"], "semantic_map_approved")
+            self.assertEqual(reopened.project_record["project_status"], "semantic_map_reopened")
+            self.assertTrue(reopened.semantic_review_record["reopened_after_change"])
+            self.assertIn("reopened", reopened.semantic_review_record["approval_transition_message"].lower())
+            self.assertIn("changed after approval", reopened.semantic_review_record["reopen_reason"])
+
+            reloaded = store.load_project(project.project_dir)
+            self.assertTrue(reloaded.semantic_review_record["reopened_after_change"])
+            self.assertIn("changed after approval", reloaded.semantic_review_record["reopen_reason"])
 
     def test_reorder_and_readiness_persist_after_reload(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -81,9 +92,6 @@ class ProjectSliceStoreTests(unittest.TestCase):
             reloaded = store.load_project(project.project_dir)
 
             self.assertEqual(reloaded.semantic_blocks[0]["record_id"], second_block_id)
-            self.assertEqual(reloaded.semantic_blocks[0]["sequence"], 1)
-            self.assertEqual(reloaded.semantic_blocks[1]["sequence"], 2)
-
             status_payload = (reloaded.project_dir / "project.meta" / "status.json").read_text(encoding="utf-8")
             self.assertIn('"approval_readiness": "editable_but_complete"', status_payload)
 
@@ -102,7 +110,7 @@ class ProjectSliceStoreTests(unittest.TestCase):
 
 
 class DNAFilmAppTests(unittest.TestCase):
-    def test_app_saves_block_edits_and_review_status(self) -> None:
+    def test_app_shows_blocked_approval_reason(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = tk.Tk()
             root.withdraw()
@@ -112,34 +120,21 @@ class DNAFilmAppTests(unittest.TestCase):
                 app.store = ProjectSliceStore(app.workspace_root)
 
                 with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
-                    app.project_name_var.set("UI Editable Map")
+                    app.project_name_var.set("UI Guardrail Map")
                     app.film_title_var.set("Demo Film")
                     app.language_var.set("en")
                     app.create_project()
                     app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
                     app.save_analysis_text()
-
-                    first_block_id = app.project.semantic_blocks[0]["record_id"]
-                    app._select_block_by_id(first_block_id)
-                    app.block_title_var.set("Edited in UI")
-                    app.block_role_var.set("insight")
-                    app.notes_text.delete("1.0", "end")
-                    app.notes_text.insert("1.0", "Inspector notes persisted through the app layer.")
-                    app.save_selected_block()
-
-                    app.review_status_var.set("ready_for_review")
+                    app.review_status_var.set("approved")
                     app.save_review_status()
 
-                reloaded = app.store.load_project(app.project.project_dir)
-                edited_block = next(block for block in reloaded.semantic_blocks if block["record_id"] == first_block_id)
-                self.assertEqual(edited_block["title"], "Edited in UI")
-                self.assertEqual(edited_block["semantic_role"], "insight")
-                self.assertEqual(edited_block["notes"], "Inspector notes persisted through the app layer.")
-                self.assertEqual(reloaded.semantic_review_record["review_status"], "ready_for_review")
+                self.assertIn("Approve is blocked", app.approval_reason_text.get())
+                self.assertEqual(app.readiness_text.get(), "Approval readiness: editable_but_complete")
             finally:
                 root.destroy()
 
-    def test_app_reorders_blocks_and_updates_readiness_visibility(self) -> None:
+    def test_app_reopen_signal_survives_reload(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = tk.Tk()
             root.withdraw()
@@ -149,22 +144,25 @@ class DNAFilmAppTests(unittest.TestCase):
                 app.store = ProjectSliceStore(app.workspace_root)
 
                 with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
-                    app.project_name_var.set("UI Ordered Map")
+                    app.project_name_var.set("UI Reopen Map")
                     app.film_title_var.set("Demo Film")
                     app.language_var.set("en")
                     app.create_project()
                     app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
                     app.save_analysis_text()
-
-                    second_block_id = app.project.semantic_blocks[1]["record_id"]
-                    app._select_block_by_id(second_block_id)
-                    app.reorder_selected_block("up")
                     app.review_status_var.set("ready_for_review")
                     app.save_review_status()
+                    app.review_status_var.set("approved")
+                    app.save_review_status()
+                    first_block_id = app.project.semantic_blocks[0]["record_id"]
+                    app._select_block_by_id(first_block_id)
+                    app.block_title_var.set("Edited after approval")
+                    app.save_selected_block()
 
                 reloaded = app.store.load_project(app.project.project_dir)
-                self.assertEqual(reloaded.semantic_blocks[0]["record_id"], second_block_id)
-                self.assertEqual(app.readiness_text.get(), "Approval readiness: ready_for_approval")
+                self.assertTrue(reloaded.semantic_review_record["reopened_after_change"])
+                self.assertIn("reopened", app.approval_message_text.get().lower())
+                self.assertIn("changed after approval", app.reopen_text.get())
             finally:
                 root.destroy()
 

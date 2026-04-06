@@ -2,26 +2,25 @@
 
 Last updated: 2026-04-06
 Status: ready
-Task ID: F-009
+Task ID: F-010
 Task type: implementation
-Title: Semantic Approval Guardrails and Reopen Clarity
+Title: Semantic Completeness Cues and Issue Visibility
 
 ## Goal
 
-Extend the semantic workspace with clearer approval-transition guardrails and explicit reopen visibility without drifting into matching, backend, or downstream execution work.
+Extend the semantic workspace with lightweight completeness cues and clearer issue visibility without drifting into matching, backend, or downstream execution work.
 
 ## Why this is next
 
-The repository now has persisted semantic block ordering and clearer approval-readiness visibility inside the local-first semantic workspace. The strongest next step is to make approval transitions safer and more legible so the user can see when the semantic map is approved, why it is not yet approved, and when later edits reopen it, without building a larger workflow system.
+The repository now has clearer approval guardrails and explicit reopened-after-change visibility inside the local-first semantic workspace. The strongest next step is to make the semantic map more self-explanatory by surfacing lightweight completeness cues and issue visibility before any broader workflow or matching-facing work begins.
 
 ## In scope
 
-- one bounded follow-up packet on top of the completed F-008 runtime slice
-- clearer approval and reopen messaging inside `Semantic Map Workspace`
-- one narrow guardrail that prevents unclear approval transitions
-- persisted visibility for reopened-after-change semantic state
-- summary and inspector updates required to keep those approval signals readable
-- only the runtime and persistence touches required to improve semantic approval trust
+- one bounded follow-up packet on top of the completed F-009 runtime slice
+- lightweight completeness cues for semantic blocks or project-level semantic state
+- clearer visibility for small semantic issues that affect approval confidence
+- summary and inspector updates required to keep those cues readable
+- only the runtime and persistence touches required to improve semantic review clarity
 
 ## Out of scope
 
@@ -29,17 +28,17 @@ The repository now has persisted semantic block ordering and clearer approval-re
 - scene-matching automation
 - downstream output generation
 - backend or API design
-- generalized workflow engine
+- generalized validation engine
 - broad navigation expansion
-- packet expansion beyond semantic approval guardrails and reopen clarity
+- packet expansion beyond semantic completeness cues and issue visibility
 
 ## Recommended validation
 
 Validate that the resulting packet delivers:
 
-- one clear approval-transition guardrail inside the desktop-facing semantic workspace
-- visible reopened or under-edit state after semantic changes affect an approved map
-- persisted approval-transition visibility that survives reload
+- visible completeness or issue cues inside the desktop-facing semantic workspace
+- persisted visibility that survives reload where required by the new cues
+- clearer understanding of why the semantic map is complete or still weak
 - no scope explosion into matching, backend, or downstream-output implementation
 
 ## Required handoff format

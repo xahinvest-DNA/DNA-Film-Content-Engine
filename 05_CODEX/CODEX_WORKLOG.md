@@ -1,5 +1,23 @@
 ﻿# Codex Worklog
 
+## 2026-04-06 - F-009 completed and approval transitions became clearer
+
+### Completed
+- completed the semantic approval guardrails and reopen clarity packet as one bounded follow-up to the reorderable semantic workspace;
+- added one approval guardrail that blocks unclear approval transitions until the semantic map is explicitly ready for review;
+- persisted readable blocked-approval reasons and approval-transition messages inside the local project package;
+- made reopened-after-change state explicit when approved semantic content or ordering changes invalidate prior approval;
+- updated local validation so blocked approval and reopened-after-change visibility are verified through reload persistence;
+- synchronized the repository state layer after real implementation progress.
+
+### Repository effect
+- the repository now contains clearer and safer approval transitions inside the semantic workspace;
+- blocked, approved, and reopened semantic review signals remain local-first, file-based, and persist inside the project package;
+- the implementation remains intentionally narrow and does not open matching, backend, or downstream-output execution work.
+
+### Recommended next step
+Execute `F-010 Semantic Completeness Cues and Issue Visibility`
+
 ## 2026-04-06 - F-008 completed and semantic block ordering became persistent
 
 ### Completed
