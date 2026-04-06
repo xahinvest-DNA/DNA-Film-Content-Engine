@@ -24,6 +24,8 @@ It owns navigation only. It must not restate live project state or the active Co
 
 ## Current core documents
 
+Existing approved documents only.
+
 ### Master
 - `01_MASTER/DECISIONS.md`
 - `01_MASTER/PRODUCT_SCOPE.md`

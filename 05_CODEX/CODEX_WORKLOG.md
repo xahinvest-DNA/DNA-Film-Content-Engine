@@ -17,6 +17,9 @@
 ### Recommended next step
 Execute `F-005 Render/Export Schema and Downstream Output-Boundary Fixation`
 
+### Correction note
+The previous correction pass did not satisfy the requested explicitness threshold. This pass makes the post-`F-004` frontier literal in the state layer.
+
 ## 2026-04-06 - F-004 completed and persistence-facing structure fixed
 
 ### Completed

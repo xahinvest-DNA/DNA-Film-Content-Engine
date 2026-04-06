@@ -4,6 +4,7 @@ Last updated: 2026-04-06
 Status: active
 Current stage: F-004 data schema and project file format fixation is completed
 Active module: F-005 render/export schema and downstream output-boundary fixation
+Active frontier: F-005 Render/Export Schema and Downstream Output-Boundary Fixation
 Active question: how to define the first stable render/export-facing schema and downstream output contracts that connect approved data structures to later output stages without drifting into runtime backend implementation too early
 
 ## Where the project is now
@@ -37,6 +38,7 @@ At this point:
 - manager-led execution model is fixed.
 - domain/model boundaries are fixed before execution/runtime design.
 - schema/project-file boundaries are fixed before backend/runtime design.
+- F-004 is completed and no longer the active frontier.
 - The next implementation lane must not drift into automatic film downloading, full render automation, platform publishing, or speculative AI quality scoring.
 
 ## Open items

@@ -5,6 +5,7 @@ Status: ready
 Task ID: F-005
 Task type: product-architecture
 Packet title: Render/Export Schema and Downstream Output-Boundary Fixation
+Task status meaning: this is the one active bounded packet and replaces F-004 as the current frontier
 
 ## Goal
 
@@ -29,6 +30,7 @@ The repository now has product flows, MVP interface specifications, the core dom
 * export-ready structures
 * render/export-facing schema boundaries
 * module boundaries for long-form, shorts/reels, carousel, and packaging outputs
+* bounded documentation only, not runtime implementation
 
 ## Out of scope
 
