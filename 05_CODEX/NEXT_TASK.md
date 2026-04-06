@@ -2,42 +2,41 @@
 
 Last updated: 2026-04-06
 Status: ready
-Task ID: F-003
+Task ID: F-004
 Task type: product-architecture
 
 ## Goal
 
-Create one bounded domain model and module-boundary packet so DNA Film Content Engine can move from approved MVP interface structure to stable product entities and system boundaries without drifting into engine runtime implementation too early.
+Create one bounded data schema and project file format packet so DNA Film Content Engine can move from approved domain/module boundaries to stable persistence-ready structures without drifting into runtime pipeline implementation too early.
 
 ## Why this is next
 
-The repository now has user flows, screen map, UX principles, output definitions, platform rules, and a concrete MVP desktop interface package. The strongest next need is to define the product entities and module boundaries that the approved interface will operate on.
+The repository now has product flows, MVP interface specifications, the core domain model, and module boundaries for intake, semantic structuring, and scene matching. The strongest next need is to define the stable data structures and local project-file boundaries that these approved layers depend on.
 
 ## What should change
 
-1. Add `04_TECH/DOMAIN_MODEL.md`.
-2. Add `03_MODULES/PROJECT_INTAKE.md`.
-3. Add `03_MODULES/DNA_SEMANTIC_ENGINE.md`.
-4. Add `03_MODULES/SCENE_MATCHING.md`.
-5. Synchronize `CURRENT_STATE.md`, `TASKS.md`, and `CODEX_WORKLOG.md` if the packet is completed.
+1. Add `04_TECH/DATA_SCHEMA.md`.
+2. Add `04_TECH/PROJECT_FILE_FORMAT.md`.
+3. Add `04_TECH/ASSET_PIPELINE.md`.
+4. Synchronize `CURRENT_STATE.md`, `TASKS.md`, and `CODEX_WORKLOG.md` if the packet is completed.
 
 ## What must stay unchanged
 
-* no engine runtime implementation
+* no runtime pipeline implementation
 * no automatic film downloading
 * no render/export backend
 * no scene-matching execution logic
-* no mobile/sync/team workflow expansion
+* no API or job orchestration design
 * no generic editor drift
 
 ## Recommended validation
 
 Validate that the resulting packet defines:
 
-* the core product entities used by the MVP interface
-* clear ownership boundaries between intake, semantic, and matching-preparation modules
-* stable terminology across product and tech layers
-* prepared support for later phases without pretending runtime execution already exists
+* stable structures for core project entities and readiness markers
+* local project-file organization boundaries
+* asset classification and handoff boundaries without runtime fiction
+* clear continuity from domain/model layer into later technical implementation packets
 
 ## Required handoff format
 

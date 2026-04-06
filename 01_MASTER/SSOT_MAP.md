@@ -62,6 +62,24 @@ Purpose: define which document owns each project question so the repository stay
 - Primary SSOT: `02_PRODUCT/NAVIGATION_BEHAVIOR.md`
 - Scope: navigation rules, availability logic, contextual inspector behavior, next-action visibility, and placeholder behavior.
 
+## Domain and logical architecture source-of-truth documents
+
+### Domain model
+- Primary SSOT: `04_TECH/DOMAIN_MODEL.md`
+- Scope: canonical domain entities, entity relationships, lifecycle logic, and source/derived/output distinctions.
+
+### Project intake module
+- Primary SSOT: `03_MODULES/PROJECT_INTAKE.md`
+- Scope: accepted inputs, normalization rules, readiness implications, and intake handoff contract.
+
+### DNA semantic engine module
+- Primary SSOT: `03_MODULES/DNA_SEMANTIC_ENGINE.md`
+- Scope: semantic transformation responsibilities, semantic output contract, ambiguity handling, and review boundaries.
+
+### Scene matching module
+- Primary SSOT: `03_MODULES/SCENE_MATCHING.md`
+- Scope: matching prerequisites, output artifacts, confidence levels, human validation role, and downstream handoff.
+
 ## Codex execution source-of-truth documents
 
 ### Current active task packet

@@ -1,5 +1,24 @@
 # Codex Worklog
 
+## 2026-04-06 - F-003 completed and domain/model layer fixed
+
+### Completed
+- completed the domain model and module-boundary fixation packet;
+- added `04_TECH/DOMAIN_MODEL.md`;
+- added `03_MODULES/PROJECT_INTAKE.md`;
+- added `03_MODULES/DNA_SEMANTIC_ENGINE.md`;
+- added `03_MODULES/SCENE_MATCHING.md`;
+- synchronized `CURRENT_STATE.md`, `TASKS.md`, and `NEXT_TASK.md` for the completed packet;
+- fixed the meaning-first logical handoff chain from intake to semantic structuring to scene-reference preparation.
+
+### Repository effect
+- repository now has an approved domain/model layer separate from both product/interface docs and future runtime concerns;
+- canonical entities and module contracts are now explicit;
+- the next strong step is data schema and project file format fixation.
+
+### Recommended next step
+`F-004 Data Schema and Project File Format Fixation`
+
 ## 2026-04-06 - F-002 completed and MVP desktop interface fixed
 
 ### Completed
