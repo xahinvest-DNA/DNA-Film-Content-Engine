@@ -3,9 +3,9 @@
 Last updated: 2026-04-06
 Status: active
 Current stage: F-005 render/export schema and downstream output-boundary fixation is completed
-Active module: F-006 first MVP implementation slice definition
+Active module: F-006 first MVP implementation slice
 Active frontier: F-006 First MVP Implementation Slice
-Active question: how to define the first bounded implementation slice that turns the approved product, domain, schema, and downstream output architecture into one real user-visible desktop workflow without drifting into broad runtime infrastructure
+Active question: how to implement one minimal executable desktop slice that turns the approved product, domain, schema, file, asset, and downstream output architecture into a real user-visible path without scope explosion
 
 ## Where the project is now
 
@@ -19,14 +19,14 @@ At this point:
 - MVP desktop interface specification is completed through `MVP_DESKTOP_INTERFACE.md`, `SCREEN_STATES.md`, and `NAVIGATION_BEHAVIOR.md`;
 - domain model and module-boundary fixation are completed through `DOMAIN_MODEL.md`, `PROJECT_INTAKE.md`, `DNA_SEMANTIC_ENGINE.md`, and `SCENE_MATCHING.md`;
 - data schema, project file format, and asset-pipeline boundaries are completed through `DATA_SCHEMA.md`, `PROJECT_FILE_FORMAT.md`, and `ASSET_PIPELINE.md`;
-- render/export-facing schema and downstream output boundaries are now completed through `RENDER_EXPORT_SCHEMA.md`, `LONG_VIDEO_BUILDER.md`, `SHORTS_REELS_BUILDER.md`, `CAROUSEL_BUILDER.md`, and `PACKAGING_ENGINE.md`;
+- render/export-facing schema and downstream output boundaries are completed through `RENDER_EXPORT_SCHEMA.md`, `LONG_VIDEO_BUILDER.md`, `SHORTS_REELS_BUILDER.md`, `CAROUSEL_BUILDER.md`, and `PACKAGING_ENGINE.md`;
 - the main MVP operating surface remains fixed as `Semantic Map Workspace`;
-- the meaning-first architecture is now explicit across product, domain, schema, local project-package, and downstream output layers;
+- the meaning-first architecture is now explicit across product, domain, schema, project-package, asset, and downstream output layers;
 - the project now uses a manager-led execution model;
 - ChatGPT owns strongest-next-step selection;
 - Codex owns repository execution and state synchronization;
-- the current active frontier is now `F-006 First MVP Implementation Slice`;
-- the next practical implementation frontier is a bounded user-visible implementation slice, not broad runtime infrastructure.
+- F-005 is completed and no longer the active frontier;
+- the current active frontier is now `F-006 First MVP Implementation Slice`.
 
 ## Accepted boundaries right now
 
@@ -37,20 +37,18 @@ At this point:
 - The project starts desktop-first.
 - MVP is centered on project creation, source intake, semantic blocks, semantic-map review, and the approved semantic-first desktop operating surface.
 - manager-led execution model is fixed.
-- domain/model boundaries are fixed before execution/runtime design.
-- schema/project-file boundaries are fixed before backend/runtime design.
-- downstream output-boundary architecture is fixed before runtime render/export implementation.
+- architecture layers through downstream output-boundary fixation are completed before broad runtime expansion.
 - The next implementation lane must not drift into automatic film downloading, full render automation, platform publishing, or speculative AI quality scoring.
 
 ## Open items
 
-- first bounded implementation slice for project creation, source intake, and semantic-map flow;
-- implementation boundaries for desktop shell and local project interaction;
-- practical sequencing of MVP build steps after architecture fixation.
+- first bounded implementation slice for project creation, analysis-text intake, semantic block persistence, and semantic-map inspection;
+- minimal executable path through the approved architecture;
+- bounded implementation sequencing after the first slice is proven.
 
 ## Next step
 
-Open one bounded packet for `F-006 First MVP Implementation Slice`.
+Open and execute one bounded packet for `F-006 First MVP Implementation Slice`.
 
 ## What must not be lost in a new chat
 
@@ -59,4 +57,5 @@ Open one bounded packet for `F-006 First MVP Implementation Slice`.
 - manager-led execution model is fixed.
 - MVP main surface is `Semantic Map Workspace`.
 - product, domain, schema, project-file, asset, and downstream output-boundary layers are fixed.
+- F-005 is completed.
 - the next strong step is `F-006 First MVP Implementation Slice`, not broad runtime/backend depth.

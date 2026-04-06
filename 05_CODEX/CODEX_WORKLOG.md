@@ -1,5 +1,21 @@
 ﻿# Codex Worklog
 
+## 2026-04-06 - Correction pass for post-F-005 state synchronization
+
+### Completed
+- marked `F-005` as completed in the state layer;
+- moved `CURRENT_STATE.md` to explicit post-`F-005` language;
+- opened `F-006 First MVP Implementation Slice` as the active bounded packet in `NEXT_TASK.md` and `TASKS.md`;
+- synchronized the worklog to the real post-`F-005` repository state.
+
+### Repository effect
+- the repository no longer presents `F-005` as the active frontier;
+- `F-006` is now the single active bounded packet across the state layer;
+- the project can now move into implementation without state-layer contradiction.
+
+### Recommended next step
+Execute `F-006 First MVP Implementation Slice`
+
 ## 2026-04-06 - F-005 completed and downstream output boundaries fixed
 
 ### Completed

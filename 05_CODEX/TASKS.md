@@ -13,7 +13,7 @@ Tasks should be bounded, product-visible, and small enough to preserve continuit
 - Module: first MVP implementation slice
 - Goal: implement one bounded user-visible desktop slice that covers project creation, analysis-text intake, semantic block persistence, and semantic-map inspection without drifting into broad runtime infrastructure.
 - Input documents: `00_INDEX.md`, `01_MASTER/CURRENT_STATE.md`, `01_MASTER/DECISIONS.md`, `01_MASTER/ROADMAP.md`, `01_MASTER/SSOT_MAP.md`, `05_CODEX/NEXT_TASK.md`, `02_PRODUCT/MVP_DESKTOP_INTERFACE.md`, `04_TECH/DATA_SCHEMA.md`, `04_TECH/PROJECT_FILE_FORMAT.md`
-- Expected result: one implementation packet for create project, load analysis text, persist semantic blocks, and inspect the semantic map in a real desktop-facing slice
+- Expected result: one executable or testable MVP slice for create project, load analysis text, persist semantic blocks, and inspect the semantic map in a real desktop-facing path.
 
 ## Completed tasks
 
