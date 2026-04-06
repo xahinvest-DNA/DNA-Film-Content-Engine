@@ -16,7 +16,7 @@ class DNAFilmApp:
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
         self.root.title("DNA Film Content Engine - Semantic Review Workspace")
-        self.root.geometry("1360x820")
+        self.root.geometry("1380x840")
 
         self.workspace_root = Path.cwd() / "runtime_projects"
         self.workspace_root.mkdir(exist_ok=True)
@@ -30,6 +30,7 @@ class DNAFilmApp:
         self.next_action = tk.StringVar(value="Next action: Create project")
         self.summary_text = tk.StringVar(value="No semantic map yet.")
         self.review_status_text = tk.StringVar(value="Semantic review: under_edit")
+        self.readiness_text = tk.StringVar(value="Approval readiness: not_ready")
         self.placeholder_text = tk.StringVar(value="Available after semantic-map approval in a later bounded packet.")
 
         self.project_name_var = tk.StringVar()
@@ -38,11 +39,12 @@ class DNAFilmApp:
         self.block_title_var = tk.StringVar()
         self.block_role_var = tk.StringVar(value=ALLOWED_SEMANTIC_ROLES[0])
         self.review_status_var = tk.StringVar(value=ALLOWED_REVIEW_STATES[0])
-        self.block_status_var = tk.StringVar(value="Select a semantic block to inspect and edit it here.")
+        self.block_status_var = tk.StringVar(value="Select a semantic block to inspect, reorder, and edit it here.")
 
         self._build_layout()
         self._switch_view("Project Home")
         self._set_editor_enabled(False)
+        self._set_reorder_enabled(False, False)
 
     def _build_layout(self) -> None:
         self.root.columnconfigure(1, weight=1)
@@ -56,6 +58,7 @@ class DNAFilmApp:
         ttk.Label(header, textvariable=self.header_title, font=("Segoe UI", 11, "bold")).grid(row=1, column=0, sticky="w")
         ttk.Label(header, textvariable=self.header_status, wraplength=980).grid(row=2, column=0, sticky="w")
         ttk.Label(header, textvariable=self.next_action, foreground="#0b5cad").grid(row=3, column=0, sticky="w")
+        ttk.Label(header, textvariable=self.readiness_text).grid(row=4, column=0, sticky="w")
 
         nav = ttk.Frame(self.root, padding=(12, 8))
         nav.grid(row=1, column=0, sticky="nsw")
@@ -72,24 +75,30 @@ class DNAFilmApp:
         inspector = ttk.Frame(self.root, padding=12)
         inspector.grid(row=1, column=2, sticky="nsew")
         inspector.columnconfigure(0, weight=1)
-        inspector.rowconfigure(7, weight=1)
+        inspector.rowconfigure(9, weight=1)
         ttk.Label(inspector, text="Block Detail / Inspector", font=("Segoe UI", 12, "bold")).grid(row=0, column=0, sticky="w")
         ttk.Label(inspector, textvariable=self.block_status_var, wraplength=320).grid(row=1, column=0, sticky="w", pady=(4, 10))
-        ttk.Label(inspector, text="Title").grid(row=2, column=0, sticky="w")
+        order_controls = ttk.Frame(inspector)
+        order_controls.grid(row=2, column=0, sticky="ew", pady=(0, 10))
+        self.move_up_button = ttk.Button(order_controls, text="Move Up", command=lambda: self.reorder_selected_block("up"))
+        self.move_up_button.pack(side="left")
+        self.move_down_button = ttk.Button(order_controls, text="Move Down", command=lambda: self.reorder_selected_block("down"))
+        self.move_down_button.pack(side="left", padx=(8, 0))
+        ttk.Label(inspector, text="Title").grid(row=3, column=0, sticky="w")
         self.block_title_entry = ttk.Entry(inspector, textvariable=self.block_title_var, width=36)
-        self.block_title_entry.grid(row=3, column=0, sticky="ew", pady=(0, 10))
-        ttk.Label(inspector, text="Semantic role").grid(row=4, column=0, sticky="w")
+        self.block_title_entry.grid(row=4, column=0, sticky="ew", pady=(0, 10))
+        ttk.Label(inspector, text="Semantic role").grid(row=5, column=0, sticky="w")
         self.block_role_combo = ttk.Combobox(inspector, textvariable=self.block_role_var, values=ALLOWED_SEMANTIC_ROLES, state="readonly")
-        self.block_role_combo.grid(row=5, column=0, sticky="ew", pady=(0, 10))
-        ttk.Label(inspector, text="Notes").grid(row=6, column=0, sticky="w")
+        self.block_role_combo.grid(row=6, column=0, sticky="ew", pady=(0, 10))
+        ttk.Label(inspector, text="Notes").grid(row=7, column=0, sticky="w")
         self.notes_text = tk.Text(inspector, height=8, wrap="word")
-        self.notes_text.grid(row=7, column=0, sticky="nsew")
-        ttk.Label(inspector, text="Full block text").grid(row=8, column=0, sticky="w", pady=(10, 0))
+        self.notes_text.grid(row=8, column=0, sticky="nsew")
+        ttk.Label(inspector, text="Full block text").grid(row=9, column=0, sticky="w", pady=(10, 0))
         self.content_text = tk.Text(inspector, height=10, wrap="word")
-        self.content_text.grid(row=9, column=0, sticky="nsew", pady=(0, 10))
+        self.content_text.grid(row=10, column=0, sticky="nsew", pady=(0, 10))
         self.content_text.configure(state="disabled")
         self.save_block_button = ttk.Button(inspector, text="Save Block Changes", command=self.save_selected_block)
-        self.save_block_button.grid(row=10, column=0, sticky="ew")
+        self.save_block_button.grid(row=11, column=0, sticky="ew")
 
         self.views: dict[str, ttk.Frame] = {}
         self.views["Project Home"] = self._build_home_view(main)
@@ -122,6 +131,7 @@ class DNAFilmApp:
         ttk.Label(frame, text="Readiness overview", font=("Segoe UI", 11, "bold")).grid(row=5, column=0, columnspan=2, sticky="w")
         ttk.Label(frame, textvariable=self.summary_text, wraplength=700).grid(row=6, column=0, columnspan=2, sticky="w", pady=(6, 0))
         ttk.Label(frame, textvariable=self.review_status_text, wraplength=700).grid(row=7, column=0, columnspan=2, sticky="w", pady=(8, 0))
+        ttk.Label(frame, textvariable=self.readiness_text, wraplength=700).grid(row=8, column=0, columnspan=2, sticky="w", pady=(4, 0))
         return frame
 
     def _build_intake_view(self, parent: ttk.Frame) -> ttk.Frame:
@@ -150,6 +160,7 @@ class DNAFilmApp:
         self.review_status_combo.pack(side="left", padx=(8, 8))
         ttk.Button(toolbar, text="Save Review Status", command=self.save_review_status).pack(side="left")
         ttk.Label(toolbar, textvariable=self.review_status_text).pack(side="left", padx=(16, 0))
+        ttk.Label(toolbar, textvariable=self.readiness_text).pack(side="left", padx=(16, 0))
 
         self.semantic_list = tk.Listbox(frame, activestyle="none")
         self.semantic_list.grid(row=2, column=0, sticky="nsew", pady=(0, 12))
@@ -218,6 +229,7 @@ class DNAFilmApp:
         if not selection:
             self.selected_block_id = None
             self._set_editor_enabled(False)
+            self._set_reorder_enabled(False, False)
             return
         block = self.project.semantic_blocks[selection[0]]
         self._show_block(block)
@@ -243,6 +255,19 @@ class DNAFilmApp:
         self.block_status_var.set("Block changes saved to the local project package.")
         messagebox.showinfo("Semantic map", "Selected block changes were saved.")
 
+    def reorder_selected_block(self, direction: str) -> None:
+        if self.project is None or self.selected_block_id is None:
+            messagebox.showerror("Semantic map", "Select a semantic block first.")
+            return
+        try:
+            project = self.store.reorder_semantic_block(self.project.project_dir, self.selected_block_id, direction)
+        except ValueError as exc:
+            messagebox.showerror("Semantic map", str(exc))
+            return
+        self._load_project_into_ui(project, select_block_id=self.selected_block_id)
+        self._switch_view("Semantic Map")
+        self.block_status_var.set(f"Block order updated: moved {direction} and persisted to disk.")
+
     def save_review_status(self) -> None:
         if self.project is None:
             messagebox.showerror("Semantic review", "Create or open a project first.")
@@ -265,13 +290,13 @@ class DNAFilmApp:
         self.header_status.set(project.project_record["current_readiness_summary"])
         self.next_action.set(self._next_action_label(project))
         self.review_status_var.set(project.semantic_review_record["review_status"])
-        self.review_status_text.set(
-            f"Semantic review: {project.semantic_review_record['review_status']}"
-        )
+        self.review_status_text.set(f"Semantic review: {project.semantic_review_record['review_status']}")
+        readiness = self._approval_readiness(project)
+        self.readiness_text.set(f"Approval readiness: {readiness}")
         warnings = project.intake_record.get("intake_warnings", [])
         warning_text = f"Warnings: {', '.join(warnings)}" if warnings else "Warnings: none"
         self.summary_text.set(
-            f"Project status: {project.project_record['project_status']} | Intake: {project.intake_record['intake_readiness']} | Semantic blocks: {len(project.semantic_blocks)} | Review: {project.semantic_review_record['review_status']} | {warning_text}"
+            f"Project status: {project.project_record['project_status']} | Intake: {project.intake_record['intake_readiness']} | Semantic blocks: {len(project.semantic_blocks)} | Review: {project.semantic_review_record['review_status']} | Readiness: {readiness} | {warning_text}"
         )
 
         self.analysis_text.delete("1.0", "end")
@@ -289,8 +314,9 @@ class DNAFilmApp:
             self._select_block_by_id(target_block_id)
         else:
             self.selected_block_id = None
-            self.block_status_var.set("Select a semantic block to inspect and edit it here.")
+            self.block_status_var.set("Select a semantic block to inspect, reorder, and edit it here.")
             self._set_editor_enabled(False)
+            self._set_reorder_enabled(False, False)
             self._clear_block_editor()
 
     def _show_block(self, block: dict) -> None:
@@ -303,8 +329,12 @@ class DNAFilmApp:
         self.content_text.delete("1.0", "end")
         self.content_text.insert("1.0", block["content"])
         self.content_text.configure(state="disabled")
+        current_index = next((index for index, item in enumerate(self.project.semantic_blocks) if item["record_id"] == block["record_id"]), 0)
+        can_move_up = current_index > 0
+        can_move_down = current_index < len(self.project.semantic_blocks) - 1
+        self._set_reorder_enabled(can_move_up, can_move_down)
         self.block_status_var.set(
-            f"Editing {block['record_id']} | review state: {self.project.semantic_review_record['review_status']}"
+            f"Editing {block['record_id']} | sequence: {block['sequence']} | review state: {self.project.semantic_review_record['review_status']}"
         )
         self._set_editor_enabled(True)
 
@@ -321,6 +351,7 @@ class DNAFilmApp:
         self.semantic_list.selection_clear(0, "end")
         self.selected_block_id = None
         self._set_editor_enabled(False)
+        self._set_reorder_enabled(False, False)
 
     def _set_editor_enabled(self, enabled: bool) -> None:
         entry_state = "normal" if enabled else "disabled"
@@ -331,6 +362,10 @@ class DNAFilmApp:
         self.block_role_combo.configure(state=combo_state)
         self.notes_text.configure(state=text_state)
         self.save_block_button.configure(state=button_state)
+
+    def _set_reorder_enabled(self, can_move_up: bool, can_move_down: bool) -> None:
+        self.move_up_button.configure(state="normal" if can_move_up else "disabled")
+        self.move_down_button.configure(state="normal" if can_move_down else "disabled")
 
     def _clear_block_editor(self) -> None:
         self.block_title_var.set("")
@@ -343,22 +378,33 @@ class DNAFilmApp:
         self.content_text.insert("1.0", "Select a semantic block to inspect it here.")
         self.content_text.configure(state="disabled")
 
+    def _approval_readiness(self, project: ProjectSlice) -> str:
+        if project.intake_record["intake_readiness"] != "ready" or not project.semantic_blocks:
+            return "not_ready"
+        review_status = project.semantic_review_record["review_status"]
+        if review_status == "approved":
+            return "approved"
+        if review_status == "ready_for_review":
+            return "ready_for_approval"
+        return "editable_but_complete"
+
     def _next_action_label(self, project: ProjectSlice) -> str:
         if not project.analysis_source_record:
             return "Next action: Load analysis text"
         review_status = project.semantic_review_record["review_status"]
+        readiness = self._approval_readiness(project)
         if review_status == "approved":
             return "Next action: Matching prep will unlock in a later packet"
-        if review_status == "ready_for_review":
+        if readiness == "ready_for_approval":
             return "Next action: Approve semantic map"
-        return "Next action: Review and refine semantic blocks"
+        return "Next action: Reorder and refine semantic blocks"
 
 
 def main() -> None:
     root = tk.Tk()
     ttk.Style().theme_use("clam")
     DNAFilmApp(root)
-    root.minsize(1160, 720)
+    root.minsize(1180, 740)
     root.mainloop()
 
 

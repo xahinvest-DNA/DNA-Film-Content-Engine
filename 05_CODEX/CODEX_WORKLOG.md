@@ -1,5 +1,23 @@
 ﻿# Codex Worklog
 
+## 2026-04-06 - F-008 completed and semantic block ordering became persistent
+
+### Completed
+- completed the semantic map ordering and approval readiness packet as one bounded follow-up to the editable semantic workspace;
+- added a minimal move-up / move-down ordering control for the selected semantic block;
+- persisted reordered semantic block sequence on local disk so the saved order survives reload;
+- added clearer approval-readiness visibility derived from the existing semantic review state rather than a new workflow engine;
+- updated local validation so reorder persistence and readiness visibility are verified through reload;
+- synchronized the repository state layer after real implementation progress.
+
+### Repository effect
+- the repository now contains a minimally reorderable semantic workspace rather than a fixed-order semantic list;
+- semantic block order and readiness visibility remain local-first, file-based, and persist inside the project package;
+- the implementation remains intentionally narrow and does not open matching, backend, or downstream-output execution work.
+
+### Recommended next step
+Execute `F-009 Semantic Approval Guardrails and Reopen Clarity`
+
 ## 2026-04-06 - F-007 completed and semantic workspace became editable
 
 ### Completed

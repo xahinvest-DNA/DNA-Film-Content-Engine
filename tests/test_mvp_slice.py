@@ -70,6 +70,28 @@ class ProjectSliceStoreTests(unittest.TestCase):
             self.assertTrue(reloaded.semantic_review_record["approved"])
             self.assertEqual(reloaded.project_record["project_status"], "semantic_map_approved")
 
+    def test_reorder_and_readiness_persist_after_reload(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = store.create_project("Ordered Map", film_title="Demo Film", language="en")
+            project = store.save_analysis_text(project.project_dir, SAMPLE_ANALYSIS)
+
+            second_block_id = project.semantic_blocks[1]["record_id"]
+            project = store.reorder_semantic_block(project.project_dir, second_block_id, "up")
+            reloaded = store.load_project(project.project_dir)
+
+            self.assertEqual(reloaded.semantic_blocks[0]["record_id"], second_block_id)
+            self.assertEqual(reloaded.semantic_blocks[0]["sequence"], 1)
+            self.assertEqual(reloaded.semantic_blocks[1]["sequence"], 2)
+
+            status_payload = (reloaded.project_dir / "project.meta" / "status.json").read_text(encoding="utf-8")
+            self.assertIn('"approval_readiness": "editable_but_complete"', status_payload)
+
+            reloaded = store.update_semantic_review_status(reloaded.project_dir, "ready_for_review")
+            self.assertEqual(reloaded.project_record["project_status"], "semantic_map_ready_for_review")
+            status_payload = (reloaded.project_dir / "project.meta" / "status.json").read_text(encoding="utf-8")
+            self.assertIn('"approval_readiness": "ready_for_approval"', status_payload)
+
     def test_analysis_text_must_be_meaningful(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             store = ProjectSliceStore(Path(temp_dir))
@@ -114,6 +136,35 @@ class DNAFilmAppTests(unittest.TestCase):
                 self.assertEqual(edited_block["semantic_role"], "insight")
                 self.assertEqual(edited_block["notes"], "Inspector notes persisted through the app layer.")
                 self.assertEqual(reloaded.semantic_review_record["review_status"], "ready_for_review")
+            finally:
+                root.destroy()
+
+    def test_app_reorders_blocks_and_updates_readiness_visibility(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Ordered Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+
+                    second_block_id = app.project.semantic_blocks[1]["record_id"]
+                    app._select_block_by_id(second_block_id)
+                    app.reorder_selected_block("up")
+                    app.review_status_var.set("ready_for_review")
+                    app.save_review_status()
+
+                reloaded = app.store.load_project(app.project.project_dir)
+                self.assertEqual(reloaded.semantic_blocks[0]["record_id"], second_block_id)
+                self.assertEqual(app.readiness_text.get(), "Approval readiness: ready_for_approval")
             finally:
                 root.destroy()
 

@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
-PROJECT_FORMAT_VERSION = "0.2"
+PROJECT_FORMAT_VERSION = "0.3"
 ANALYSIS_RECORD_FILENAME = "analysis_source.json"
 REVIEW_RECORD_FILENAME = "semantic_review.json"
 ALLOWED_SEMANTIC_ROLES = (
@@ -23,6 +23,7 @@ ALLOWED_REVIEW_STATES = (
     "ready_for_review",
     "approved",
 )
+ALLOWED_REORDER_DIRECTIONS = ("up", "down")
 
 
 def utc_now() -> str:
@@ -315,6 +316,58 @@ class ProjectSliceStore:
         )
         return self.load_project(project_dir)
 
+    def reorder_semantic_block(self, project_dir: Path, block_id: str, direction: str) -> ProjectSlice:
+        clean_direction = direction.strip().lower()
+        if clean_direction not in ALLOWED_REORDER_DIRECTIONS:
+            raise ValueError("Reorder direction is invalid for this MVP slice.")
+
+        project = self.load_project(project_dir)
+        semantic_blocks = [dict(block) for block in project.semantic_blocks]
+        if len(semantic_blocks) < 2:
+            return project
+
+        current_index = next((index for index, block in enumerate(semantic_blocks) if block["record_id"] == block_id), None)
+        if current_index is None:
+            raise ValueError("Selected semantic block was not found.")
+
+        target_index = current_index - 1 if clean_direction == "up" else current_index + 1
+        if target_index < 0 or target_index >= len(semantic_blocks):
+            return project
+
+        semantic_blocks[current_index], semantic_blocks[target_index] = semantic_blocks[target_index], semantic_blocks[current_index]
+        for index, block in enumerate(semantic_blocks, start=1):
+            block["sequence"] = index
+
+        now = utc_now()
+        manifest = dict(project.manifest)
+        manifest["updated_at"] = now
+        project_record = dict(project.project_record)
+        project_record["updated_at"] = now
+        intake_record = dict(project.intake_record)
+        intake_record["updated_at"] = now
+        analysis_source_record = project.analysis_source_record
+        if analysis_source_record is not None:
+            analysis_source_record = dict(analysis_source_record)
+            analysis_source_record["updated_at"] = now
+
+        semantic_review_record = dict(project.semantic_review_record)
+        if semantic_review_record["review_status"] == "approved":
+            semantic_review_record["review_status"] = "under_edit"
+            semantic_review_record["approved"] = False
+        semantic_review_record["updated_at"] = now
+
+        self._apply_project_summary(project_record, intake_record, semantic_blocks, semantic_review_record)
+        self._write_project_state(
+            project_dir,
+            manifest,
+            project_record,
+            intake_record,
+            analysis_source_record,
+            semantic_review_record,
+            semantic_blocks,
+        )
+        return self.load_project(project_dir)
+
     def update_semantic_review_status(self, project_dir: Path, review_status: str) -> ProjectSlice:
         clean_status = review_status.strip()
         if clean_status not in ALLOWED_REVIEW_STATES:
@@ -385,6 +438,7 @@ class ProjectSliceStore:
             "semantic_block_count": len(semantic_blocks),
             "semantic_map_status": semantic_review_record["review_status"],
             "semantic_review_approved": semantic_review_record["approved"],
+            "approval_readiness": self._approval_readiness_label(intake_record, semantic_blocks, semantic_review_record),
             "updated_at": project_record["updated_at"],
         }
 
@@ -402,15 +456,33 @@ class ProjectSliceStore:
 
         review_status = semantic_review_record["review_status"]
         block_count = len(semantic_blocks)
+        readiness = self._approval_readiness_label(intake_record, semantic_blocks, semantic_review_record)
         if review_status == "approved":
             project_record["project_status"] = "semantic_map_approved"
             project_record["current_readiness_summary"] = f"{block_count} semantic blocks approved for later matching prep."
         elif review_status == "ready_for_review":
             project_record["project_status"] = "semantic_map_ready_for_review"
-            project_record["current_readiness_summary"] = f"{block_count} semantic blocks ready for approval review."
+            project_record["current_readiness_summary"] = f"{block_count} semantic blocks ready for approval review. Readiness: {readiness}."
         else:
             project_record["project_status"] = "semantic_map_under_edit"
-            project_record["current_readiness_summary"] = f"{block_count} semantic blocks under edit in Semantic Map Workspace."
+            project_record["current_readiness_summary"] = f"{block_count} semantic blocks under edit in Semantic Map Workspace. Readiness: {readiness}."
+
+    def _approval_readiness_label(
+        self,
+        intake_record: dict,
+        semantic_blocks: list[dict],
+        semantic_review_record: dict,
+    ) -> str:
+        if intake_record["intake_readiness"] != "ready" or not semantic_blocks:
+            return "not_ready"
+        if semantic_review_record["review_status"] == "approved":
+            return "approved"
+        if semantic_review_record["review_status"] == "ready_for_review":
+            return "ready_for_approval"
+        complete_blocks = all(block.get("title", "").strip() and block.get("semantic_role", "").strip() for block in semantic_blocks)
+        if complete_blocks:
+            return "editable_but_complete"
+        return "under_edit"
 
     def _default_review_record(self, project_id: str, timestamp: str) -> dict:
         return {

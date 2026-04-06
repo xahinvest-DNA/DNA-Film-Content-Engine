@@ -1,21 +1,27 @@
 ﻿# Codex Tasks
 
 Last updated: 2026-04-06
-Current focus: F-008 semantic map ordering and approval readiness
+Current focus: F-009 semantic approval guardrails and reopen clarity
 
 ## Working rule
 Tasks should be bounded, product-visible, and small enough to preserve continuity without turning the repository into micro-slice overload.
 
 ## Active task
 
-### F-008
+### F-009
 - Status: active
-- Module: semantic map ordering and approval readiness
-- Goal: extend the editable semantic workspace with one bounded ordering control and clearer approval-readiness visibility without drifting into matching, backend, or downstream execution.
+- Module: semantic approval guardrails and reopen clarity
+- Goal: extend the semantic workspace with clearer approval-transition guardrails and explicit reopen visibility without drifting into matching, backend, or downstream execution.
 - Input documents: `00_INDEX.md`, `01_MASTER/CURRENT_STATE.md`, `01_MASTER/DECISIONS.md`, `01_MASTER/ROADMAP.md`, `01_MASTER/SSOT_MAP.md`, `05_CODEX/NEXT_TASK.md`, `02_PRODUCT/MVP_DESKTOP_INTERFACE.md`, `02_PRODUCT/NAVIGATION_BEHAVIOR.md`, `03_MODULES/DNA_SEMANTIC_ENGINE.md`
-- Expected result: one minimal semantic workspace update where block ordering changes persist across reload and approval-readiness visibility becomes clearer without scope explosion.
+- Expected result: one minimal semantic workspace update where approval transitions and reopened-after-change state are clearer and persist across reload without scope explosion.
 
 ## Completed tasks
+
+### F-008
+- Status: completed
+- Module: semantic map ordering and approval readiness
+- Goal: extend the editable semantic workspace with one bounded ordering control and clearer approval-readiness visibility without drifting into matching, backend, or downstream execution.
+- Outcome: added a minimal move-up / move-down ordering control, persisted semantic block order updates on disk, kept reordered sequence values stable across reload, derived a clearer approval-readiness indicator from existing semantic state, updated workspace summaries with that visibility, added local validation for reorder persistence, and kept the packet intentionally narrow.
 
 ### F-007
 - Status: completed
