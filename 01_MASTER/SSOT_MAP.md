@@ -50,6 +50,18 @@ Purpose: define which document owns each project question so the repository stay
 - Primary SSOT: `02_PRODUCT/PLATFORM_RULES.md`
 - Scope: platform differences for YouTube, Shorts, Reels, Carousel, and later channels.
 
+### MVP desktop interface specification
+- Primary SSOT: `02_PRODUCT/MVP_DESKTOP_INTERFACE.md`
+- Scope: main desktop layout, role of interface areas, semantic workspace behavior, and MVP/non-MVP boundaries.
+
+### Screen states
+- Primary SSOT: `02_PRODUCT/SCREEN_STATES.md`
+- Scope: project states, screen states, readiness vocabulary, and major state transitions.
+
+### Navigation behavior
+- Primary SSOT: `02_PRODUCT/NAVIGATION_BEHAVIOR.md`
+- Scope: navigation rules, availability logic, contextual inspector behavior, next-action visibility, and placeholder behavior.
+
 ## Codex execution source-of-truth documents
 
 ### Current active task packet
@@ -58,7 +70,7 @@ Purpose: define which document owns each project question so the repository stay
 
 ### Codex implementation rules
 - Primary SSOT: `05_CODEX/IMPLEMENTATION_RULES.md`
-- Scope: how implementation tasks should be interpreted and how state files must be updated.
+- Scope: execution rules, manager-led operating model, and required state synchronization behavior.
 
 ### Codex handoff format
 - Primary SSOT: `05_CODEX/HANDOFF_TEMPLATE.md`

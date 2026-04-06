@@ -2,43 +2,42 @@
 
 Last updated: 2026-04-06
 Status: ready
-Task ID: F-002
-Task type: product-design
+Task ID: F-003
+Task type: product-architecture
 
 ## Goal
 
-Create one bounded MVP desktop interface specification packet so DNA Film Content Engine can move from approved product-layer structure to a concrete first desktop operating surface without drifting into engine implementation too early.
+Create one bounded domain model and module-boundary packet so DNA Film Content Engine can move from approved MVP interface structure to stable product entities and system boundaries without drifting into engine runtime implementation too early.
 
 ## Why this is next
 
-The repository now has user flows, screen map, UX principles, output definitions, and platform rules. The strongest next need is to turn that product layer into a concrete MVP desktop interface package centered on the Semantic Map Workspace.
+The repository now has user flows, screen map, UX principles, output definitions, platform rules, and a concrete MVP desktop interface package. The strongest next need is to define the product entities and module boundaries that the approved interface will operate on.
 
 ## What should change
 
-1. Add `02_PRODUCT/MVP_DESKTOP_INTERFACE.md`.
-2. Add `02_PRODUCT/SCREEN_STATES.md`.
-3. Add `02_PRODUCT/NAVIGATION_BEHAVIOR.md`.
-4. Synchronize `CURRENT_STATE.md`, `TASKS.md`, and `CODEX_WORKLOG.md` if the packet is completed.
+1. Add `04_TECH/DOMAIN_MODEL.md`.
+2. Add `03_MODULES/PROJECT_INTAKE.md`.
+3. Add `03_MODULES/DNA_SEMANTIC_ENGINE.md`.
+4. Add `03_MODULES/SCENE_MATCHING.md`.
+5. Synchronize `CURRENT_STATE.md`, `TASKS.md`, and `CODEX_WORKLOG.md` if the packet is completed.
 
 ## What must stay unchanged
 
-* no engine implementation
+* no engine runtime implementation
 * no automatic film downloading
-* no scene-matching runtime
-* no export/render backend
+* no render/export backend
+* no scene-matching execution logic
 * no mobile/sync/team workflow expansion
-* no generic timeline-editor drift
+* no generic editor drift
 
 ## Recommended validation
 
-Validate that the resulting interface package defines:
+Validate that the resulting packet defines:
 
-* the main MVP desktop layout
-* Semantic Map Workspace zones
-* object visibility per screen
-* screen and workflow states
-* navigation rules between stages
-* bounded placeholder behavior for later-phase screens
+* the core product entities used by the MVP interface
+* clear ownership boundaries between intake, semantic, and matching-preparation modules
+* stable terminology across product and tech layers
+* prepared support for later phases without pretending runtime execution already exists
 
 ## Required handoff format
 

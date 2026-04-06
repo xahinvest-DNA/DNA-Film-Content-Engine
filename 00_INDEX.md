@@ -39,6 +39,9 @@ It owns navigation only. It must not restate live project state or the active Co
 - `02_PRODUCT/UX_PRINCIPLES.md`
 - `02_PRODUCT/CONTENT_OUTPUT_SPEC.md`
 - `02_PRODUCT/PLATFORM_RULES.md`
+- `02_PRODUCT/MVP_DESKTOP_INTERFACE.md`
+- `02_PRODUCT/SCREEN_STATES.md`
+- `02_PRODUCT/NAVIGATION_BEHAVIOR.md`
 
 ## Domain modules
 

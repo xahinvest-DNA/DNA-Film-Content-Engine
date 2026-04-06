@@ -1,21 +1,27 @@
 # Codex Tasks
 
 Last updated: 2026-04-06
-Current focus: MVP desktop interface specification
+Current focus: domain model and module-boundary fixation
 
 ## Working rule
 Tasks should be bounded, product-visible, and small enough to preserve continuity without turning the repository into micro-slice overload.
 
 ## Active task
 
-### F-002
+### F-003
 - Status: active
-- Module: MVP desktop interface specification
-- Goal: fix the first complete desktop interface package on top of the approved product layer without drifting into engine implementation.
-- Input documents: `00_INDEX.md`, `01_MASTER/CURRENT_STATE.md`, `01_MASTER/DECISIONS.md`, `01_MASTER/ROADMAP.md`, `01_MASTER/SSOT_MAP.md`, `05_CODEX/NEXT_TASK.md`, `02_PRODUCT/USER_FLOWS.md`, `02_PRODUCT/SCREEN_MAP.md`, `02_PRODUCT/UX_PRINCIPLES.md`
-- Expected result: `02_PRODUCT/MVP_DESKTOP_INTERFACE.md`, `02_PRODUCT/SCREEN_STATES.md`, `02_PRODUCT/NAVIGATION_BEHAVIOR.md`
+- Module: domain model and module-boundary fixation
+- Goal: define the first domain model and module boundaries that support the approved MVP desktop interface without drifting into engine runtime implementation.
+- Input documents: `00_INDEX.md`, `01_MASTER/CURRENT_STATE.md`, `01_MASTER/DECISIONS.md`, `01_MASTER/ROADMAP.md`, `01_MASTER/SSOT_MAP.md`, `05_CODEX/NEXT_TASK.md`, `02_PRODUCT/MVP_DESKTOP_INTERFACE.md`, `02_PRODUCT/SCREEN_STATES.md`, `02_PRODUCT/NAVIGATION_BEHAVIOR.md`
+- Expected result: `04_TECH/DOMAIN_MODEL.md`, `03_MODULES/PROJECT_INTAKE.md`, `03_MODULES/DNA_SEMANTIC_ENGINE.md`, `03_MODULES/SCENE_MATCHING.md`
 
 ## Completed tasks
+
+### F-002
+- Status: completed
+- Module: MVP desktop interface specification
+- Goal: fix the first complete desktop interface package on top of the approved product layer without drifting into engine implementation.
+- Outcome: added the MVP desktop interface specification, fixed desktop layout responsibilities, fixed screen and project states, fixed navigation behavior, fixed contextual inspector behavior, and preserved bounded later-phase placeholders around `Semantic Map Workspace`.
 
 ### F-001
 - Status: completed
