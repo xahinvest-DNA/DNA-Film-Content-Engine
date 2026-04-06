@@ -42,9 +42,9 @@ At this point:
 
 ## Open items
 
-- first bounded implementation slice for project creation, analysis-text intake, semantic block persistence, and semantic-map inspection;
-- minimal executable path through the approved architecture;
-- bounded implementation sequencing after the first slice is proven.
+- define the first bounded implementation-entry packet for project creation, analysis-text intake, semantic block persistence, and semantic-map inspection;
+- keep the first executable slice narrow enough to validate the approved architecture without opening broad runtime scope;
+- sequence the next implementation-entry packets only after the first bounded slice is executable or testable.
 
 ## Next step
 

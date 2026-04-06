@@ -11,9 +11,9 @@ Tasks should be bounded, product-visible, and small enough to preserve continuit
 ### F-006
 - Status: active
 - Module: first MVP implementation slice
-- Goal: implement one bounded user-visible desktop slice that covers project creation, analysis-text intake, semantic block persistence, and semantic-map inspection without drifting into broad runtime infrastructure.
+- Goal: implement one bounded implementation-entry packet for a user-visible desktop slice that covers project creation, analysis-text intake, semantic block persistence, and semantic-map inspection without drifting into broad runtime/backend infrastructure.
 - Input documents: `00_INDEX.md`, `01_MASTER/CURRENT_STATE.md`, `01_MASTER/DECISIONS.md`, `01_MASTER/ROADMAP.md`, `01_MASTER/SSOT_MAP.md`, `05_CODEX/NEXT_TASK.md`, `02_PRODUCT/MVP_DESKTOP_INTERFACE.md`, `04_TECH/DATA_SCHEMA.md`, `04_TECH/PROJECT_FILE_FORMAT.md`
-- Expected result: one executable or testable MVP slice for create project, load analysis text, persist semantic blocks, and inspect the semantic map in a real desktop-facing path.
+- Expected result: one minimal executable or testable MVP slice for create project, load analysis text, persist semantic blocks, and inspect the semantic map in a real desktop-facing path without scope explosion.
 
 ## Completed tasks
 
@@ -21,7 +21,7 @@ Tasks should be bounded, product-visible, and small enough to preserve continuit
 - Status: completed
 - Module: render/export schema and downstream output-boundary fixation
 - Goal: define the first stable downstream render/export schema boundaries and output-module contracts without drifting into runtime backend implementation.
-- Outcome: added the render/export-facing schema layer, fixed downstream output record families, fixed long-form / short-form / carousel / packaging module contracts, clarified export-ready grouping boundaries, and preserved clear separation between output architecture and runtime render/backend design.
+- Outcome: added the render/export-facing schema layer, fixed downstream output record families, fixed long-form / short-form / carousel / packaging module contracts, clarified export-ready grouping boundaries, preserved clear separation between output architecture and runtime render/backend design, and closed `F-005` before opening `F-006` as the active packet.
 
 ### F-004
 - Status: completed

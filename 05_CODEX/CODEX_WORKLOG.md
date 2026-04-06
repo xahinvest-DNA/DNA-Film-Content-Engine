@@ -1,5 +1,22 @@
 ﻿# Codex Worklog
 
+## 2026-04-06 - Correction pass for F-005 completion / F-006 activation state sync
+
+### Completed
+- verified that `F-005` must be presented as completed across the state layer;
+- corrected `CURRENT_STATE.md` so the active frontier is literally `F-006 First MVP Implementation Slice`;
+- corrected `NEXT_TASK.md` so it literally presents `Task ID: F-006` with bounded in-scope, out-of-scope, and validation language;
+- corrected `TASKS.md` so `F-005` is completed and `F-006` is the active task with aligned wording;
+- added this worklog entry to record that the correction pass removed the state-layer desynchronization.
+
+### Repository effect
+- the repository state layer now consistently presents `F-005` as completed and `F-006` as the single active packet;
+- the active question and open items now point to the first bounded implementation-entry slice rather than render/export schema work;
+- this pass changes state synchronization only and does not begin substantive `F-006` execution.
+
+### Recommended next step
+Execute `F-006 First MVP Implementation Slice`
+
 ## 2026-04-06 - Correction pass for post-F-005 state synchronization
 
 ### Completed

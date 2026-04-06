@@ -12,40 +12,35 @@ Create one bounded implementation packet so DNA Film Content Engine can move fro
 
 ## Why this is next
 
-The repository now has approved product, domain, schema, file, asset, and downstream output boundaries. The strongest next need is to prove that architecture through one narrow implementation slice rather than continue documentation layering or expand into the full stack at once.
-
-## What should change
-
-1. Implement one bounded path for project creation.
-2. Implement one bounded path for analysis-text intake.
-3. Implement one bounded path for semantic block persistence.
-4. Implement one bounded path for semantic-map inspection.
-5. Synchronize `CURRENT_STATE.md`, `TASKS.md`, and `CODEX_WORKLOG.md` if the packet is completed.
+The repository now has approved product, domain, schema, file, asset, and downstream output boundaries. The strongest next step is to open one bounded implementation-entry packet that proves the architecture through a minimal executable desktop slice instead of continuing documentation layering or expanding into broad runtime/backend work.
 
 ## In scope
 
-* first minimal implementation slice
-* one narrow vertical path only
-* only the runtime surfaces and contracts required for that slice
-* minimal executable path through the approved architecture
+- one bounded implementation-entry packet for the first MVP slice
+- project creation in the narrow form required by that slice
+- analysis-text intake in the narrow form required by that slice
+- semantic block persistence in the narrow form required by that slice
+- semantic-map inspection in the narrow form required by that slice
+- only the runtime surfaces and contracts required to make that slice executable or testable
 
 ## Out of scope
 
-* full backend
-* full render pipeline
-* full scene-matching automation
-* platform publishing automation
-* broad UI implementation across all screens
-* generalized production system
+- full backend or API design
+- full render pipeline
+- full scene-matching automation
+- platform publishing automation
+- broad UI implementation across all screens
+- generalized production system
+- any packet expansion beyond the first bounded implementation slice
 
 ## Recommended validation
 
 Validate that the resulting packet delivers:
 
-* concrete files created or updated
-* one executable or testable minimal slice
-* state synchronized after completion
-* no scope explosion beyond the bounded slice
+- concrete files created or updated for one bounded slice only
+- one minimal executable or testable desktop-facing path
+- proof that project creation, analysis-text intake, semantic block persistence, and semantic-map inspection connect through the approved architecture at minimal depth
+- no scope explosion into broad runtime, backend, or downstream-output implementation
 
 ## Required handoff format
 
