@@ -1,26 +1,26 @@
-﻿# NEXT TASK
+# NEXT TASK
 
 Last updated: 2026-04-06
 Status: ready
-Task ID: F-013
+Task ID: F-014
 Task type: implementation
-Title: Semantic Review Filters and Focus Cues
+Title: Semantic Review Next-Issue Navigation and Focus-Step Controls
 
 ## Goal
 
-Extend the local-first semantic workspace with one minimal filtering and focus-cue layer so the editor can quickly isolate weak, suitability-specific, or review-ready semantic blocks without opening downstream execution, backend/API scope, or a dashboard-heavy workflow surface.
+Extend the local-first semantic workspace with one minimal step-through navigation layer so the editor can move through the currently focused semantic review set without losing context or opening broader workflow, backend/API, or dashboard scope.
 
 ## Why this is next
 
-The repository now has real semantic review controls for editing, ordering, split/merge correction, issue visibility, and output suitability. The strongest next bounded step is to improve editor navigation inside the existing semantic map by adding one minimal way to focus the list on blocks that currently need attention, rather than broadening into matching or downstream planning.
+The repository now has bounded semantic review focus controls for issues, review-ready blocks, and suitability lanes. The strongest next bounded step is to let the editor move through those filtered review sets more fluidly inside the existing semantic map, rather than broadening into matching, downstream planning, or a larger workflow surface.
 
 ## In scope
 
-- one bounded follow-up packet on top of the completed F-012 runtime slice
-- one minimal semantic-map filter or focus control inside the existing workspace
-- visibility for blocks with issues, review-readiness, or selected suitability states where it improves focus
-- only the runtime and persistence touches required to keep filtering coherent and reload-stable if state is stored
-- local tests covering focus/filter behavior without regressing prior packets
+- one bounded follow-up packet on top of the completed F-013 runtime slice
+- one minimal next/previous navigation control for the currently visible semantic-review set
+- lightweight current-position visibility for the focused list where needed for clarity
+- only the runtime and local-state touches required to keep focused navigation coherent after edits or focus changes
+- local tests covering focused navigation behavior without regressing prior packets
 
 ## Out of scope
 
@@ -28,17 +28,17 @@ The repository now has real semantic review controls for editing, ordering, spli
 - scene-matching automation
 - downstream output generation
 - backend or API design
-- generalized query/filter engine
+- generalized workflow queue or review engine
 - broad navigation expansion
-- packet expansion beyond semantic review filters and focus cues
+- packet expansion beyond semantic review next-issue navigation and focus-step controls
 
 ## Recommended validation
 
 Validate that the resulting packet delivers:
 
-- one clear semantic-map focus/filter control in the desktop-facing workspace
-- faster isolation of blocks that need attention without dashboard sprawl
-- coherence with existing issue visibility, suitability review, and approval signals
+- one clear next/previous control inside the desktop-facing semantic workspace
+- stable movement through issue-focused, review-ready, or suitability-focused block subsets
+- visible current-position clarity without dashboard sprawl
 - no scope explosion into matching, backend, or downstream-output implementation
 
 ## Required handoff format

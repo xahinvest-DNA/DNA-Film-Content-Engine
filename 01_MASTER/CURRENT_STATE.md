@@ -2,10 +2,10 @@
 
 Last updated: 2026-04-06
 Status: active
-Current stage: F-012 semantic output suitability review controls are completed
-Active module: F-013 semantic review filters and focus cues
-Active frontier: F-013 Semantic Review Filters and Focus Cues
-Active question: how to add one minimal filtering and focus-cue layer to the local-first semantic workspace so editors can quickly isolate weak, suitability-specific, or review-ready blocks without turning the workspace into a dashboard or workflow engine
+Current stage: F-013 semantic review filters and focus cues are completed
+Active module: F-014 semantic review next-issue navigation and focus-step controls
+Active frontier: F-014 Semantic Review Next-Issue Navigation and Focus-Step Controls
+Active question: how to let editors step through the currently focused semantic review set with minimal next/previous controls so issue-driven review moves faster without turning the workspace into a workflow engine or dashboard
 
 ## Where the project is now
 
@@ -27,8 +27,8 @@ At this point:
 - the project now uses a manager-led execution model;
 - ChatGPT owns strongest-next-step selection;
 - Codex owns repository execution and state synchronization;
-- F-012 is completed and no longer the active frontier;
-- the current active frontier is now `F-013 Semantic Review Filters and Focus Cues`.
+- F-013 is completed and no longer the active frontier;
+- the current active frontier is now `F-014 Semantic Review Next-Issue Navigation and Focus-Step Controls`.
 
 ## Accepted boundaries right now
 
@@ -45,13 +45,13 @@ At this point:
 
 ## Open items
 
-- add one minimal semantic-map filter or focus control inside Semantic Map Workspace;
-- let the editor quickly isolate blocks with issues, review readiness, or selected suitability signals;
-- keep filtering local-first and readable without turning the workspace into a dashboard-heavy planning surface.
+- add one minimal next/previous navigation control for the current focused semantic review set inside Semantic Map Workspace;
+- keep movement through issue-focused, review-ready, or suitability-focused subsets stable and legible;
+- improve review flow without introducing a workflow queue, dashboard surface, or broader navigation subsystem.
 
 ## Next step
 
-Open and execute one bounded packet for `F-013 Semantic Review Filters and Focus Cues`.
+Open and execute one bounded packet for `F-014 Semantic Review Next-Issue Navigation and Focus-Step Controls`.
 
 ## What must not be lost in a new chat
 
@@ -60,5 +60,5 @@ Open and execute one bounded packet for `F-013 Semantic Review Filters and Focus
 - manager-led execution model is fixed.
 - MVP main surface is `Semantic Map Workspace`.
 - product, domain, schema, project-file, asset, and downstream output-boundary layers are fixed.
-- F-012 is completed with persisted selected-block output-suitability review controls, lightweight suitability visibility in the semantic list and inspector, and coherent reopen-after-suitability-change behavior in the local project package.
-- the next strong step is `F-013 Semantic Review Filters and Focus Cues`, not broad runtime/backend depth.
+- F-013 is completed with one bounded focus control, filtered semantic-list visibility for issues/review-ready/suitability modes, coherent selection behavior, and concise empty-state cues in the local-first workspace.
+- the next strong step is `F-014 Semantic Review Next-Issue Navigation and Focus-Step Controls`, not broad runtime/backend depth.

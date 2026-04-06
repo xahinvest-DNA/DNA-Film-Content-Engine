@@ -16,6 +16,24 @@ from runtime.project_slice import (
 )
 
 
+FOCUS_MODES = (
+    "All blocks",
+    "Issues present",
+    "Review-ready",
+    "Long video focus",
+    "Shorts/reels focus",
+    "Carousel focus",
+    "Packaging focus",
+)
+
+FOCUS_TO_SUITABILITY_KEY = {
+    "Long video focus": "long_video",
+    "Shorts/reels focus": "shorts_reels",
+    "Carousel focus": "carousel",
+    "Packaging focus": "packaging",
+}
+
+
 class DNAFilmApp:
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
@@ -27,6 +45,7 @@ class DNAFilmApp:
         self.store = ProjectSliceStore(self.workspace_root)
         self.project: ProjectSlice | None = None
         self.selected_block_id: str | None = None
+        self.visible_blocks: list[dict] = []
 
         self.current_view = tk.StringVar(value="Project Home")
         self.header_title = tk.StringVar(value="No project loaded")
@@ -37,6 +56,8 @@ class DNAFilmApp:
         self.completeness_text = tk.StringVar(value="Semantic completeness: Incomplete")
         self.issues_summary_text = tk.StringVar(value="Issue visibility: no semantic issues yet.")
         self.readiness_text = tk.StringVar(value="Approval readiness: not_ready")
+        self.focus_mode_var = tk.StringVar(value=FOCUS_MODES[0])
+        self.focus_status_text = tk.StringVar(value="Focus: All blocks | showing 0 of 0 blocks.")
         self.approval_message_text = tk.StringVar(value="Approval message: Semantic map remains under edit.")
         self.approval_reason_text = tk.StringVar(value="Approval reason: Approve is blocked until semantic review is moved to ready_for_review.")
         self.reopen_text = tk.StringVar(value="Reopen state: none")
@@ -215,6 +236,10 @@ class DNAFilmApp:
         ttk.Label(frame, text="Semantic Map Workspace", font=("Segoe UI", 14, "bold")).grid(row=0, column=0, sticky="w")
         toolbar = ttk.Frame(frame)
         toolbar.grid(row=1, column=0, sticky="ew", pady=(10, 10))
+        ttk.Label(toolbar, text="Focus").pack(side="left")
+        self.focus_mode_combo = ttk.Combobox(toolbar, textvariable=self.focus_mode_var, values=FOCUS_MODES, state="readonly", width=20)
+        self.focus_mode_combo.pack(side="left", padx=(8, 16))
+        self.focus_mode_combo.bind("<<ComboboxSelected>>", self.apply_focus_mode)
         ttk.Label(toolbar, text="Project semantic review").pack(side="left")
         self.review_status_combo = ttk.Combobox(toolbar, textvariable=self.review_status_var, values=ALLOWED_REVIEW_STATES, state="readonly", width=18)
         self.review_status_combo.pack(side="left", padx=(8, 8))
@@ -226,11 +251,12 @@ class DNAFilmApp:
         self.semantic_list = tk.Listbox(frame, activestyle="none")
         self.semantic_list.grid(row=2, column=0, sticky="nsew", pady=(0, 12))
         self.semantic_list.bind("<<ListboxSelect>>", self.on_block_selected)
-        ttk.Label(frame, textvariable=self.summary_text, wraplength=760).grid(row=3, column=0, sticky="w")
-        ttk.Label(frame, textvariable=self.issues_summary_text, wraplength=760).grid(row=4, column=0, sticky="w")
-        ttk.Label(frame, textvariable=self.approval_message_text, wraplength=760).grid(row=5, column=0, sticky="w")
-        ttk.Label(frame, textvariable=self.approval_reason_text, wraplength=760).grid(row=6, column=0, sticky="w")
-        ttk.Label(frame, textvariable=self.reopen_text, wraplength=760).grid(row=7, column=0, sticky="w")
+        ttk.Label(frame, textvariable=self.focus_status_text, wraplength=760).grid(row=3, column=0, sticky="w")
+        ttk.Label(frame, textvariable=self.summary_text, wraplength=760).grid(row=4, column=0, sticky="w")
+        ttk.Label(frame, textvariable=self.issues_summary_text, wraplength=760).grid(row=5, column=0, sticky="w")
+        ttk.Label(frame, textvariable=self.approval_message_text, wraplength=760).grid(row=6, column=0, sticky="w")
+        ttk.Label(frame, textvariable=self.approval_reason_text, wraplength=760).grid(row=7, column=0, sticky="w")
+        ttk.Label(frame, textvariable=self.reopen_text, wraplength=760).grid(row=8, column=0, sticky="w")
         return frame
 
     def _switch_view(self, name: str) -> None:
@@ -254,6 +280,7 @@ class DNAFilmApp:
             messagebox.showerror("Project creation", "A project folder with the same generated name already exists.")
             return
 
+        self.focus_mode_var.set(FOCUS_MODES[0])
         self._load_project_into_ui(project)
         self._switch_view("Source Intake")
         messagebox.showinfo("Project created", f"Project package created at:\n{project.project_dir}")
@@ -267,6 +294,7 @@ class DNAFilmApp:
         except FileNotFoundError:
             messagebox.showerror("Open project", "Selected folder does not look like a DNA project package.")
             return
+        self.focus_mode_var.set(FOCUS_MODES[0])
         self._load_project_into_ui(project)
         self._switch_view("Project Home")
 
@@ -281,6 +309,7 @@ class DNAFilmApp:
             messagebox.showerror("Source intake", str(exc))
             return
 
+        self.focus_mode_var.set(FOCUS_MODES[0])
         self._load_project_into_ui(project)
         self._switch_view("Semantic Map")
         if project.semantic_blocks:
@@ -297,7 +326,7 @@ class DNAFilmApp:
             self._set_structure_enabled(False, False, False, False, False)
             self.block_issues_text.set("Block issues: none")
             return
-        block = self.project.semantic_blocks[selection[0]]
+        block = self.visible_blocks[selection[0]]
         self._show_block(block)
 
     def save_selected_block(self) -> None:
@@ -423,23 +452,77 @@ class DNAFilmApp:
         if analysis_path.exists():
             self.analysis_text.insert("1.0", analysis_path.read_text(encoding="utf-8"))
 
+        self._refresh_semantic_list(select_block_id)
+
+    def apply_focus_mode(self, _event: object | None = None) -> None:
+        if self.project is None:
+            self.focus_status_text.set(f"Focus: {self.focus_mode_var.get()} | showing 0 of 0 blocks.")
+            return
+        preferred_block_id = self.selected_block_id
+        self._refresh_semantic_list(preferred_block_id)
+
+    def _refresh_semantic_list(self, select_block_id: str | None = None) -> None:
+        if self.project is None:
+            self.visible_blocks = []
+            self.semantic_list.delete(0, "end")
+            self.focus_status_text.set(f"Focus: {self.focus_mode_var.get()} | showing 0 of 0 blocks.")
+            return
+
+        self.visible_blocks = self._visible_blocks_for_focus(self.project.semantic_blocks)
         self.semantic_list.delete(0, "end")
-        for block in project.semantic_blocks:
+        for block in self.visible_blocks:
             preview = block["content"][:56].replace("\n", " ")
             issue_suffix = f" | issues:{len(block.get('warning_flags', []))}" if block.get("warning_flags") else ""
             suitability_suffix = f" | {self._suitability_summary(block)}"
             self.semantic_list.insert("end", f"{block['sequence']:02d}. {block['title']} [{block['semantic_role']}] - {preview}{issue_suffix}{suitability_suffix}")
 
-        if project.semantic_blocks:
-            target_block_id = select_block_id or project.semantic_blocks[0]["record_id"]
-            self._select_block_by_id(target_block_id)
+        focus_mode = self.focus_mode_var.get()
+        total_blocks = len(self.project.semantic_blocks)
+        shown_blocks = len(self.visible_blocks)
+        if shown_blocks:
+            self.focus_status_text.set(f"Focus: {focus_mode} | showing {shown_blocks} of {total_blocks} blocks.")
         else:
+            self.focus_status_text.set(f"Focus: {focus_mode} | {self._focus_empty_message(focus_mode)}")
+
+        if self.visible_blocks:
+            preferred_id = select_block_id or self.selected_block_id
+            if preferred_id and any(block["record_id"] == preferred_id for block in self.visible_blocks):
+                self._select_block_by_id(preferred_id)
+            else:
+                self._select_block_by_id(self.visible_blocks[0]["record_id"])
+        else:
+            self.semantic_list.selection_clear(0, "end")
             self.selected_block_id = None
-            self.block_status_var.set("Select a semantic block to inspect, reorder, split, merge, and edit it here.")
+            self.block_status_var.set(self._focus_empty_message(focus_mode))
             self.block_issues_text.set("Block issues: none")
             self._set_editor_enabled(False)
             self._set_structure_enabled(False, False, False, False, False)
             self._clear_block_editor()
+
+    def _visible_blocks_for_focus(self, semantic_blocks: list[dict]) -> list[dict]:
+        focus_mode = self.focus_mode_var.get()
+        return [block for block in semantic_blocks if self._block_matches_focus(block, focus_mode)]
+
+    def _block_matches_focus(self, block: dict, focus_mode: str) -> bool:
+        if focus_mode == "All blocks":
+            return True
+        if focus_mode == "Issues present":
+            return bool(block.get("warning_flags"))
+        if focus_mode == "Review-ready":
+            return not block.get("warning_flags")
+        suitability_key = FOCUS_TO_SUITABILITY_KEY.get(focus_mode)
+        if suitability_key:
+            return block.get("output_suitability", {}).get(suitability_key) == "strong"
+        return True
+
+    def _focus_empty_message(self, focus_mode: str) -> str:
+        if focus_mode == "Issues present":
+            return "No blocks with issues."
+        if focus_mode == "Review-ready":
+            return "No blocks currently look review-ready."
+        if focus_mode in FOCUS_TO_SUITABILITY_KEY:
+            return "No blocks currently match this suitability focus."
+        return "No semantic blocks match the current focus."
 
     def _show_block(self, block: dict) -> None:
         self.selected_block_id = block["record_id"]
@@ -476,7 +559,7 @@ class DNAFilmApp:
     def _select_block_by_id(self, block_id: str) -> None:
         if self.project is None:
             return
-        for index, block in enumerate(self.project.semantic_blocks):
+        for index, block in enumerate(self.visible_blocks):
             if block["record_id"] == block_id:
                 self.semantic_list.selection_clear(0, "end")
                 self.semantic_list.selection_set(index)

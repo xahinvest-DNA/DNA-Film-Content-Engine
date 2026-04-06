@@ -1,21 +1,27 @@
 ﻿# Codex Tasks
 
 Last updated: 2026-04-06
-Current focus: F-013 semantic review filters and focus cues
+Current focus: F-014 semantic review next-issue navigation and focus-step controls
 
 ## Working rule
 Tasks should be bounded, product-visible, and small enough to preserve continuity without turning the repository into micro-slice overload.
 
 ## Active task
 
-### F-013
+### F-014
 - Status: active
-- Module: semantic review filters and focus cues
-- Goal: extend the semantic workspace with one minimal filter or focus cue so editors can isolate blocks that need attention without drifting into matching, backend, or downstream execution.
+- Module: semantic review next-issue navigation and focus-step controls
+- Goal: extend the semantic workspace with one minimal next/previous control so editors can move through the current focused review set without drifting into matching, backend, or downstream execution.
 - Input documents: `00_INDEX.md`, `01_MASTER/CURRENT_STATE.md`, `01_MASTER/DECISIONS.md`, `01_MASTER/ROADMAP.md`, `01_MASTER/SSOT_MAP.md`, `05_CODEX/NEXT_TASK.md`, `02_PRODUCT/MVP_DESKTOP_INTERFACE.md`, `02_PRODUCT/NAVIGATION_BEHAVIOR.md`, `03_MODULES/DNA_SEMANTIC_ENGINE.md`
-- Expected result: one minimal semantic workspace update where review focus is easier without scope explosion.
+- Expected result: one minimal semantic workspace update where focused review navigation becomes easier without scope explosion.
 
 ## Completed tasks
+
+### F-013
+- Status: completed
+- Module: semantic review filters and focus cues
+- Goal: extend the semantic workspace with one minimal filter or focus cue so editors can isolate blocks that need attention without drifting into matching, backend, or downstream execution.
+- Outcome: added one bounded focus control with issue, review-ready, and suitability-lane modes; filtered the semantic list without introducing a dashboard surface; kept selection behavior coherent when focus changes; added concise empty-state cues; added local validation for focus behavior; and kept the packet intentionally narrow.
 
 ### F-012
 - Status: completed

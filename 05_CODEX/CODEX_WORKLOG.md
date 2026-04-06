@@ -1,5 +1,22 @@
 # Codex Worklog
 
+## 2026-04-06 - F-013 completed and semantic review focus became navigable
+
+### Completed
+- completed the semantic review filters and focus cues packet as one bounded follow-up to the suitability-visible semantic workspace;
+- added one compact focus control for all blocks, issue-present blocks, review-ready blocks, and suitability-lane review modes inside the existing semantic map workspace;
+- filtered the semantic block list through existing warning-flag and output-suitability state rather than introducing a new filter engine or dashboard surface;
+- kept selection behavior coherent when focus changes by preserving the current block where possible and falling back cleanly when it is filtered out;
+- added concise empty-state messaging for focus modes with no matching blocks and verified the new focus behavior through local app-level tests alongside prior packet regressions;
+- synchronized the repository state layer after real implementation progress.
+
+### Repository effect
+- the repository now contains a more navigable semantic review workspace where editors can isolate issue-heavy, review-ready, or lane-specific subsets without leaving the current local-first surface;
+- focus behavior remains local-first, deterministic, and bounded to existing semantic review state rather than a broader query or workflow subsystem;
+- the implementation remains intentionally narrow and does not open matching, backend, or downstream-output execution work.
+
+### Recommended next step
+Execute `F-014 Semantic Review Next-Issue Navigation and Focus-Step Controls`
 ## 2026-04-06 - F-012 completed and output suitability became reviewable
 
 ### Completed

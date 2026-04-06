@@ -410,5 +410,123 @@ class DNAFilmAppTests(unittest.TestCase):
                 root.destroy()
 
 
+    def test_app_focus_modes_filter_blocks_and_keep_selection_coherent(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Focus Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+
+                    first_block, second_block, third_block = app.project.semantic_blocks
+                    project = app.store.update_semantic_block(
+                        app.project.project_dir,
+                        second_block["record_id"],
+                        second_block["title"],
+                        second_block["semantic_role"],
+                        "Editor clarification added.",
+                        output_suitability={
+                            "long_video": "strong",
+                            "shorts_reels": "candidate",
+                            "carousel": "weak",
+                            "packaging": "weak",
+                        },
+                    )
+                    project = app.store.update_semantic_block(
+                        app.project.project_dir,
+                        third_block["record_id"],
+                        third_block["title"],
+                        third_block["semantic_role"],
+                        "Editor clarification added.",
+                        output_suitability={
+                            "long_video": "weak",
+                            "shorts_reels": "strong",
+                            "carousel": "strong",
+                            "packaging": "not_suitable",
+                        },
+                    )
+                    app._load_project_into_ui(project)
+
+                self.assertEqual(app.semantic_list.size(), 3)
+                self.assertIn("showing 3 of 3", app.focus_status_text.get())
+
+                issue_block_id = app.project.semantic_blocks[0]["record_id"]
+                long_video_block_id = app.project.semantic_blocks[1]["record_id"]
+
+                app._select_block_by_id(long_video_block_id)
+                app.focus_mode_var.set("Issues present")
+                app.apply_focus_mode()
+                self.assertEqual(app.semantic_list.size(), 1)
+                self.assertEqual(app.selected_block_id, issue_block_id)
+                self.assertIn("Issues present", app.focus_status_text.get())
+
+                app.focus_mode_var.set("Review-ready")
+                app.apply_focus_mode()
+                self.assertEqual(app.semantic_list.size(), 2)
+                self.assertEqual(app.selected_block_id, long_video_block_id)
+                self.assertIn("showing 2 of 3", app.focus_status_text.get())
+
+                app.focus_mode_var.set("Long video focus")
+                app.apply_focus_mode()
+                self.assertEqual(app.semantic_list.size(), 1)
+                self.assertEqual(app.selected_block_id, long_video_block_id)
+                self.assertIn("LV:strong", app.semantic_list.get(0))
+            finally:
+                root.destroy()
+
+    def test_app_focus_empty_state_for_suitability_mode(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Empty Focus Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+
+                    project = app.project
+                    for block in list(project.semantic_blocks):
+                        project = app.store.update_semantic_block(
+                            project.project_dir,
+                            block["record_id"],
+                            block["title"],
+                            block["semantic_role"],
+                            "Editor clarification added.",
+                            output_suitability={
+                                "long_video": "candidate",
+                                "shorts_reels": "candidate",
+                                "carousel": "candidate",
+                                "packaging": "not_suitable",
+                            },
+                        )
+                    app._load_project_into_ui(project)
+
+                app.focus_mode_var.set("Packaging focus")
+                app.apply_focus_mode()
+
+                self.assertEqual(app.semantic_list.size(), 0)
+                self.assertIsNone(app.selected_block_id)
+                self.assertIn("No blocks currently match this suitability focus.", app.focus_status_text.get())
+                self.assertIn("No blocks currently match this suitability focus.", app.block_status_var.get())
+            finally:
+                root.destroy()
+
+
 if __name__ == "__main__":
     unittest.main()
