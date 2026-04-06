@@ -1,5 +1,25 @@
 ﻿# Codex Worklog
 
+## 2026-04-06 - F-005 completed and downstream output boundaries fixed
+
+### Completed
+- completed the render/export schema and downstream output-boundary fixation packet;
+- added `04_TECH/RENDER_EXPORT_SCHEMA.md`;
+- added `03_MODULES/LONG_VIDEO_BUILDER.md`;
+- added `03_MODULES/SHORTS_REELS_BUILDER.md`;
+- added `03_MODULES/CAROUSEL_BUILDER.md`;
+- added `03_MODULES/PACKAGING_ENGINE.md`;
+- synchronized `CURRENT_STATE.md`, `TASKS.md`, and `NEXT_TASK.md` for the completed packet;
+- fixed the architectural bridge from approved scene/timecode artifacts into output-ready and export-facing structures.
+
+### Repository effect
+- repository now has an approved downstream output-boundary layer;
+- render/export-facing records are now distinguished from runtime render/backend behavior;
+- the next strong step is the first bounded MVP implementation slice.
+
+### Recommended next step
+`F-006 First MVP Implementation Slice`
+
 ## 2026-04-06 - Correction pass for post-F-004 state synchronization
 
 ### Completed
@@ -16,9 +36,6 @@
 
 ### Recommended next step
 Execute `F-005 Render/Export Schema and Downstream Output-Boundary Fixation`
-
-### Correction note
-The previous correction pass did not satisfy the requested explicitness threshold. This pass makes the post-`F-004` frontier literal in the state layer.
 
 ## 2026-04-06 - F-004 completed and persistence-facing structure fixed
 

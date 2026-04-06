@@ -24,8 +24,6 @@ It owns navigation only. It must not restate live project state or the active Co
 
 ## Current core documents
 
-Existing approved documents only.
-
 ### Master
 - `01_MASTER/DECISIONS.md`
 - `01_MASTER/PRODUCT_SCOPE.md`
@@ -48,12 +46,17 @@ Existing approved documents only.
 - `03_MODULES/PROJECT_INTAKE.md`
 - `03_MODULES/DNA_SEMANTIC_ENGINE.md`
 - `03_MODULES/SCENE_MATCHING.md`
+- `03_MODULES/LONG_VIDEO_BUILDER.md`
+- `03_MODULES/SHORTS_REELS_BUILDER.md`
+- `03_MODULES/CAROUSEL_BUILDER.md`
+- `03_MODULES/PACKAGING_ENGINE.md`
 
 ### Tech
 - `04_TECH/DOMAIN_MODEL.md`
 - `04_TECH/DATA_SCHEMA.md`
 - `04_TECH/PROJECT_FILE_FORMAT.md`
 - `04_TECH/ASSET_PIPELINE.md`
+- `04_TECH/RENDER_EXPORT_SCHEMA.md`
 
 ### Codex operating layer
 - `05_CODEX/NEXT_TASK.md`
@@ -70,15 +73,11 @@ The paths below are part of the intended repository map and are not proof that t
 - `03_MODULES/FILM_INGEST.md`
 - `03_MODULES/TEXT_ANALYSIS.md`
 - `03_MODULES/TIMECODE_ENGINE.md`
-- `03_MODULES/LONG_VIDEO_BUILDER.md`
-- `03_MODULES/SHORTS_REELS_BUILDER.md`
-- `03_MODULES/CAROUSEL_BUILDER.md`
-- `03_MODULES/PACKAGING_ENGINE.md`
 - `03_MODULES/EXPORT_CENTER.md`
 - `03_MODULES/FILM_LIBRARY.md`
 
 ### Planned tech
-- `04_TECH/RENDER_EXPORT_SCHEMA.md`
+None beyond the current core set.
 
 ### Planned quality
 - `06_QUALITY/MATCHING_QUALITY.md`

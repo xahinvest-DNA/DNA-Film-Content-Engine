@@ -2,54 +2,51 @@
 
 Last updated: 2026-04-06
 Status: ready
-Task ID: F-005
-Task type: product-architecture
-Packet title: Render/Export Schema and Downstream Output-Boundary Fixation
-Task status meaning: this is the one active bounded packet and replaces F-004 as the current frontier
+Task ID: F-006
+Task type: implementation
+Packet title: First MVP Implementation Slice
 
 ## Goal
 
-Create one bounded render/export schema and downstream output-boundary packet so DNA Film Content Engine can move from approved schema/project-file structures to stable downstream output contracts without drifting into runtime backend implementation too early.
+Create one bounded implementation packet so DNA Film Content Engine can move from approved architecture to one real desktop-facing MVP slice without drifting into broad runtime infrastructure.
 
 ## Why this is next
 
-The repository now has product flows, MVP interface specifications, the core domain model, module boundaries, stable data structures, local project-file boundaries, and asset classifications. After the approved domain/model layer and persistence-facing structure layer, the strongest next need is to fix downstream output contracts before any runtime implementation packet begins.
+The repository now has product flows, interface specifications, domain/model boundaries, persistence-facing structures, and downstream output contracts. The strongest next need is to turn that approved architecture into one concrete user-visible slice rather than continue architecture layering indefinitely.
 
 ## What should change
 
-1. Add `04_TECH/RENDER_EXPORT_SCHEMA.md`.
-2. Add `03_MODULES/LONG_VIDEO_BUILDER.md`.
-3. Add `03_MODULES/SHORTS_REELS_BUILDER.md`.
-4. Add `03_MODULES/CAROUSEL_BUILDER.md`.
-5. Add `03_MODULES/PACKAGING_ENGINE.md`.
-6. Synchronize `CURRENT_STATE.md`, `TASKS.md`, and `CODEX_WORKLOG.md` if the packet is completed.
+1. Define one bounded implementation packet for project creation.
+2. Define one bounded implementation packet for analysis-text intake.
+3. Define one bounded implementation packet for semantic block persistence and semantic-map inspection.
+4. Synchronize `CURRENT_STATE.md`, `TASKS.md`, and `CODEX_WORKLOG.md` if the packet is completed.
 
 ## In scope
 
-* downstream output units
-* export-ready structures
-* render/export-facing schema boundaries
-* module boundaries for long-form, shorts/reels, carousel, and packaging outputs
-* bounded documentation only, not runtime implementation
+* one user-visible MVP implementation slice
+* project creation
+* analysis-text intake
+* semantic block persistence
+* semantic-map inspection
+* local-first implementation boundaries only
 
 ## Out of scope
 
-* no runtime backend implementation
-* no automatic film downloading
-* no render queue or job orchestration design
-* no scene-matching execution logic
-* no API design
-* no generic editor drift
+* no broad runtime infrastructure
+* no render backend
+* no export execution
+* no scene-matching runtime implementation
+* no API/backend platform design
+* no publishing automation
 
 ## Recommended validation
 
-Validate that the resulting packet defines:
+Validate that the resulting packet defines and executes:
 
-* downstream render/export-facing record and package boundaries
-* module contracts for long-form, shorts, carousel, and packaging output layers
-* continuity from approved timecode/scene-reference artifacts into output-ready structures
-* clear separation between schema-level architecture and runtime/backend implementation
-* bounded docs created, state synchronized, and no runtime drift
+* one real desktop-facing MVP slice
+* continuity from project creation to semantic-map inspection
+* alignment with approved product, schema, and project-file boundaries
+* bounded implementation without architecture drift
 
 ## Required handoff format
 

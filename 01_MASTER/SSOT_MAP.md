@@ -94,6 +94,28 @@ Purpose: define which document owns each project question so the repository stay
 - Primary SSOT: `04_TECH/ASSET_PIPELINE.md`
 - Scope: asset classes, asset states, module handoff boundaries, and readiness implications without runtime execution design.
 
+## Downstream output source-of-truth documents
+
+### Render/export schema
+- Primary SSOT: `04_TECH/RENDER_EXPORT_SCHEMA.md`
+- Scope: downstream output record families, export-facing distinctions, readiness/review markers, and export-set boundaries.
+
+### Long video builder module
+- Primary SSOT: `03_MODULES/LONG_VIDEO_BUILDER.md`
+- Scope: long-form output boundary, input/output contract, continuity logic, and handoff into packaging/export layers.
+
+### Shorts/reels builder module
+- Primary SSOT: `03_MODULES/SHORTS_REELS_BUILDER.md`
+- Scope: short-form output-unit boundary, conceptual unitization logic, review points, and export-facing handoff.
+
+### Carousel builder module
+- Primary SSOT: `03_MODULES/CAROUSEL_BUILDER.md`
+- Scope: carousel output boundary, card/slide-level output logic, and downstream grouping readiness.
+
+### Packaging engine module
+- Primary SSOT: `03_MODULES/PACKAGING_ENGINE.md`
+- Scope: packaging bundle logic, export grouping boundaries, completeness rules, and approval checkpoints.
+
 ## Codex execution source-of-truth documents
 
 ### Current active task packet

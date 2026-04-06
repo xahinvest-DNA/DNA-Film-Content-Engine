@@ -2,10 +2,10 @@
 
 Last updated: 2026-04-06
 Status: active
-Current stage: F-004 data schema and project file format fixation is completed
-Active module: F-005 render/export schema and downstream output-boundary fixation
-Active frontier: F-005 Render/Export Schema and Downstream Output-Boundary Fixation
-Active question: how to define the first stable render/export-facing schema and downstream output contracts that connect approved data structures to later output stages without drifting into runtime backend implementation too early
+Current stage: F-005 render/export schema and downstream output-boundary fixation is completed
+Active module: F-006 first MVP implementation slice definition
+Active frontier: F-006 First MVP Implementation Slice
+Active question: how to define the first bounded implementation slice that turns the approved product, domain, schema, and downstream output architecture into one real user-visible desktop workflow without drifting into broad runtime infrastructure
 
 ## Where the project is now
 
@@ -19,13 +19,14 @@ At this point:
 - MVP desktop interface specification is completed through `MVP_DESKTOP_INTERFACE.md`, `SCREEN_STATES.md`, and `NAVIGATION_BEHAVIOR.md`;
 - domain model and module-boundary fixation are completed through `DOMAIN_MODEL.md`, `PROJECT_INTAKE.md`, `DNA_SEMANTIC_ENGINE.md`, and `SCENE_MATCHING.md`;
 - data schema, project file format, and asset-pipeline boundaries are completed through `DATA_SCHEMA.md`, `PROJECT_FILE_FORMAT.md`, and `ASSET_PIPELINE.md`;
+- render/export-facing schema and downstream output boundaries are now completed through `RENDER_EXPORT_SCHEMA.md`, `LONG_VIDEO_BUILDER.md`, `SHORTS_REELS_BUILDER.md`, `CAROUSEL_BUILDER.md`, and `PACKAGING_ENGINE.md`;
 - the main MVP operating surface remains fixed as `Semantic Map Workspace`;
-- the meaning-first architecture is now explicit across product, domain, schema, and local project-package layers;
+- the meaning-first architecture is now explicit across product, domain, schema, local project-package, and downstream output layers;
 - the project now uses a manager-led execution model;
 - ChatGPT owns strongest-next-step selection;
 - Codex owns repository execution and state synchronization;
-- the current active frontier is now `F-005 Render/Export Schema and Downstream Output-Boundary Fixation`;
-- the next practical implementation frontier is downstream render/export schema fixation, not runtime backend implementation.
+- the current active frontier is now `F-006 First MVP Implementation Slice`;
+- the next practical implementation frontier is a bounded user-visible implementation slice, not broad runtime infrastructure.
 
 ## Accepted boundaries right now
 
@@ -38,18 +39,18 @@ At this point:
 - manager-led execution model is fixed.
 - domain/model boundaries are fixed before execution/runtime design.
 - schema/project-file boundaries are fixed before backend/runtime design.
-- F-004 is completed and no longer the active frontier.
+- downstream output-boundary architecture is fixed before runtime render/export implementation.
 - The next implementation lane must not drift into automatic film downloading, full render automation, platform publishing, or speculative AI quality scoring.
 
 ## Open items
 
-- downstream render/export-facing schema boundaries;
-- output-module boundaries for long-form, shorts/reels, carousel, and packaging;
-- export-ready structure boundaries before runtime/backend implementation.
+- first bounded implementation slice for project creation, source intake, and semantic-map flow;
+- implementation boundaries for desktop shell and local project interaction;
+- practical sequencing of MVP build steps after architecture fixation.
 
 ## Next step
 
-Execute one bounded packet for `F-005 Render/Export Schema and Downstream Output-Boundary Fixation`.
+Open one bounded packet for `F-006 First MVP Implementation Slice`.
 
 ## What must not be lost in a new chat
 
@@ -57,7 +58,5 @@ Execute one bounded packet for `F-005 Render/Export Schema and Downstream Output
 - The correct logic is `analysis text -> semantic blocks -> scene matching -> timecodes -> rough cut -> shorts/carousel/package`.
 - manager-led execution model is fixed.
 - MVP main surface is `Semantic Map Workspace`.
-- MVP desktop interface package is fixed.
-- domain model and module boundaries are fixed.
-- schema and local project-package boundaries are fixed.
-- the next strong step is `F-005 Render/Export Schema and Downstream Output-Boundary Fixation`, not runtime backend depth.
+- product, domain, schema, project-file, asset, and downstream output-boundary layers are fixed.
+- the next strong step is `F-006 First MVP Implementation Slice`, not broad runtime/backend depth.

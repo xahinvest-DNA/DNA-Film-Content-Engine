@@ -1,22 +1,27 @@
 ﻿# Codex Tasks
 
 Last updated: 2026-04-06
-Current focus: F-005 render/export schema and downstream output-boundary fixation
+Current focus: F-006 first MVP implementation slice
 
 ## Working rule
 Tasks should be bounded, product-visible, and small enough to preserve continuity without turning the repository into micro-slice overload.
 
 ## Active task
 
-### F-005
+### F-006
 - Status: active
-- Module: render/export schema and downstream output-boundary fixation
-- Packet title: `Render/Export Schema and Downstream Output-Boundary Fixation`
-- Goal: define the first stable downstream render/export schema boundaries and output-module contracts without drifting into runtime backend implementation.
-- Input documents: `00_INDEX.md`, `01_MASTER/CURRENT_STATE.md`, `01_MASTER/DECISIONS.md`, `01_MASTER/ROADMAP.md`, `01_MASTER/SSOT_MAP.md`, `05_CODEX/NEXT_TASK.md`, `04_TECH/DATA_SCHEMA.md`, `04_TECH/PROJECT_FILE_FORMAT.md`, `04_TECH/ASSET_PIPELINE.md`
-- Expected result: `04_TECH/RENDER_EXPORT_SCHEMA.md`, `03_MODULES/LONG_VIDEO_BUILDER.md`, `03_MODULES/SHORTS_REELS_BUILDER.md`, `03_MODULES/CAROUSEL_BUILDER.md`, `03_MODULES/PACKAGING_ENGINE.md`
+- Module: first MVP implementation slice
+- Goal: implement one bounded user-visible desktop slice that covers project creation, analysis-text intake, semantic block persistence, and semantic-map inspection without drifting into broad runtime infrastructure.
+- Input documents: `00_INDEX.md`, `01_MASTER/CURRENT_STATE.md`, `01_MASTER/DECISIONS.md`, `01_MASTER/ROADMAP.md`, `01_MASTER/SSOT_MAP.md`, `05_CODEX/NEXT_TASK.md`, `02_PRODUCT/MVP_DESKTOP_INTERFACE.md`, `04_TECH/DATA_SCHEMA.md`, `04_TECH/PROJECT_FILE_FORMAT.md`
+- Expected result: one implementation packet for create project, load analysis text, persist semantic blocks, and inspect the semantic map in a real desktop-facing slice
 
 ## Completed tasks
+
+### F-005
+- Status: completed
+- Module: render/export schema and downstream output-boundary fixation
+- Goal: define the first stable downstream render/export schema boundaries and output-module contracts without drifting into runtime backend implementation.
+- Outcome: added the render/export-facing schema layer, fixed downstream output record families, fixed long-form / short-form / carousel / packaging module contracts, clarified export-ready grouping boundaries, and preserved clear separation between output architecture and runtime render/backend design.
 
 ### F-004
 - Status: completed
