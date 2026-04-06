@@ -1,4 +1,4 @@
-# DNA Film Content Engine
+﻿# DNA Film Content Engine
 
 A project system for building a Communication DNA-based content engine that turns a film analysis text into synchronized video and multi-platform content outputs.
 
@@ -25,3 +25,23 @@ and produces:
 - shorts / reels,
 - carousel-ready slide content,
 - packaging assets such as titles, captions, and thumbnails.
+
+## F-006 local MVP slice
+
+The repository now includes one bounded local-first MVP implementation slice:
+- create a project package on disk;
+- load analysis text;
+- derive and persist semantic blocks;
+- inspect the semantic map and selected block in a minimal desktop-facing prototype.
+
+### Run the desktop prototype
+
+```bash
+python -m runtime
+```
+
+### Run the local validation tests
+
+```bash
+python -m unittest tests/test_mvp_slice.py -v
+```

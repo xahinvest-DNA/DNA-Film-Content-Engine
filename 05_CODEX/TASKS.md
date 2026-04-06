@@ -1,21 +1,27 @@
 ﻿# Codex Tasks
 
 Last updated: 2026-04-06
-Current focus: F-006 first MVP implementation slice
+Current focus: F-007 semantic map editing and review controls
 
 ## Working rule
 Tasks should be bounded, product-visible, and small enough to preserve continuity without turning the repository into micro-slice overload.
 
 ## Active task
 
-### F-006
+### F-007
 - Status: active
-- Module: first MVP implementation slice
-- Goal: implement one bounded implementation-entry packet for a user-visible desktop slice that covers project creation, analysis-text intake, semantic block persistence, and semantic-map inspection without drifting into broad runtime/backend infrastructure.
-- Input documents: `00_INDEX.md`, `01_MASTER/CURRENT_STATE.md`, `01_MASTER/DECISIONS.md`, `01_MASTER/ROADMAP.md`, `01_MASTER/SSOT_MAP.md`, `05_CODEX/NEXT_TASK.md`, `02_PRODUCT/MVP_DESKTOP_INTERFACE.md`, `04_TECH/DATA_SCHEMA.md`, `04_TECH/PROJECT_FILE_FORMAT.md`
-- Expected result: one minimal executable or testable MVP slice for create project, load analysis text, persist semantic blocks, and inspect the semantic map in a real desktop-facing path without scope explosion.
+- Module: semantic map editing and review controls
+- Goal: extend the completed local-first MVP slice with persisted selected-block editing and one minimal project-level semantic review control without drifting into matching, backend, or downstream execution.
+- Input documents: `00_INDEX.md`, `01_MASTER/CURRENT_STATE.md`, `01_MASTER/DECISIONS.md`, `01_MASTER/ROADMAP.md`, `01_MASTER/SSOT_MAP.md`, `05_CODEX/NEXT_TASK.md`, `02_PRODUCT/MVP_DESKTOP_INTERFACE.md`, `02_PRODUCT/NAVIGATION_BEHAVIOR.md`, `03_MODULES/DNA_SEMANTIC_ENGINE.md`
+- Expected result: one minimal editable semantic workspace where selected-block changes and project-level semantic review state persist across reload without scope explosion.
 
 ## Completed tasks
+
+### F-006
+- Status: completed
+- Module: first MVP implementation slice
+- Goal: implement one bounded implementation-entry packet for a user-visible desktop slice that covers project creation, analysis-text intake, semantic block persistence, and semantic-map inspection without drifting into broad runtime/backend infrastructure.
+- Outcome: added a local-first runtime package, created a minimal `tkinter` desktop-facing app shell, created a file-based project package flow for project creation and analysis-text intake, persisted derived semantic blocks to disk, exposed semantic map and selected-block inspection, added local tests, and kept the slice intentionally narrow.
 
 ### F-005
 - Status: completed

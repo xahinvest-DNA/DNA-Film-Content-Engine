@@ -1,5 +1,23 @@
 ﻿# Codex Worklog
 
+## 2026-04-06 - F-006 completed and first local MVP slice implemented
+
+### Completed
+- completed the first MVP implementation slice as one bounded local-first packet;
+- added a minimal runtime package for project creation, intake persistence, and semantic block derivation;
+- added a `tkinter` desktop-facing app shell with `Project Home`, `Source Intake`, `Semantic Map Workspace`, and contextual selected-block inspection;
+- added real on-disk project package persistence for manifest, project record, intake record, analysis source, and semantic blocks;
+- added local tests proving the flow `create project -> load analysis text -> persist semantic blocks -> inspect semantic map`;
+- synchronized the repository state layer after real implementation progress.
+
+### Repository effect
+- the repository now contains one real executable or testable MVP slice rather than documentation-only architecture;
+- project creation, analysis-text intake, semantic block persistence, and semantic-map inspection are now connected in one local-first flow;
+- the implementation remains intentionally narrow and does not open backend, matching, or downstream-output execution work.
+
+### Recommended next step
+Execute `F-007 Semantic Map Editing and Review Controls`
+
 ## 2026-04-06 - Correction pass for F-005 completion / F-006 activation state sync
 
 ### Completed

@@ -1,4 +1,4 @@
-# Decisions
+﻿# Decisions
 
 Last updated: 2026-04-06
 Status: active
@@ -67,3 +67,13 @@ The project is run through a manager-led execution model.
 
 ### Why
 This model reduces noise, improves decision quality, preserves project coherence, and prevents repository drift caused by mixing strategic and operational roles.
+
+## D-007 First runtime boundary
+
+The first runtime implementation boundary is a local-first, file-based desktop prototype rather than a backend-led or network-led architecture.
+
+### Consequences
+- the initial executable slice should run locally without external services or dependency-heavy infrastructure;
+- project state should persist as a real local project package on disk;
+- desktop-facing proof matters more than generalized platform abstractions at this stage;
+- backend, API, matching, and downstream execution layers remain deferred until the semantic workspace becomes meaningfully editable.

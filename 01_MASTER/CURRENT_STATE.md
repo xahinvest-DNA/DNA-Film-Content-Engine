@@ -2,10 +2,10 @@
 
 Last updated: 2026-04-06
 Status: active
-Current stage: F-005 render/export schema and downstream output-boundary fixation is completed
-Active module: F-006 first MVP implementation slice
-Active frontier: F-006 First MVP Implementation Slice
-Active question: how to implement one minimal executable desktop slice that turns the approved product, domain, schema, file, asset, and downstream output architecture into a real user-visible path without scope explosion
+Current stage: F-006 first MVP implementation slice is completed
+Active module: F-007 semantic map editing and review controls
+Active frontier: F-007 Semantic Map Editing and Review Controls
+Active question: how to extend the new local-first MVP slice from inspect-only semantic review into one bounded editable semantic workspace with persisted block updates and project-level review control without broadening into matching, backend, or downstream execution
 
 ## Where the project is now
 
@@ -20,13 +20,14 @@ At this point:
 - domain model and module-boundary fixation are completed through `DOMAIN_MODEL.md`, `PROJECT_INTAKE.md`, `DNA_SEMANTIC_ENGINE.md`, and `SCENE_MATCHING.md`;
 - data schema, project file format, and asset-pipeline boundaries are completed through `DATA_SCHEMA.md`, `PROJECT_FILE_FORMAT.md`, and `ASSET_PIPELINE.md`;
 - render/export-facing schema and downstream output boundaries are completed through `RENDER_EXPORT_SCHEMA.md`, `LONG_VIDEO_BUILDER.md`, `SHORTS_REELS_BUILDER.md`, `CAROUSEL_BUILDER.md`, and `PACKAGING_ENGINE.md`;
+- the first bounded MVP implementation slice is now real through a local-first runtime that can create a project, accept analysis text, derive semantic blocks, persist them on disk, and inspect them in a desktop-facing semantic workspace;
 - the main MVP operating surface remains fixed as `Semantic Map Workspace`;
-- the meaning-first architecture is now explicit across product, domain, schema, project-package, asset, and downstream output layers;
+- the meaning-first architecture is now explicit across product, domain, schema, project-package, asset, downstream output, and first implementation layers;
 - the project now uses a manager-led execution model;
 - ChatGPT owns strongest-next-step selection;
 - Codex owns repository execution and state synchronization;
-- F-005 is completed and no longer the active frontier;
-- the current active frontier is now `F-006 First MVP Implementation Slice`.
+- F-006 is completed and no longer the active frontier;
+- the current active frontier is now `F-007 Semantic Map Editing and Review Controls`.
 
 ## Accepted boundaries right now
 
@@ -38,17 +39,18 @@ At this point:
 - MVP is centered on project creation, source intake, semantic blocks, semantic-map review, and the approved semantic-first desktop operating surface.
 - manager-led execution model is fixed.
 - architecture layers through downstream output-boundary fixation are completed before broad runtime expansion.
+- the current runtime proof remains local-first, file-based, and intentionally narrow.
 - The next implementation lane must not drift into automatic film downloading, full render automation, platform publishing, or speculative AI quality scoring.
 
 ## Open items
 
-- define the first bounded implementation-entry packet for project creation, analysis-text intake, semantic block persistence, and semantic-map inspection;
-- keep the first executable slice narrow enough to validate the approved architecture without opening broad runtime scope;
-- sequence the next implementation-entry packets only after the first bounded slice is executable or testable.
+- add bounded editing controls inside `Semantic Map Workspace` for selected-block title, role, and notes persistence;
+- add one minimal project-level semantic review or approval control without opening matching or downstream execution work;
+- keep the runtime slice local-first and narrow while making semantic review more editor-usable.
 
 ## Next step
 
-Open and execute one bounded packet for `F-006 First MVP Implementation Slice`.
+Open and execute one bounded packet for `F-007 Semantic Map Editing and Review Controls`.
 
 ## What must not be lost in a new chat
 
@@ -57,5 +59,5 @@ Open and execute one bounded packet for `F-006 First MVP Implementation Slice`.
 - manager-led execution model is fixed.
 - MVP main surface is `Semantic Map Workspace`.
 - product, domain, schema, project-file, asset, and downstream output-boundary layers are fixed.
-- F-005 is completed.
-- the next strong step is `F-006 First MVP Implementation Slice`, not broad runtime/backend depth.
+- F-006 is completed with one local-first desktop-facing slice for create project, load analysis text, persist semantic blocks, and inspect the semantic map.
+- the next strong step is `F-007 Semantic Map Editing and Review Controls`, not broad runtime/backend depth.
