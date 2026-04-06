@@ -1,4 +1,4 @@
-# SSOT Map
+﻿# SSOT Map
 
 Last updated: 2026-04-06
 Status: active
@@ -80,6 +80,20 @@ Purpose: define which document owns each project question so the repository stay
 - Primary SSOT: `03_MODULES/SCENE_MATCHING.md`
 - Scope: matching prerequisites, output artifacts, confidence levels, human validation role, and downstream handoff.
 
+## Persistence and file-boundary source-of-truth documents
+
+### Data schema
+- Primary SSOT: `04_TECH/DATA_SCHEMA.md`
+- Scope: stable record structures, identity rules, readiness markers, and persistence-facing distinctions.
+
+### Project file format
+- Primary SSOT: `04_TECH/PROJECT_FILE_FORMAT.md`
+- Scope: local project-package structure, required/optional files, storage zones, and compatibility boundaries.
+
+### Asset pipeline boundaries
+- Primary SSOT: `04_TECH/ASSET_PIPELINE.md`
+- Scope: asset classes, asset states, module handoff boundaries, and readiness implications without runtime execution design.
+
 ## Codex execution source-of-truth documents
 
 ### Current active task packet
@@ -111,4 +125,4 @@ A new chat should begin with:
 4. `01_MASTER/ROADMAP.md`
 5. `01_MASTER/SSOT_MAP.md`
 6. `05_CODEX/NEXT_TASK.md` if the purpose is implementation
-7. The relevant product or module documents for the active slice
+7. The relevant product, module, or tech documents for the active slice

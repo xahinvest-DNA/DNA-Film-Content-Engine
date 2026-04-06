@@ -1,4 +1,4 @@
-# DNA Film Content Engine Project Brain
+﻿# DNA Film Content Engine Project Brain
 
 ## Purpose
 
@@ -20,11 +20,11 @@ It owns navigation only. It must not restate live project state or the active Co
 3. `01_MASTER/ROADMAP.md`
 4. `01_MASTER/SSOT_MAP.md`
 5. `05_CODEX/NEXT_TASK.md` when the purpose is implementation
-6. Relevant product/module documents for the active question
+6. Relevant product/module/tech documents for the active question
 
-## Core master documents
+## Current core documents
 
-- `01_MASTER/VISION.md`
+### Master
 - `01_MASTER/DECISIONS.md`
 - `01_MASTER/PRODUCT_SCOPE.md`
 - `01_MASTER/MVP_vs_FULL.md`
@@ -32,8 +32,7 @@ It owns navigation only. It must not restate live project state or the active Co
 - `01_MASTER/CURRENT_STATE.md`
 - `01_MASTER/SSOT_MAP.md`
 
-## Product design layer
-
+### Product
 - `02_PRODUCT/USER_FLOWS.md`
 - `02_PRODUCT/SCREEN_MAP.md`
 - `02_PRODUCT/UX_PRINCIPLES.md`
@@ -43,13 +42,31 @@ It owns navigation only. It must not restate live project state or the active Co
 - `02_PRODUCT/SCREEN_STATES.md`
 - `02_PRODUCT/NAVIGATION_BEHAVIOR.md`
 
-## Domain modules
-
+### Modules
 - `03_MODULES/PROJECT_INTAKE.md`
-- `03_MODULES/FILM_INGEST.md`
-- `03_MODULES/TEXT_ANALYSIS.md`
 - `03_MODULES/DNA_SEMANTIC_ENGINE.md`
 - `03_MODULES/SCENE_MATCHING.md`
+
+### Tech
+- `04_TECH/DOMAIN_MODEL.md`
+- `04_TECH/DATA_SCHEMA.md`
+- `04_TECH/PROJECT_FILE_FORMAT.md`
+- `04_TECH/ASSET_PIPELINE.md`
+
+### Codex operating layer
+- `05_CODEX/NEXT_TASK.md`
+- `05_CODEX/IMPLEMENTATION_RULES.md`
+- `05_CODEX/HANDOFF_TEMPLATE.md`
+- `05_CODEX/CODEX_WORKLOG.md`
+- `05_CODEX/TASKS.md`
+
+## Planned document map
+
+Planning only. The paths below are part of the intended repository map and are not proof that the documents already exist or are completed.
+
+### Planned modules
+- `03_MODULES/FILM_INGEST.md`
+- `03_MODULES/TEXT_ANALYSIS.md`
 - `03_MODULES/TIMECODE_ENGINE.md`
 - `03_MODULES/LONG_VIDEO_BUILDER.md`
 - `03_MODULES/SHORTS_REELS_BUILDER.md`
@@ -58,24 +75,10 @@ It owns navigation only. It must not restate live project state or the active Co
 - `03_MODULES/EXPORT_CENTER.md`
 - `03_MODULES/FILM_LIBRARY.md`
 
-## Tech layer
-
-- `04_TECH/DOMAIN_MODEL.md`
-- `04_TECH/DATA_SCHEMA.md`
-- `04_TECH/ASSET_PIPELINE.md`
+### Planned tech
 - `04_TECH/RENDER_EXPORT_SCHEMA.md`
-- `04_TECH/PROJECT_FILE_FORMAT.md`
 
-## Codex operating layer
-
-- `05_CODEX/NEXT_TASK.md`
-- `05_CODEX/IMPLEMENTATION_RULES.md`
-- `05_CODEX/HANDOFF_TEMPLATE.md`
-- `05_CODEX/CODEX_WORKLOG.md`
-- `05_CODEX/TASKS.md`
-
-## Quality layer
-
+### Planned quality
 - `06_QUALITY/MATCHING_QUALITY.md`
 - `06_QUALITY/CONTENT_QUALITY_RULES.md`
 - `06_QUALITY/EDITOR_APPROVAL_RULES.md`

@@ -1,21 +1,27 @@
-# Codex Tasks
+﻿# Codex Tasks
 
 Last updated: 2026-04-06
-Current focus: data schema and project file format fixation
+Current focus: render/export schema and downstream output-boundary fixation
 
 ## Working rule
 Tasks should be bounded, product-visible, and small enough to preserve continuity without turning the repository into micro-slice overload.
 
 ## Active task
 
-### F-004
+### F-005
 - Status: active
-- Module: data schema and project file format fixation
-- Goal: define the first stable data schema and local project file structure that support the approved domain model and MVP interface without drifting into runtime pipeline implementation.
-- Input documents: `00_INDEX.md`, `01_MASTER/CURRENT_STATE.md`, `01_MASTER/DECISIONS.md`, `01_MASTER/ROADMAP.md`, `01_MASTER/SSOT_MAP.md`, `05_CODEX/NEXT_TASK.md`, `04_TECH/DOMAIN_MODEL.md`, `03_MODULES/PROJECT_INTAKE.md`, `03_MODULES/DNA_SEMANTIC_ENGINE.md`, `03_MODULES/SCENE_MATCHING.md`
-- Expected result: `04_TECH/DATA_SCHEMA.md`, `04_TECH/PROJECT_FILE_FORMAT.md`, `04_TECH/ASSET_PIPELINE.md`
+- Module: render/export schema and downstream output-boundary fixation
+- Goal: define the first stable downstream render/export schema boundaries and output-module contracts without drifting into runtime backend implementation.
+- Input documents: `00_INDEX.md`, `01_MASTER/CURRENT_STATE.md`, `01_MASTER/DECISIONS.md`, `01_MASTER/ROADMAP.md`, `01_MASTER/SSOT_MAP.md`, `05_CODEX/NEXT_TASK.md`, `04_TECH/DATA_SCHEMA.md`, `04_TECH/PROJECT_FILE_FORMAT.md`, `04_TECH/ASSET_PIPELINE.md`
+- Expected result: `04_TECH/RENDER_EXPORT_SCHEMA.md`, `03_MODULES/LONG_VIDEO_BUILDER.md`, `03_MODULES/SHORTS_REELS_BUILDER.md`, `03_MODULES/CAROUSEL_BUILDER.md`, `03_MODULES/PACKAGING_ENGINE.md`
 
 ## Completed tasks
+
+### F-004
+- Status: completed
+- Module: data schema and project file format fixation
+- Goal: define the first stable data schema and local project file structure that support the approved domain model and MVP interface without drifting into runtime pipeline implementation.
+- Outcome: added the stable data schema layer, fixed local project-package boundaries, fixed asset classification and handoff boundaries, clarified canonical versus derived persistence structures, and cleaned `00_INDEX.md` to separate current documents from planning-only map entries.
 
 ### F-003
 - Status: completed

@@ -1,4 +1,23 @@
-# Codex Worklog
+﻿# Codex Worklog
+
+## 2026-04-06 - F-004 completed and persistence-facing structure fixed
+
+### Completed
+- completed the data schema and project file format fixation packet;
+- added `04_TECH/DATA_SCHEMA.md`;
+- added `04_TECH/PROJECT_FILE_FORMAT.md`;
+- added `04_TECH/ASSET_PIPELINE.md`;
+- updated `00_INDEX.md` to separate current core documents from planning-only document map entries;
+- synchronized `CURRENT_STATE.md`, `TASKS.md`, and `NEXT_TASK.md` for the completed packet;
+- fixed the persistence-facing structure layer between the approved domain model and later implementation packets.
+
+### Repository effect
+- repository now has an approved schema layer, local project-package boundary, and asset classification boundary;
+- current versus planned document navigation is clearer at the entry point;
+- the next strong step is render/export schema and downstream output-boundary fixation.
+
+### Recommended next step
+`F-005 Render/Export Schema and Downstream Output-Boundary Fixation`
 
 ## 2026-04-06 - F-003 completed and domain/model layer fixed
 
