@@ -24,6 +24,7 @@ ALLOWED_REVIEW_STATES = (
     "approved",
 )
 ALLOWED_REORDER_DIRECTIONS = ("up", "down")
+ALLOWED_MERGE_DIRECTIONS = ("up", "down")
 
 
 APPROVAL_READY_REASON = "Semantic map is ready for approval."
@@ -31,6 +32,7 @@ APPROVAL_BLOCK_REASON = "Approve is blocked until semantic review is moved to re
 REOPEN_BLOCK_EDIT_REASON = "Approval was reopened because a semantic block changed after approval."
 REOPEN_REORDER_REASON = "Approval was reopened because semantic block order changed after approval."
 REOPEN_SOURCE_REASON = "Approval was reopened because the analysis source was replaced after approval."
+REOPEN_STRUCTURE_REASON = "Approval was reopened because semantic block boundaries changed after approval."
 
 
 def utc_now() -> str:
@@ -67,6 +69,14 @@ def semantic_role_for(paragraph: str) -> str:
 def title_for(paragraph: str) -> str:
     words = paragraph.split()
     return " ".join(words[:8]).strip(" .,;:") or "Untitled block"
+
+
+def split_sentences(content: str) -> list[str]:
+    normalized = re.sub(r"\s+", " ", content.strip())
+    if not normalized:
+        return []
+    sentences = [chunk.strip() for chunk in re.split(r"(?<=[.!?])\s+", normalized) if chunk.strip()]
+    return sentences or [normalized]
 
 
 def build_semantic_blocks(project_id: str, source_record_id: str, analysis_text: str) -> list[dict]:
@@ -293,32 +303,13 @@ class ProjectSliceStore:
         if not updated:
             raise ValueError("Selected semantic block was not found.")
 
-        manifest = dict(project.manifest)
-        manifest["updated_at"] = now
-        project_record = dict(project.project_record)
-        project_record["updated_at"] = now
-        intake_record = dict(project.intake_record)
-        intake_record["updated_at"] = now
-        analysis_source_record = project.analysis_source_record
-        if analysis_source_record is not None:
-            analysis_source_record = dict(analysis_source_record)
-            analysis_source_record["updated_at"] = now
-
-        semantic_review_record = dict(project.semantic_review_record)
-        self._mark_reopened_if_needed(semantic_review_record, REOPEN_BLOCK_EDIT_REASON)
-        semantic_review_record["updated_at"] = now
-
-        self._apply_project_summary(project_record, intake_record, semantic_blocks, semantic_review_record)
-        self._write_project_state(
+        return self._persist_semantic_update(
             project_dir,
-            manifest,
-            project_record,
-            intake_record,
-            analysis_source_record,
-            semantic_review_record,
+            project,
             semantic_blocks,
+            now,
+            REOPEN_BLOCK_EDIT_REASON,
         )
-        return self.load_project(project_dir)
 
     def reorder_semantic_block(self, project_dir: Path, block_id: str, direction: str) -> ProjectSlice:
         clean_direction = direction.strip().lower()
@@ -339,36 +330,101 @@ class ProjectSliceStore:
             return project
 
         semantic_blocks[current_index], semantic_blocks[target_index] = semantic_blocks[target_index], semantic_blocks[current_index]
-        for index, block in enumerate(semantic_blocks, start=1):
-            block["sequence"] = index
+        self._resequence_blocks(semantic_blocks)
 
-        now = utc_now()
-        manifest = dict(project.manifest)
-        manifest["updated_at"] = now
-        project_record = dict(project.project_record)
-        project_record["updated_at"] = now
-        intake_record = dict(project.intake_record)
-        intake_record["updated_at"] = now
-        analysis_source_record = project.analysis_source_record
-        if analysis_source_record is not None:
-            analysis_source_record = dict(analysis_source_record)
-            analysis_source_record["updated_at"] = now
-
-        semantic_review_record = dict(project.semantic_review_record)
-        self._mark_reopened_if_needed(semantic_review_record, REOPEN_REORDER_REASON)
-        semantic_review_record["updated_at"] = now
-
-        self._apply_project_summary(project_record, intake_record, semantic_blocks, semantic_review_record)
-        self._write_project_state(
+        return self._persist_semantic_update(
             project_dir,
-            manifest,
-            project_record,
-            intake_record,
-            analysis_source_record,
-            semantic_review_record,
+            project,
             semantic_blocks,
+            utc_now(),
+            REOPEN_REORDER_REASON,
         )
-        return self.load_project(project_dir)
+
+    def split_semantic_block(self, project_dir: Path, block_id: str, split_after_sentence: int) -> ProjectSlice:
+        project = self.load_project(project_dir)
+        current_index = next((index for index, block in enumerate(project.semantic_blocks) if block["record_id"] == block_id), None)
+        if current_index is None:
+            raise ValueError("Selected semantic block was not found.")
+
+        original_block = dict(project.semantic_blocks[current_index])
+        sentences = split_sentences(original_block.get("content", ""))
+        if len(sentences) < 2:
+            raise ValueError("Selected block needs at least two sentences before it can be split.")
+        if split_after_sentence < 1 or split_after_sentence >= len(sentences):
+            raise ValueError("Split boundary must leave at least one sentence on each side.")
+
+        first_content = " ".join(sentences[:split_after_sentence]).strip()
+        second_content = " ".join(sentences[split_after_sentence:]).strip()
+        if not first_content or not second_content:
+            raise ValueError("Split boundary must leave meaningful content on each side.")
+
+        first_block = dict(original_block)
+        first_block["title"] = title_for(first_content)
+        first_block["content"] = first_content
+
+        second_block = dict(original_block)
+        second_block["record_id"] = self._next_block_id(project.semantic_blocks)
+        second_block["title"] = title_for(second_content)
+        second_block["content"] = second_content
+        second_block["notes"] = ""
+
+        semantic_blocks = [dict(block) for block in project.semantic_blocks]
+        semantic_blocks[current_index: current_index + 1] = [first_block, second_block]
+        self._resequence_blocks(semantic_blocks)
+
+        return self._persist_semantic_update(
+            project_dir,
+            project,
+            semantic_blocks,
+            utc_now(),
+            REOPEN_STRUCTURE_REASON,
+        )
+
+    def merge_semantic_block(self, project_dir: Path, block_id: str, direction: str) -> ProjectSlice:
+        clean_direction = direction.strip().lower()
+        if clean_direction not in ALLOWED_MERGE_DIRECTIONS:
+            raise ValueError("Merge direction is invalid for this MVP slice.")
+
+        project = self.load_project(project_dir)
+        semantic_blocks = [dict(block) for block in project.semantic_blocks]
+        if len(semantic_blocks) < 2:
+            raise ValueError("At least two semantic blocks are required before merge is available.")
+
+        current_index = next((index for index, block in enumerate(semantic_blocks) if block["record_id"] == block_id), None)
+        if current_index is None:
+            raise ValueError("Selected semantic block was not found.")
+
+        neighbor_index = current_index - 1 if clean_direction == "up" else current_index + 1
+        if neighbor_index < 0 or neighbor_index >= len(semantic_blocks):
+            raise ValueError("Selected semantic block has no adjacent neighbor in that direction.")
+
+        selected_block = dict(semantic_blocks[current_index])
+        neighbor_block = dict(semantic_blocks[neighbor_index])
+        if clean_direction == "up":
+            combined_content = f"{neighbor_block['content'].strip()}\n\n{selected_block['content'].strip()}"
+            insert_index = neighbor_index
+        else:
+            combined_content = f"{selected_block['content'].strip()}\n\n{neighbor_block['content'].strip()}"
+            insert_index = current_index
+
+        merged_block = dict(selected_block)
+        merged_block["title"] = title_for(combined_content)
+        merged_block["content"] = combined_content
+
+        start = min(current_index, neighbor_index)
+        end = max(current_index, neighbor_index)
+        semantic_blocks[start : end + 1] = [merged_block]
+        if insert_index != start:
+            insert_index = start
+        self._resequence_blocks(semantic_blocks)
+
+        return self._persist_semantic_update(
+            project_dir,
+            project,
+            semantic_blocks,
+            utc_now(),
+            REOPEN_STRUCTURE_REASON,
+        )
 
     def update_semantic_review_status(self, project_dir: Path, review_status: str) -> ProjectSlice:
         clean_status = review_status.strip()
@@ -386,10 +442,7 @@ class ProjectSliceStore:
         project_record["updated_at"] = now
         intake_record = dict(project.intake_record)
         intake_record["updated_at"] = now
-        analysis_source_record = project.analysis_source_record
-        if analysis_source_record is not None:
-            analysis_source_record = dict(analysis_source_record)
-            analysis_source_record["updated_at"] = now
+        analysis_source_record = self._copy_analysis_record(project.analysis_source_record, now)
         semantic_review_record = dict(project.semantic_review_record)
         readiness = self._approval_readiness_label(project.intake_record, project.semantic_blocks, project.semantic_review_record)
         if clean_status == "approved" and readiness != "ready_for_approval":
@@ -411,7 +464,13 @@ class ProjectSliceStore:
         semantic_review_record["review_status"] = clean_status
         semantic_review_record["approved"] = clean_status == "approved"
         semantic_review_record["approval_block_reason"] = ""
-        semantic_review_record["approval_transition_message"] = "Semantic map approved." if clean_status == "approved" else APPROVAL_READY_REASON if clean_status == "ready_for_review" else "Semantic map remains under edit."
+        semantic_review_record["approval_transition_message"] = (
+            "Semantic map approved."
+            if clean_status == "approved"
+            else APPROVAL_READY_REASON
+            if clean_status == "ready_for_review"
+            else "Semantic map remains under edit."
+        )
         if clean_status != "approved":
             semantic_review_record["reopened_after_change"] = False
             semantic_review_record["reopen_reason"] = ""
@@ -428,6 +487,56 @@ class ProjectSliceStore:
             project.semantic_blocks,
         )
         return self.load_project(project_dir)
+
+    def _persist_semantic_update(
+        self,
+        project_dir: Path,
+        project: ProjectSlice,
+        semantic_blocks: list[dict],
+        now: str,
+        reopen_reason: str,
+    ) -> ProjectSlice:
+        manifest = dict(project.manifest)
+        manifest["updated_at"] = now
+        project_record = dict(project.project_record)
+        project_record["updated_at"] = now
+        intake_record = dict(project.intake_record)
+        intake_record["updated_at"] = now
+        analysis_source_record = self._copy_analysis_record(project.analysis_source_record, now)
+        semantic_review_record = dict(project.semantic_review_record)
+        self._mark_reopened_if_needed(semantic_review_record, reopen_reason)
+        semantic_review_record["updated_at"] = now
+
+        self._apply_project_summary(project_record, intake_record, semantic_blocks, semantic_review_record)
+        self._write_project_state(
+            project_dir,
+            manifest,
+            project_record,
+            intake_record,
+            analysis_source_record,
+            semantic_review_record,
+            semantic_blocks,
+        )
+        return self.load_project(project_dir)
+
+    def _copy_analysis_record(self, analysis_source_record: dict | None, now: str) -> dict | None:
+        if analysis_source_record is None:
+            return None
+        updated = dict(analysis_source_record)
+        updated["updated_at"] = now
+        return updated
+
+    def _next_block_id(self, semantic_blocks: list[dict]) -> str:
+        max_seen = 0
+        for block in semantic_blocks:
+            match = re.fullmatch(r"sb-(\d+)", block.get("record_id", ""))
+            if match:
+                max_seen = max(max_seen, int(match.group(1)))
+        return f"sb-{max_seen + 1:03d}"
+
+    def _resequence_blocks(self, semantic_blocks: list[dict]) -> None:
+        for index, block in enumerate(semantic_blocks, start=1):
+            block["sequence"] = index
 
     def _write_project_state(
         self,

@@ -1,5 +1,22 @@
-﻿# Codex Worklog
+# Codex Worklog
 
+## 2026-04-06 - F-010 completed and semantic boundary editing became real
+
+### Completed
+- completed the semantic block boundary editing and structural review completion packet as one bounded follow-up to the editable semantic workspace;
+- added one minimal split-block action and one minimal merge-with-adjacent action inside the existing inspector surface;
+- persisted structural semantic-block updates on local disk and kept semantic-block sequence stable after split and merge;
+- made approved semantic maps reopen explicitly after structural boundary changes and kept that visibility persisted through reload;
+- updated local validation so split, merge, structural reopen, and reload persistence are verified through local tests;
+- synchronized the repository state layer after real implementation progress.
+
+### Repository effect
+- the repository now contains a minimally boundary-editable semantic workspace rather than a rename/reorder-only semantic map;
+- structural semantic changes remain local-first, file-based, and persist inside the local project package;
+- the implementation remains intentionally narrow and does not open matching, backend, or downstream-output execution work.
+
+### Recommended next step
+Execute `F-011 Semantic Completeness Cues and Issue Visibility`
 ## 2026-04-06 - F-009 completed and approval transitions became clearer
 
 ### Completed
@@ -16,7 +33,7 @@
 - the implementation remains intentionally narrow and does not open matching, backend, or downstream-output execution work.
 
 ### Recommended next step
-Execute `F-010 Semantic Completeness Cues and Issue Visibility`
+Execute `F-010 Semantic Block Boundary Editing and Structural Review Completion`
 
 ## 2026-04-06 - F-008 completed and semantic block ordering became persistent
 

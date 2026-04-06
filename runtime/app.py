@@ -9,6 +9,7 @@ from runtime.project_slice import (
     ALLOWED_SEMANTIC_ROLES,
     ProjectSlice,
     ProjectSliceStore,
+    split_sentences,
 )
 
 
@@ -42,12 +43,13 @@ class DNAFilmApp:
         self.block_title_var = tk.StringVar()
         self.block_role_var = tk.StringVar(value=ALLOWED_SEMANTIC_ROLES[0])
         self.review_status_var = tk.StringVar(value=ALLOWED_REVIEW_STATES[0])
-        self.block_status_var = tk.StringVar(value="Select a semantic block to inspect, reorder, and edit it here.")
+        self.split_sentence_var = tk.StringVar(value="1")
+        self.block_status_var = tk.StringVar(value="Select a semantic block to inspect, reorder, split, merge, and edit it here.")
 
         self._build_layout()
         self._switch_view("Project Home")
         self._set_editor_enabled(False)
-        self._set_reorder_enabled(False, False)
+        self._set_structure_enabled(False, False, False, False, False)
 
     def _build_layout(self) -> None:
         self.root.columnconfigure(1, weight=1)
@@ -81,30 +83,47 @@ class DNAFilmApp:
         inspector = ttk.Frame(self.root, padding=12)
         inspector.grid(row=1, column=2, sticky="nsew")
         inspector.columnconfigure(0, weight=1)
-        inspector.rowconfigure(9, weight=1)
+        inspector.rowconfigure(13, weight=1)
         ttk.Label(inspector, text="Block Detail / Inspector", font=("Segoe UI", 12, "bold")).grid(row=0, column=0, sticky="w")
         ttk.Label(inspector, textvariable=self.block_status_var, wraplength=320).grid(row=1, column=0, sticky="w", pady=(4, 10))
+
         order_controls = ttk.Frame(inspector)
-        order_controls.grid(row=2, column=0, sticky="ew", pady=(0, 10))
+        order_controls.grid(row=2, column=0, sticky="ew", pady=(0, 8))
         self.move_up_button = ttk.Button(order_controls, text="Move Up", command=lambda: self.reorder_selected_block("up"))
         self.move_up_button.pack(side="left")
         self.move_down_button = ttk.Button(order_controls, text="Move Down", command=lambda: self.reorder_selected_block("down"))
         self.move_down_button.pack(side="left", padx=(8, 0))
-        ttk.Label(inspector, text="Title").grid(row=3, column=0, sticky="w")
+
+        merge_controls = ttk.Frame(inspector)
+        merge_controls.grid(row=3, column=0, sticky="ew", pady=(0, 8))
+        self.merge_up_button = ttk.Button(merge_controls, text="Merge Up", command=lambda: self.merge_selected_block("up"))
+        self.merge_up_button.pack(side="left")
+        self.merge_down_button = ttk.Button(merge_controls, text="Merge Down", command=lambda: self.merge_selected_block("down"))
+        self.merge_down_button.pack(side="left", padx=(8, 0))
+
+        ttk.Label(inspector, text="Split after sentence #").grid(row=4, column=0, sticky="w")
+        split_controls = ttk.Frame(inspector)
+        split_controls.grid(row=5, column=0, sticky="ew", pady=(0, 10))
+        self.split_sentence_entry = ttk.Entry(split_controls, textvariable=self.split_sentence_var, width=8)
+        self.split_sentence_entry.pack(side="left")
+        self.split_button = ttk.Button(split_controls, text="Split Block", command=self.split_selected_block)
+        self.split_button.pack(side="left", padx=(8, 0))
+
+        ttk.Label(inspector, text="Title").grid(row=6, column=0, sticky="w")
         self.block_title_entry = ttk.Entry(inspector, textvariable=self.block_title_var, width=36)
-        self.block_title_entry.grid(row=4, column=0, sticky="ew", pady=(0, 10))
-        ttk.Label(inspector, text="Semantic role").grid(row=5, column=0, sticky="w")
+        self.block_title_entry.grid(row=7, column=0, sticky="ew", pady=(0, 10))
+        ttk.Label(inspector, text="Semantic role").grid(row=8, column=0, sticky="w")
         self.block_role_combo = ttk.Combobox(inspector, textvariable=self.block_role_var, values=ALLOWED_SEMANTIC_ROLES, state="readonly")
-        self.block_role_combo.grid(row=6, column=0, sticky="ew", pady=(0, 10))
-        ttk.Label(inspector, text="Notes").grid(row=7, column=0, sticky="w")
+        self.block_role_combo.grid(row=9, column=0, sticky="ew", pady=(0, 10))
+        ttk.Label(inspector, text="Notes").grid(row=10, column=0, sticky="w")
         self.notes_text = tk.Text(inspector, height=8, wrap="word")
-        self.notes_text.grid(row=8, column=0, sticky="nsew")
-        ttk.Label(inspector, text="Full block text").grid(row=9, column=0, sticky="w", pady=(10, 0))
+        self.notes_text.grid(row=11, column=0, sticky="nsew")
+        ttk.Label(inspector, text="Full block text").grid(row=12, column=0, sticky="w", pady=(10, 0))
         self.content_text = tk.Text(inspector, height=10, wrap="word")
-        self.content_text.grid(row=10, column=0, sticky="nsew", pady=(0, 10))
+        self.content_text.grid(row=13, column=0, sticky="nsew", pady=(0, 10))
         self.content_text.configure(state="disabled")
         self.save_block_button = ttk.Button(inspector, text="Save Block Changes", command=self.save_selected_block)
-        self.save_block_button.grid(row=11, column=0, sticky="ew")
+        self.save_block_button.grid(row=14, column=0, sticky="ew")
 
         self.views: dict[str, ttk.Frame] = {}
         self.views["Project Home"] = self._build_home_view(main)
@@ -241,7 +260,7 @@ class DNAFilmApp:
         if not selection:
             self.selected_block_id = None
             self._set_editor_enabled(False)
-            self._set_reorder_enabled(False, False)
+            self._set_structure_enabled(False, False, False, False, False)
             return
         block = self.project.semantic_blocks[selection[0]]
         self._show_block(block)
@@ -280,6 +299,39 @@ class DNAFilmApp:
         self._switch_view("Semantic Map")
         self.block_status_var.set(f"Block order updated: moved {direction} and persisted to disk.")
 
+    def split_selected_block(self) -> None:
+        if self.project is None or self.selected_block_id is None:
+            messagebox.showerror("Semantic map", "Select a semantic block first.")
+            return
+        try:
+            split_after_sentence = int(self.split_sentence_var.get().strip())
+        except ValueError:
+            messagebox.showerror("Semantic map", "Split after sentence # must be a whole number.")
+            return
+        try:
+            project = self.store.split_semantic_block(self.project.project_dir, self.selected_block_id, split_after_sentence)
+        except ValueError as exc:
+            messagebox.showerror("Semantic map", str(exc))
+            return
+        self._load_project_into_ui(project, select_block_id=self.selected_block_id)
+        self._switch_view("Semantic Map")
+        self.block_status_var.set("Selected block was split and the new semantic structure was persisted to disk.")
+        messagebox.showinfo("Semantic map", "Selected block was split into two semantic blocks.")
+
+    def merge_selected_block(self, direction: str) -> None:
+        if self.project is None or self.selected_block_id is None:
+            messagebox.showerror("Semantic map", "Select a semantic block first.")
+            return
+        try:
+            project = self.store.merge_semantic_block(self.project.project_dir, self.selected_block_id, direction)
+        except ValueError as exc:
+            messagebox.showerror("Semantic map", str(exc))
+            return
+        self._load_project_into_ui(project, select_block_id=self.selected_block_id)
+        self._switch_view("Semantic Map")
+        self.block_status_var.set(f"Selected block was merged {direction} and the semantic structure was persisted to disk.")
+        messagebox.showinfo("Semantic map", f"Selected block was merged {direction} with its adjacent neighbor.")
+
     def save_review_status(self) -> None:
         if self.project is None:
             messagebox.showerror("Semantic review", "Create or open a project first.")
@@ -309,10 +361,10 @@ class DNAFilmApp:
         readiness = self._approval_readiness(project)
         self.readiness_text.set(f"Approval readiness: {readiness}")
         self.approval_message_text.set(f"Approval message: {project.semantic_review_record.get('approval_transition_message', '')}")
-        block_reason = project.semantic_review_record.get('approval_block_reason', '') or 'none'
+        block_reason = project.semantic_review_record.get("approval_block_reason", "") or "none"
         self.approval_reason_text.set(f"Approval reason: {block_reason}")
-        reopen_reason = project.semantic_review_record.get('reopen_reason', '') or 'none'
-        reopened = 'reopened' if project.semantic_review_record.get('reopened_after_change') else 'not_reopened'
+        reopen_reason = project.semantic_review_record.get("reopen_reason", "") or "none"
+        reopened = "reopened" if project.semantic_review_record.get("reopened_after_change") else "not_reopened"
         self.reopen_text.set(f"Reopen state: {reopened} | reason: {reopen_reason}")
         warnings = project.intake_record.get("intake_warnings", [])
         warning_text = f"Warnings: {', '.join(warnings)}" if warnings else "Warnings: none"
@@ -335,9 +387,9 @@ class DNAFilmApp:
             self._select_block_by_id(target_block_id)
         else:
             self.selected_block_id = None
-            self.block_status_var.set("Select a semantic block to inspect, reorder, and edit it here.")
+            self.block_status_var.set("Select a semantic block to inspect, reorder, split, merge, and edit it here.")
             self._set_editor_enabled(False)
-            self._set_reorder_enabled(False, False)
+            self._set_structure_enabled(False, False, False, False, False)
             self._clear_block_editor()
 
     def _show_block(self, block: dict) -> None:
@@ -350,11 +402,17 @@ class DNAFilmApp:
         self.content_text.delete("1.0", "end")
         self.content_text.insert("1.0", block["content"])
         self.content_text.configure(state="disabled")
+        sentence_count = len(split_sentences(block["content"]))
+        if sentence_count > 1:
+            self.split_sentence_var.set("1")
+        else:
+            self.split_sentence_var.set("0")
         current_index = next((index for index, item in enumerate(self.project.semantic_blocks) if item["record_id"] == block["record_id"]), 0)
         can_move_up = current_index > 0
         can_move_down = current_index < len(self.project.semantic_blocks) - 1
-        self._set_reorder_enabled(can_move_up, can_move_down)
-        reopen_note = self.project.semantic_review_record.get('reopen_reason', '')
+        can_split = sentence_count > 1
+        self._set_structure_enabled(can_move_up, can_move_down, can_split, can_move_up, can_move_down)
+        reopen_note = self.project.semantic_review_record.get("reopen_reason", "")
         status_suffix = f" | reopen reason: {reopen_note}" if reopen_note else ""
         self.block_status_var.set(
             f"Editing {block['record_id']} | sequence: {block['sequence']} | review state: {self.project.semantic_review_record['review_status']}{status_suffix}"
@@ -374,7 +432,7 @@ class DNAFilmApp:
         self.semantic_list.selection_clear(0, "end")
         self.selected_block_id = None
         self._set_editor_enabled(False)
-        self._set_reorder_enabled(False, False)
+        self._set_structure_enabled(False, False, False, False, False)
 
     def _set_editor_enabled(self, enabled: bool) -> None:
         entry_state = "normal" if enabled else "disabled"
@@ -386,13 +444,25 @@ class DNAFilmApp:
         self.notes_text.configure(state=text_state)
         self.save_block_button.configure(state=button_state)
 
-    def _set_reorder_enabled(self, can_move_up: bool, can_move_down: bool) -> None:
+    def _set_structure_enabled(
+        self,
+        can_move_up: bool,
+        can_move_down: bool,
+        can_split: bool,
+        can_merge_up: bool,
+        can_merge_down: bool,
+    ) -> None:
         self.move_up_button.configure(state="normal" if can_move_up else "disabled")
         self.move_down_button.configure(state="normal" if can_move_down else "disabled")
+        self.merge_up_button.configure(state="normal" if can_merge_up else "disabled")
+        self.merge_down_button.configure(state="normal" if can_merge_down else "disabled")
+        self.split_sentence_entry.configure(state="normal" if can_split else "disabled")
+        self.split_button.configure(state="normal" if can_split else "disabled")
 
     def _clear_block_editor(self) -> None:
         self.block_title_var.set("")
         self.block_role_var.set(ALLOWED_SEMANTIC_ROLES[0])
+        self.split_sentence_var.set("1")
         self.notes_text.configure(state="normal")
         self.notes_text.delete("1.0", "end")
         self.notes_text.configure(state="disabled")
@@ -424,7 +494,7 @@ class DNAFilmApp:
             return "Next action: Approve semantic map"
         if readiness == "reopened_after_change":
             return "Next action: Re-approve semantic map after reviewing reopened changes"
-        return "Next action: Reorder and refine semantic blocks"
+        return "Next action: Reorder, split, merge, and refine semantic blocks"
 
 
 def main() -> None:

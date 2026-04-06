@@ -55,31 +55,73 @@ class ProjectSliceStoreTests(unittest.TestCase):
             reloaded = store.load_project(project.project_dir)
             self.assertIn("Approve is blocked", reloaded.semantic_review_record["approval_block_reason"])
 
-    def test_reopen_after_change_persists_after_reload(self) -> None:
+    def test_split_block_persists_after_reload(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             store = ProjectSliceStore(Path(temp_dir))
-            project = store.create_project("Reopen Map", film_title="Demo Film", language="en")
+            project = store.create_project("Boundary Map", film_title="Demo Film", language="en")
+            project = store.save_analysis_text(project.project_dir, SAMPLE_ANALYSIS)
+
+            first_block_id = project.semantic_blocks[0]["record_id"]
+            split_project = store.split_semantic_block(project.project_dir, first_block_id, 1)
+
+            self.assertEqual(len(split_project.semantic_blocks), 4)
+            self.assertEqual([block["sequence"] for block in split_project.semantic_blocks], [1, 2, 3, 4])
+            self.assertEqual(split_project.semantic_blocks[0]["record_id"], first_block_id)
+            self.assertEqual(
+                split_project.semantic_blocks[0]["content"],
+                "The opening movement argues that the film is really about inherited fear rather than simple survival.",
+            )
+            self.assertEqual(
+                split_project.semantic_blocks[1]["content"],
+                "The critic frames the family house as a system that teaches each character how to obey the past.",
+            )
+            self.assertEqual(split_project.semantic_blocks[0]["source_record_id"], split_project.semantic_blocks[1]["source_record_id"])
+
+            reloaded = store.load_project(project.project_dir)
+            self.assertEqual(len(reloaded.semantic_blocks), 4)
+            self.assertEqual(reloaded.semantic_blocks[1]["sequence"], 2)
+            self.assertEqual(reloaded.semantic_blocks[1]["record_id"], "sb-004")
+
+    def test_merge_adjacent_block_persists_after_reload(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = store.create_project("Merge Map", film_title="Demo Film", language="en")
+            project = store.save_analysis_text(project.project_dir, SAMPLE_ANALYSIS)
+
+            second_block_id = project.semantic_blocks[1]["record_id"]
+            merged = store.merge_semantic_block(project.project_dir, second_block_id, "down")
+
+            self.assertEqual(len(merged.semantic_blocks), 2)
+            self.assertEqual([block["sequence"] for block in merged.semantic_blocks], [1, 2])
+            self.assertEqual(merged.semantic_blocks[1]["record_id"], second_block_id)
+            self.assertIn("Because the mother keeps translating danger into ritual", merged.semantic_blocks[1]["content"])
+            self.assertIn("However, the final section suggests", merged.semantic_blocks[1]["content"])
+
+            reloaded = store.load_project(project.project_dir)
+            self.assertEqual(len(reloaded.semantic_blocks), 2)
+            self.assertEqual(reloaded.semantic_blocks[1]["record_id"], second_block_id)
+            status_payload = (reloaded.project_dir / "project.meta" / "status.json").read_text(encoding="utf-8")
+            self.assertIn('"semantic_block_count": 2', status_payload)
+
+    def test_reopen_after_structural_change_persists_after_reload(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = store.create_project("Reopen Structure Map", film_title="Demo Film", language="en")
             project = store.save_analysis_text(project.project_dir, SAMPLE_ANALYSIS)
             project = store.update_semantic_review_status(project.project_dir, "ready_for_review")
             project = store.update_semantic_review_status(project.project_dir, "approved")
             first_block_id = project.semantic_blocks[0]["record_id"]
 
-            reopened = store.update_semantic_block(
-                project.project_dir,
-                first_block_id,
-                "Opening fear system",
-                "mechanism",
-                "Approved map edited after review.",
-            )
+            reopened = store.split_semantic_block(project.project_dir, first_block_id, 1)
 
             self.assertEqual(reopened.project_record["project_status"], "semantic_map_reopened")
             self.assertTrue(reopened.semantic_review_record["reopened_after_change"])
             self.assertIn("reopened", reopened.semantic_review_record["approval_transition_message"].lower())
-            self.assertIn("changed after approval", reopened.semantic_review_record["reopen_reason"])
+            self.assertIn("boundaries changed after approval", reopened.semantic_review_record["reopen_reason"])
 
             reloaded = store.load_project(project.project_dir)
             self.assertTrue(reloaded.semantic_review_record["reopened_after_change"])
-            self.assertIn("changed after approval", reloaded.semantic_review_record["reopen_reason"])
+            self.assertIn("boundaries changed after approval", reloaded.semantic_review_record["reopen_reason"])
 
     def test_reorder_and_readiness_persist_after_reload(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -134,7 +176,37 @@ class DNAFilmAppTests(unittest.TestCase):
             finally:
                 root.destroy()
 
-    def test_app_reopen_signal_survives_reload(self) -> None:
+    def test_app_split_and_merge_controls_persist_structure(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Structure Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+                    first_block_id = app.project.semantic_blocks[0]["record_id"]
+                    app._select_block_by_id(first_block_id)
+                    app.split_sentence_var.set("1")
+                    app.split_selected_block()
+                    self.assertEqual(len(app.project.semantic_blocks), 4)
+                    app.merge_selected_block("down")
+
+                self.assertEqual(len(app.project.semantic_blocks), 3)
+                reloaded = app.store.load_project(app.project.project_dir)
+                self.assertEqual(len(reloaded.semantic_blocks), 3)
+                self.assertEqual(reloaded.semantic_blocks[0]["record_id"], first_block_id)
+            finally:
+                root.destroy()
+
+    def test_app_reopen_signal_survives_reload_after_structural_change(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = tk.Tk()
             root.withdraw()
@@ -156,13 +228,13 @@ class DNAFilmAppTests(unittest.TestCase):
                     app.save_review_status()
                     first_block_id = app.project.semantic_blocks[0]["record_id"]
                     app._select_block_by_id(first_block_id)
-                    app.block_title_var.set("Edited after approval")
-                    app.save_selected_block()
+                    app.split_sentence_var.set("1")
+                    app.split_selected_block()
 
                 reloaded = app.store.load_project(app.project.project_dir)
                 self.assertTrue(reloaded.semantic_review_record["reopened_after_change"])
                 self.assertIn("reopened", app.approval_message_text.get().lower())
-                self.assertIn("changed after approval", app.reopen_text.get())
+                self.assertIn("boundaries changed after approval", app.reopen_text.get())
             finally:
                 root.destroy()
 

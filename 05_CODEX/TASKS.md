@@ -1,14 +1,14 @@
-﻿# Codex Tasks
+# Codex Tasks
 
 Last updated: 2026-04-06
-Current focus: F-010 semantic completeness cues and issue visibility
+Current focus: F-011 semantic completeness cues and issue visibility
 
 ## Working rule
 Tasks should be bounded, product-visible, and small enough to preserve continuity without turning the repository into micro-slice overload.
 
 ## Active task
 
-### F-010
+### F-011
 - Status: active
 - Module: semantic completeness cues and issue visibility
 - Goal: extend the semantic workspace with lightweight completeness cues and clearer issue visibility without drifting into matching, backend, or downstream execution.
@@ -17,6 +17,11 @@ Tasks should be bounded, product-visible, and small enough to preserve continuit
 
 ## Completed tasks
 
+### F-010
+- Status: completed
+- Module: semantic block boundary editing and structural review completion
+- Goal: extend the semantic workspace with one minimal split action and one minimal merge-with-adjacent action so editors can correct semantic block boundaries directly without drifting into matching, backend, or downstream execution.
+- Outcome: added one minimal split-block control and one minimal merge-with-adjacent control inside the existing semantic workspace inspector, persisted structural semantic-block updates on disk, kept sequence ordering stable after split and merge, made approved semantic maps reopen explicitly after structural edits, added reload-persistence coverage through local tests, and kept the packet intentionally narrow.
 ### F-009
 - Status: completed
 - Module: semantic approval guardrails and reopen clarity
