@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import json
 import re
@@ -8,8 +8,21 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
-PROJECT_FORMAT_VERSION = "0.1"
+PROJECT_FORMAT_VERSION = "0.2"
 ANALYSIS_RECORD_FILENAME = "analysis_source.json"
+REVIEW_RECORD_FILENAME = "semantic_review.json"
+ALLOWED_SEMANTIC_ROLES = (
+    "claim",
+    "insight",
+    "mechanism",
+    "emotional_beat",
+    "transition",
+)
+ALLOWED_REVIEW_STATES = (
+    "under_edit",
+    "ready_for_review",
+    "approved",
+)
 
 
 def utc_now() -> str:
@@ -84,6 +97,7 @@ class ProjectSlice:
     project_record: dict
     intake_record: dict
     analysis_source_record: dict | None
+    semantic_review_record: dict
     semantic_blocks: list[dict]
 
 
@@ -140,8 +154,9 @@ class ProjectSliceStore:
             "created_at": created_at,
             "updated_at": created_at,
         }
+        semantic_review_record = self._default_review_record(project_id, created_at)
 
-        self._write_project_state(project_dir, manifest, project_record, intake_record, None, [])
+        self._write_project_state(project_dir, manifest, project_record, intake_record, None, semantic_review_record, [])
         return self.load_project(project_dir)
 
     def load_project(self, project_dir: Path) -> ProjectSlice:
@@ -151,12 +166,21 @@ class ProjectSliceStore:
         analysis_record_path = project_dir / "records" / "intake" / ANALYSIS_RECORD_FILENAME
         legacy_analysis_record_path = project_dir / "records" / "intake" / "analysis.txt.json"
         semantic_record_path = project_dir / "records" / "semantic" / "semantic_blocks.json"
+        review_record_path = project_dir / "records" / "review" / REVIEW_RECORD_FILENAME
+
         if analysis_record_path.exists():
             analysis_source_record = read_json(analysis_record_path)
         elif legacy_analysis_record_path.exists():
             analysis_source_record = read_json(legacy_analysis_record_path)
         else:
             analysis_source_record = None
+
+        if review_record_path.exists():
+            semantic_review_record = read_json(review_record_path)
+        else:
+            timestamp = project_record.get("updated_at", utc_now())
+            semantic_review_record = self._default_review_record(manifest["project_id"], timestamp)
+
         semantic_blocks = read_json(semantic_record_path)["blocks"] if semantic_record_path.exists() else []
         return ProjectSlice(
             project_dir=project_dir,
@@ -164,6 +188,7 @@ class ProjectSliceStore:
             project_record=project_record,
             intake_record=intake_record,
             analysis_source_record=analysis_source_record,
+            semantic_review_record=semantic_review_record,
             semantic_blocks=semantic_blocks,
         )
 
@@ -203,8 +228,6 @@ class ProjectSliceStore:
         manifest["updated_at"] = now
 
         project_record = dict(project.project_record)
-        project_record["project_status"] = "semantic_map_ready"
-        project_record["current_readiness_summary"] = f"{len(semantic_blocks)} semantic blocks ready for review."
         project_record["updated_at"] = now
 
         intake_record = dict(project.intake_record)
@@ -213,9 +236,120 @@ class ProjectSliceStore:
         intake_record["intake_warnings"] = intake_warnings
         intake_record["updated_at"] = now
 
-        self._write_project_state(project_dir, manifest, project_record, intake_record, analysis_source_record, semantic_blocks)
+        semantic_review_record = dict(project.semantic_review_record)
+        semantic_review_record["review_status"] = "under_edit"
+        semantic_review_record["approved"] = False
+        semantic_review_record["updated_at"] = now
+
+        self._apply_project_summary(project_record, intake_record, semantic_blocks, semantic_review_record)
+        self._write_project_state(
+            project_dir,
+            manifest,
+            project_record,
+            intake_record,
+            analysis_source_record,
+            semantic_review_record,
+            semantic_blocks,
+        )
         (project_dir / "sources" / "analysis").mkdir(parents=True, exist_ok=True)
         (project_dir / "sources" / "analysis" / source_label).write_text(normalized_text + "\n", encoding="utf-8")
+        return self.load_project(project_dir)
+
+    def update_semantic_block(
+        self,
+        project_dir: Path,
+        block_id: str,
+        title: str,
+        semantic_role: str,
+        notes: str,
+    ) -> ProjectSlice:
+        clean_title = title.strip()
+        clean_role = semantic_role.strip()
+        if not clean_title:
+            raise ValueError("Block title is required.")
+        if clean_role not in ALLOWED_SEMANTIC_ROLES:
+            raise ValueError("Semantic role is invalid for this MVP slice.")
+
+        project = self.load_project(project_dir)
+        now = utc_now()
+        updated = False
+        semantic_blocks: list[dict] = []
+        for block in project.semantic_blocks:
+            current = dict(block)
+            if current["record_id"] == block_id:
+                current["title"] = clean_title
+                current["semantic_role"] = clean_role
+                current["notes"] = notes.strip()
+                updated = True
+            semantic_blocks.append(current)
+
+        if not updated:
+            raise ValueError("Selected semantic block was not found.")
+
+        manifest = dict(project.manifest)
+        manifest["updated_at"] = now
+        project_record = dict(project.project_record)
+        project_record["updated_at"] = now
+        intake_record = dict(project.intake_record)
+        intake_record["updated_at"] = now
+        analysis_source_record = project.analysis_source_record
+        if analysis_source_record is not None:
+            analysis_source_record = dict(analysis_source_record)
+            analysis_source_record["updated_at"] = now
+
+        semantic_review_record = dict(project.semantic_review_record)
+        if semantic_review_record["review_status"] == "approved":
+            semantic_review_record["review_status"] = "under_edit"
+            semantic_review_record["approved"] = False
+        semantic_review_record["updated_at"] = now
+
+        self._apply_project_summary(project_record, intake_record, semantic_blocks, semantic_review_record)
+        self._write_project_state(
+            project_dir,
+            manifest,
+            project_record,
+            intake_record,
+            analysis_source_record,
+            semantic_review_record,
+            semantic_blocks,
+        )
+        return self.load_project(project_dir)
+
+    def update_semantic_review_status(self, project_dir: Path, review_status: str) -> ProjectSlice:
+        clean_status = review_status.strip()
+        if clean_status not in ALLOWED_REVIEW_STATES:
+            raise ValueError("Review status is invalid for this MVP slice.")
+
+        project = self.load_project(project_dir)
+        if not project.semantic_blocks:
+            raise ValueError("Semantic review cannot be updated before semantic blocks exist.")
+
+        now = utc_now()
+        manifest = dict(project.manifest)
+        manifest["updated_at"] = now
+        project_record = dict(project.project_record)
+        project_record["updated_at"] = now
+        intake_record = dict(project.intake_record)
+        intake_record["updated_at"] = now
+        analysis_source_record = project.analysis_source_record
+        if analysis_source_record is not None:
+            analysis_source_record = dict(analysis_source_record)
+            analysis_source_record["updated_at"] = now
+        semantic_review_record = dict(project.semantic_review_record)
+        semantic_review_record["review_status"] = clean_status
+        semantic_review_record["approved"] = clean_status == "approved"
+        semantic_review_record["updated_at"] = now
+
+        self._apply_project_summary(project_record, intake_record, project.semantic_blocks, semantic_review_record)
+        self._write_project_state(
+            project_dir,
+            manifest,
+            project_record,
+            intake_record,
+            analysis_source_record,
+            semantic_review_record,
+            project.semantic_blocks,
+        )
         return self.load_project(project_dir)
 
     def _write_project_state(
@@ -225,22 +359,66 @@ class ProjectSliceStore:
         project_record: dict,
         intake_record: dict,
         analysis_source_record: dict | None,
+        semantic_review_record: dict,
         semantic_blocks: list[dict],
     ) -> None:
         write_json(project_dir / "project.manifest", manifest)
-        write_json(project_dir / "project.meta" / "status.json", self._status_payload(project_record, intake_record, semantic_blocks))
+        write_json(project_dir / "project.meta" / "status.json", self._status_payload(project_record, intake_record, semantic_review_record, semantic_blocks))
         write_json(project_dir / "records" / "project" / "project.json", project_record)
         write_json(project_dir / "records" / "intake" / "intake.json", intake_record)
         if analysis_source_record is not None:
             write_json(project_dir / "records" / "intake" / ANALYSIS_RECORD_FILENAME, analysis_source_record)
+        write_json(project_dir / "records" / "review" / REVIEW_RECORD_FILENAME, semantic_review_record)
         write_json(project_dir / "records" / "semantic" / "semantic_blocks.json", {"blocks": semantic_blocks})
 
-    def _status_payload(self, project_record: dict, intake_record: dict, semantic_blocks: list[dict]) -> dict:
+    def _status_payload(
+        self,
+        project_record: dict,
+        intake_record: dict,
+        semantic_review_record: dict,
+        semantic_blocks: list[dict],
+    ) -> dict:
         return {
             "project_status": project_record["project_status"],
             "current_readiness_summary": project_record["current_readiness_summary"],
             "intake_readiness": intake_record["intake_readiness"],
             "semantic_block_count": len(semantic_blocks),
-            "semantic_map_status": "ready" if semantic_blocks else "empty",
+            "semantic_map_status": semantic_review_record["review_status"],
+            "semantic_review_approved": semantic_review_record["approved"],
             "updated_at": project_record["updated_at"],
+        }
+
+    def _apply_project_summary(
+        self,
+        project_record: dict,
+        intake_record: dict,
+        semantic_blocks: list[dict],
+        semantic_review_record: dict,
+    ) -> None:
+        if intake_record["intake_readiness"] != "ready" or not semantic_blocks:
+            project_record["project_status"] = "intake_required"
+            project_record["current_readiness_summary"] = "Load analysis text to unlock semantic map."
+            return
+
+        review_status = semantic_review_record["review_status"]
+        block_count = len(semantic_blocks)
+        if review_status == "approved":
+            project_record["project_status"] = "semantic_map_approved"
+            project_record["current_readiness_summary"] = f"{block_count} semantic blocks approved for later matching prep."
+        elif review_status == "ready_for_review":
+            project_record["project_status"] = "semantic_map_ready_for_review"
+            project_record["current_readiness_summary"] = f"{block_count} semantic blocks ready for approval review."
+        else:
+            project_record["project_status"] = "semantic_map_under_edit"
+            project_record["current_readiness_summary"] = f"{block_count} semantic blocks under edit in Semantic Map Workspace."
+
+    def _default_review_record(self, project_id: str, timestamp: str) -> dict:
+        return {
+            "project_id": project_id,
+            "record_id": "semantic-review-record",
+            "record_type": "semantic_review_state",
+            "review_status": "under_edit",
+            "approved": False,
+            "created_at": timestamp,
+            "updated_at": timestamp,
         }

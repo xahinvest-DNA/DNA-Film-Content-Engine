@@ -1,5 +1,23 @@
 ﻿# Codex Worklog
 
+## 2026-04-06 - F-007 completed and semantic workspace became editable
+
+### Completed
+- completed the semantic map editing and review controls packet as one bounded follow-up to the first MVP slice;
+- extended the existing `Semantic Map Workspace` inspector with editable title, semantic role, and notes controls for the selected block;
+- added persisted selected-block updates so edits now survive project reload;
+- added one local project-level semantic review state record and desktop-facing review control;
+- updated local validation so block edits and review-state changes are verified through reload persistence;
+- synchronized the repository state layer after real implementation progress.
+
+### Repository effect
+- the repository now contains a minimally editable semantic workspace rather than an inspect-only semantic map;
+- selected-block semantic edits and one project-level review control persist inside the local project package;
+- the implementation remains intentionally narrow and does not open matching, backend, or downstream-output execution work.
+
+### Recommended next step
+Execute `F-008 Semantic Map Ordering and Approval Readiness`
+
 ## 2026-04-06 - F-006 completed and first local MVP slice implemented
 
 ### Completed

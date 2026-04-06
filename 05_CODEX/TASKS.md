@@ -1,21 +1,27 @@
 ﻿# Codex Tasks
 
 Last updated: 2026-04-06
-Current focus: F-007 semantic map editing and review controls
+Current focus: F-008 semantic map ordering and approval readiness
 
 ## Working rule
 Tasks should be bounded, product-visible, and small enough to preserve continuity without turning the repository into micro-slice overload.
 
 ## Active task
 
-### F-007
+### F-008
 - Status: active
-- Module: semantic map editing and review controls
-- Goal: extend the completed local-first MVP slice with persisted selected-block editing and one minimal project-level semantic review control without drifting into matching, backend, or downstream execution.
+- Module: semantic map ordering and approval readiness
+- Goal: extend the editable semantic workspace with one bounded ordering control and clearer approval-readiness visibility without drifting into matching, backend, or downstream execution.
 - Input documents: `00_INDEX.md`, `01_MASTER/CURRENT_STATE.md`, `01_MASTER/DECISIONS.md`, `01_MASTER/ROADMAP.md`, `01_MASTER/SSOT_MAP.md`, `05_CODEX/NEXT_TASK.md`, `02_PRODUCT/MVP_DESKTOP_INTERFACE.md`, `02_PRODUCT/NAVIGATION_BEHAVIOR.md`, `03_MODULES/DNA_SEMANTIC_ENGINE.md`
-- Expected result: one minimal editable semantic workspace where selected-block changes and project-level semantic review state persist across reload without scope explosion.
+- Expected result: one minimal semantic workspace update where block ordering changes persist across reload and approval-readiness visibility becomes clearer without scope explosion.
 
 ## Completed tasks
+
+### F-007
+- Status: completed
+- Module: semantic map editing and review controls
+- Goal: extend the completed local-first MVP slice with persisted selected-block editing and one minimal project-level semantic review control without drifting into matching, backend, or downstream execution.
+- Outcome: extended the existing inspector into an editable semantic detail surface, persisted selected-block title/role/notes updates on disk, added a local semantic review state record, exposed project-level semantic review controls in the desktop-facing workspace, added reload-persistence coverage through local tests, and kept the packet intentionally narrow.
 
 ### F-006
 - Status: completed
