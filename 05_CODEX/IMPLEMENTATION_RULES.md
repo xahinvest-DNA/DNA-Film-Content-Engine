@@ -1,6 +1,6 @@
 # Codex Implementation Rules
 
-Last updated: 2026-04-06
+Last updated: 2026-04-08
 Status: active
 Purpose: define how implementation tasks should be interpreted and how repository state must be kept synchronized.
 
@@ -20,7 +20,8 @@ ChatGPT acts as the project manager and decision layer.
 - scope control;
 - task-packet formulation;
 - interpretation of Codex results;
-- anti-drift control.
+- anti-drift control;
+- two-level handoff review with an efficiency gate before selecting the next packet.
 
 ### Codex role
 Codex acts as the implementation and repository execution layer.
@@ -45,7 +46,35 @@ Codex acts as the implementation and repository execution layer.
 3. Codex executes the packet in the repository.
 4. Codex synchronizes state files.
 5. Codex returns a handoff.
-6. ChatGPT reviews the result and defines the next step.
+6. ChatGPT reviews the handoff at completion level and management level before defining the next step.
+
+## Manager review protocol
+
+ChatGPT must review every Codex handoff at two levels.
+
+### Completion level
+- confirm what files changed;
+- confirm what was completed;
+- confirm what remains open.
+
+### Management level
+- judge what capability the packet added to the repository;
+- judge what this now unlocks;
+- judge what it still does not solve;
+- judge whether the repository is drifting into overly local refinement;
+- judge whether the next packet should stay in the current lane or change scale.
+
+## Efficiency-gate rule
+
+Strongest-next-step selection must explicitly test:
+- value gained per packet;
+- strategic relevance of the candidate next step;
+- whether packet granularity remains efficient;
+- whether a larger or different step is now stronger than another local refinement.
+
+## Anti-inertia rule
+
+ChatGPT must not choose the next packet by inertia from the previous recommendation, the last local opening, or the current micro-frontier alone. The next step must be re-evaluated against current project state, repository capability after the completed packet, strategic sequencing, and efficiency of further local work.
 
 ## Mandatory reading order for implementation tasks
 1. `00_INDEX.md`

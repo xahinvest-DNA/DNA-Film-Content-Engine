@@ -1,6 +1,6 @@
 ﻿# Decisions
 
-Last updated: 2026-04-06
+Last updated: 2026-04-08
 Status: active
 
 ## D-001 Repository operating model
@@ -68,7 +68,19 @@ The project is run through a manager-led execution model.
 ### Why
 This model reduces noise, improves decision quality, preserves project coherence, and prevents repository drift caused by mixing strategic and operational roles.
 
-## D-007 First runtime boundary
+## D-007 Manager review depth and efficiency gate
+
+ChatGPT must review Codex handoffs as project-management inputs, not only as completion confirmations.
+
+### Required manager review depth
+- completion review must confirm what files changed, what was completed, and what remains open;
+- management review must judge what capability the packet added, what this newly unlocks, what it still does not solve, whether local refinement is overtaking strategic efficiency, and whether the next step should stay in the current lane or change scale.
+
+### Operating consequence
+- strongest-next-step selection must pass an efficiency gate that checks value gained per packet, strategic relevance, current packet granularity, and whether a larger or different next move is now stronger than another local refinement.
+- ChatGPT must not choose the next packet by inertia from the previous recommendation, the last local opening, or the current micro-frontier alone; the choice must be re-evaluated against current repository capability and sequencing efficiency.
+
+## D-008 First runtime boundary
 
 The first runtime implementation boundary is a local-first, file-based desktop prototype rather than a backend-led or network-led architecture.
 

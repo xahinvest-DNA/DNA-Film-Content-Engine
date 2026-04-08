@@ -1,5 +1,21 @@
 # Codex Worklog
 
+## 2026-04-08 - G-001 completed and manager review doctrine became repository-owned
+
+### Completed
+- completed the manager review depth and efficiency-gate fixation packet as one bounded governance/documentation pass;
+- strengthened `DECISIONS.md` so ChatGPT review depth is defined at both completion level and management level;
+- strengthened `IMPLEMENTATION_RULES.md` so strongest-next-step selection must pass an explicit efficiency gate and anti-inertia check rather than rely on the previous recommendation alone;
+- synchronized live-state documents so this governance refinement survives new chats while leaving the active runtime frontier on `F-015`;
+- kept the packet documentation-only and did not change runtime, UI, tests, or the meaning of `F-015`.
+
+### Repository effect
+- the repository now makes explicit that Codex handoffs are management signals about capability gained, capability unlocked, unresolved gap, and packet-size efficiency rather than mere completion confirmations;
+- strongest-next-step selection is now governed by an explicit efficiency gate and anti-inertia rule inside repository-owned operating documents;
+- the active runtime frontier remains `F-015 Semantic Review Adjacent Context Peek`.
+
+### Recommended next step
+Execute `F-015 Semantic Review Adjacent Context Peek` unless a stronger efficiency-gated alternative is explicitly justified
 ## 2026-04-08 - F-014 completed and focused semantic review became step-through navigable
 
 ### Completed

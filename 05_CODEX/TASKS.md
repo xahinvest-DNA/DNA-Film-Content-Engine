@@ -1,6 +1,6 @@
 ﻿# Codex Tasks
 
-Last updated: 2026-04-06
+Last updated: 2026-04-08
 Current focus: F-015 semantic review adjacent context peek
 
 ## Working rule
@@ -16,6 +16,12 @@ Tasks should be bounded, product-visible, and small enough to preserve continuit
 - Expected result: one minimal semantic workspace update where adjacent review context becomes easier to read without scope explosion.
 
 ## Completed tasks
+
+### G-001
+- Status: completed
+- Module: manager review depth and efficiency-gate fixation
+- Goal: fix in the strongest governance documents that ChatGPT must review Codex handoffs as management inputs and apply an efficiency gate before choosing the next packet.
+- Outcome: strengthened the manager-led doctrine in `DECISIONS.md` and `IMPLEMENTATION_RULES.md`, fixed explicit two-level handoff review, fixed the efficiency-gate and anti-inertia rules for strongest-next-step selection, synchronized live state without changing the active runtime frontier, and kept the packet documentation-only.
 
 ### F-014
 - Status: completed

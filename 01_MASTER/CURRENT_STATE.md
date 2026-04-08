@@ -1,8 +1,8 @@
 # Current State
 
-Last updated: 2026-04-06
+Last updated: 2026-04-08
 Status: active
-Current stage: F-014 semantic review next-issue navigation and focus-step controls are completed
+Current stage: G-001 manager review depth and efficiency-gate fixation is completed
 Active module: F-015 semantic review adjacent context peek
 Active frontier: F-015 Semantic Review Adjacent Context Peek
 Active question: how to expose the immediate previous/next semantic context around the selected block so editors can review transitions faster without opening a larger workflow or dashboard surface
@@ -27,8 +27,9 @@ At this point:
 - the project now uses a manager-led execution model;
 - ChatGPT owns strongest-next-step selection;
 - Codex owns repository execution and state synchronization;
-- F-014 is completed and no longer the active frontier;
-- the current active frontier is now `F-015 Semantic Review Adjacent Context Peek`.
+- manager review depth and next-step efficiency-gate doctrine are now fixed in repository governance documents rather than left to chat memory;
+- F-014 is completed and no longer the active runtime frontier;
+- the current active frontier remains `F-015 Semantic Review Adjacent Context Peek`.
 
 ## Accepted boundaries right now
 
@@ -39,6 +40,8 @@ At this point:
 - The project starts desktop-first.
 - MVP is centered on project creation, source intake, semantic blocks, semantic-map review, and the approved semantic-first desktop operating surface.
 - manager-led execution model is fixed.
+- ChatGPT must review Codex handoffs at completion level and management level before selecting the next packet.
+- strongest-next-step selection must pass an efficiency gate rather than follow previous recommendations by inertia alone.
 - architecture layers through downstream output-boundary fixation are completed before broad runtime expansion.
 - the current runtime proof remains local-first, file-based, and intentionally narrow.
 - The next implementation lane must not drift into automatic film downloading, full render automation, platform publishing, or speculative AI quality scoring.
@@ -61,4 +64,5 @@ Open and execute one bounded packet for `F-015 Semantic Review Adjacent Context 
 - MVP main surface is `Semantic Map Workspace`.
 - product, domain, schema, project-file, asset, and downstream output-boundary layers are fixed.
 - F-014 is completed with bounded previous/next controls for the current focused review set, a compact focused-position cue, stable boundary behavior, and coherent selection across focus changes in the local-first workspace.
-- the next strong step is `F-015 Semantic Review Adjacent Context Peek`, not broad runtime/backend depth.
+- ChatGPT must read Codex handoffs as management signals about capability gained, capability unlocked, unresolved gap, and packet-size efficiency before choosing what comes next.
+- the next strong active runtime step remains `F-015 Semantic Review Adjacent Context Peek` unless a stronger efficiency-gated alternative is explicitly justified.
