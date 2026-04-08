@@ -59,6 +59,8 @@ class DNAFilmApp:
         self.focus_mode_var = tk.StringVar(value=FOCUS_MODES[0])
         self.focus_status_text = tk.StringVar(value="Focus: All blocks | showing 0 of 0 blocks.")
         self.focus_position_text = tk.StringVar(value="Focused item: 0 of 0")
+        self.previous_context_text = tk.StringVar(value="Previous: No previous semantic block")
+        self.next_context_text = tk.StringVar(value="Next: No next semantic block")
         self.approval_message_text = tk.StringVar(value="Approval message: Semantic map remains under edit.")
         self.approval_reason_text = tk.StringVar(value="Approval reason: Approve is blocked until semantic review is moved to ready_for_review.")
         self.reopen_text = tk.StringVar(value="Reopen state: none")
@@ -118,45 +120,50 @@ class DNAFilmApp:
         inspector = ttk.Frame(self.root, padding=12)
         inspector.grid(row=1, column=2, sticky="nsew")
         inspector.columnconfigure(0, weight=1)
-        inspector.rowconfigure(16, weight=1)
+        inspector.rowconfigure(17, weight=1)
         ttk.Label(inspector, text="Block Detail / Inspector", font=("Segoe UI", 12, "bold")).grid(row=0, column=0, sticky="w")
         ttk.Label(inspector, textvariable=self.block_status_var, wraplength=320).grid(row=1, column=0, sticky="w", pady=(4, 6))
-        ttk.Label(inspector, textvariable=self.block_issues_text, wraplength=320).grid(row=2, column=0, sticky="w", pady=(0, 10))
+        ttk.Label(inspector, textvariable=self.block_issues_text, wraplength=320).grid(row=2, column=0, sticky="w", pady=(0, 8))
+        context_frame = ttk.LabelFrame(inspector, text="Adjacent semantic context", padding=8)
+        context_frame.grid(row=3, column=0, sticky="ew", pady=(0, 10))
+        context_frame.columnconfigure(0, weight=1)
+        ttk.Label(context_frame, textvariable=self.previous_context_text, wraplength=320, justify="left").grid(row=0, column=0, sticky="w")
+        ttk.Label(context_frame, textvariable=self.next_context_text, wraplength=320, justify="left").grid(row=1, column=0, sticky="w", pady=(8, 0))
 
         order_controls = ttk.Frame(inspector)
-        order_controls.grid(row=3, column=0, sticky="ew", pady=(0, 8))
+        order_controls.grid(row=4, column=0, sticky="ew", pady=(0, 8))
         self.move_up_button = ttk.Button(order_controls, text="Move Up", command=lambda: self.reorder_selected_block("up"))
         self.move_up_button.pack(side="left")
         self.move_down_button = ttk.Button(order_controls, text="Move Down", command=lambda: self.reorder_selected_block("down"))
         self.move_down_button.pack(side="left", padx=(8, 0))
 
         merge_controls = ttk.Frame(inspector)
-        merge_controls.grid(row=4, column=0, sticky="ew", pady=(0, 8))
+        merge_controls.grid(row=5, column=0, sticky="ew", pady=(0, 8))
         self.merge_up_button = ttk.Button(merge_controls, text="Merge Up", command=lambda: self.merge_selected_block("up"))
         self.merge_up_button.pack(side="left")
         self.merge_down_button = ttk.Button(merge_controls, text="Merge Down", command=lambda: self.merge_selected_block("down"))
         self.merge_down_button.pack(side="left", padx=(8, 0))
 
-        ttk.Label(inspector, text="Split after sentence #").grid(row=5, column=0, sticky="w")
+        ttk.Label(inspector, text="Split after sentence #").grid(row=6, column=0, sticky="w")
         split_controls = ttk.Frame(inspector)
-        split_controls.grid(row=6, column=0, sticky="ew", pady=(0, 10))
+        split_controls.grid(row=7, column=0, sticky="ew", pady=(0, 10))
         self.split_sentence_entry = ttk.Entry(split_controls, textvariable=self.split_sentence_var, width=8)
         self.split_sentence_entry.pack(side="left")
         self.split_button = ttk.Button(split_controls, text="Split Block", command=self.split_selected_block)
         self.split_button.pack(side="left", padx=(8, 0))
 
-        ttk.Label(inspector, text="Title").grid(row=7, column=0, sticky="w")
+        ttk.Label(inspector, text="Title").grid(row=8, column=0, sticky="w")
         self.block_title_entry = ttk.Entry(inspector, textvariable=self.block_title_var, width=36)
-        self.block_title_entry.grid(row=8, column=0, sticky="ew", pady=(0, 10))
-        ttk.Label(inspector, text="Semantic role").grid(row=9, column=0, sticky="w")
+        self.block_title_entry.grid(row=9, column=0, sticky="ew", pady=(0, 10))
+        ttk.Label(inspector, text="Semantic role").grid(row=10, column=0, sticky="w")
         self.block_role_combo = ttk.Combobox(inspector, textvariable=self.block_role_var, values=ALLOWED_SEMANTIC_ROLES, state="readonly")
-        self.block_role_combo.grid(row=10, column=0, sticky="ew", pady=(0, 10))
-        ttk.Label(inspector, text="Notes").grid(row=11, column=0, sticky="w")
+        self.block_role_combo.grid(row=11, column=0, sticky="ew", pady=(0, 10))
+        ttk.Label(inspector, text="Notes").grid(row=12, column=0, sticky="w")
         self.notes_text = tk.Text(inspector, height=6, wrap="word")
-        self.notes_text.grid(row=12, column=0, sticky="nsew")
-        ttk.Label(inspector, text="Output suitability").grid(row=13, column=0, sticky="w", pady=(10, 0))
+        self.notes_text.grid(row=13, column=0, sticky="nsew")
+        ttk.Label(inspector, text="Output suitability").grid(row=14, column=0, sticky="w", pady=(10, 0))
         suitability = ttk.Frame(inspector)
-        suitability.grid(row=14, column=0, sticky="ew", pady=(4, 10))
+        suitability.grid(row=15, column=0, sticky="ew", pady=(4, 10))
         suitability.columnconfigure(1, weight=1)
         suitability.columnconfigure(3, weight=1)
         ttk.Label(suitability, text="Long video").grid(row=0, column=0, sticky="w")
@@ -171,12 +178,12 @@ class DNAFilmApp:
         ttk.Label(suitability, text="Packaging").grid(row=1, column=2, sticky="w", pady=(8, 0))
         self.packaging_combo = ttk.Combobox(suitability, textvariable=self.packaging_var, values=ALLOWED_OUTPUT_SUITABILITY, state="readonly")
         self.packaging_combo.grid(row=1, column=3, sticky="ew", pady=(8, 0))
-        ttk.Label(inspector, text="Full block text").grid(row=15, column=0, sticky="w", pady=(10, 0))
+        ttk.Label(inspector, text="Full block text").grid(row=16, column=0, sticky="w", pady=(10, 0))
         self.content_text = tk.Text(inspector, height=8, wrap="word")
-        self.content_text.grid(row=16, column=0, sticky="nsew", pady=(0, 10))
+        self.content_text.grid(row=17, column=0, sticky="nsew", pady=(0, 10))
         self.content_text.configure(state="disabled")
         self.save_block_button = ttk.Button(inspector, text="Save Block Review", command=self.save_selected_block)
-        self.save_block_button.grid(row=17, column=0, sticky="ew")
+        self.save_block_button.grid(row=18, column=0, sticky="ew")
 
         self.views: dict[str, ttk.Frame] = {}
         self.views["Project Home"] = self._build_home_view(main)
@@ -333,6 +340,8 @@ class DNAFilmApp:
             self._set_structure_enabled(False, False, False, False, False)
             self._set_focus_navigation_enabled(False, False)
             self.focus_position_text.set("Focused item: 0 of 0")
+            self.previous_context_text.set("Previous: No previous semantic block")
+            self.next_context_text.set("Next: No next semantic block")
             self.block_issues_text.set("Block issues: none")
             return
         block = self.visible_blocks[selection[0]]
@@ -484,6 +493,8 @@ class DNAFilmApp:
         if self.project is None:
             self.focus_status_text.set(f"Focus: {self.focus_mode_var.get()} | showing 0 of 0 blocks.")
             self.focus_position_text.set("Focused item: 0 of 0")
+            self.previous_context_text.set("Previous: No previous semantic block")
+            self.next_context_text.set("Next: No next semantic block")
             self._set_focus_navigation_enabled(False, False)
             return
         preferred_block_id = self.selected_block_id
@@ -495,6 +506,8 @@ class DNAFilmApp:
             self.semantic_list.delete(0, "end")
             self.focus_status_text.set(f"Focus: {self.focus_mode_var.get()} | showing 0 of 0 blocks.")
             self.focus_position_text.set("Focused item: 0 of 0")
+            self.previous_context_text.set("Previous: No previous semantic block")
+            self.next_context_text.set("Next: No next semantic block")
             self._set_focus_navigation_enabled(False, False)
             return
 
@@ -526,6 +539,8 @@ class DNAFilmApp:
             self.block_status_var.set(self._focus_empty_message(focus_mode))
             self.block_issues_text.set("Block issues: none")
             self.focus_position_text.set("Focused item: 0 of 0")
+            self.previous_context_text.set("Previous: No previous semantic block")
+            self.next_context_text.set("Next: No next semantic block")
             self._set_editor_enabled(False)
             self._set_structure_enabled(False, False, False, False, False)
             self._set_focus_navigation_enabled(False, False)
@@ -588,6 +603,7 @@ class DNAFilmApp:
         )
         self._set_editor_enabled(True)
         self._update_focus_navigation_state()
+        self._update_adjacent_context(block)
 
     def _select_block_by_id(self, block_id: str) -> None:
         if self.project is None:
@@ -605,7 +621,30 @@ class DNAFilmApp:
         self._set_structure_enabled(False, False, False, False, False)
         self._set_focus_navigation_enabled(False, False)
         self.focus_position_text.set("Focused item: 0 of 0")
+        self.previous_context_text.set("Previous: No previous semantic block")
+        self.next_context_text.set("Next: No next semantic block")
         self.block_issues_text.set("Block issues: none")
+
+    def _update_adjacent_context(self, block: dict | None) -> None:
+        if self.project is None or block is None:
+            self.previous_context_text.set("Previous: No previous semantic block")
+            self.next_context_text.set("Next: No next semantic block")
+            return
+        current_index = next((index for index, item in enumerate(self.project.semantic_blocks) if item["record_id"] == block["record_id"]), None)
+        if current_index is None:
+            self.previous_context_text.set("Previous: No previous semantic block")
+            self.next_context_text.set("Next: No next semantic block")
+            return
+        previous_block = self.project.semantic_blocks[current_index - 1] if current_index > 0 else None
+        next_block = self.project.semantic_blocks[current_index + 1] if current_index < len(self.project.semantic_blocks) - 1 else None
+        self.previous_context_text.set(self._format_adjacent_context("Previous", previous_block, "No previous semantic block"))
+        self.next_context_text.set(self._format_adjacent_context("Next", next_block, "No next semantic block"))
+
+    def _format_adjacent_context(self, label: str, block: dict | None, empty_text: str) -> str:
+        if block is None:
+            return f"{label}: {empty_text}"
+        preview = block["content"][:72].replace("\n", " ").strip()
+        return f"{label}: {block['sequence']:02d}. {block['title']} [{block['semantic_role']}] - {preview}"
 
     def _update_focus_navigation_state(self) -> None:
         total = len(self.visible_blocks)
@@ -666,6 +705,8 @@ class DNAFilmApp:
         self.notes_text.delete("1.0", "end")
         self.notes_text.configure(state="disabled")
         self.block_issues_text.set("Block issues: none")
+        self.previous_context_text.set("Previous: No previous semantic block")
+        self.next_context_text.set("Next: No next semantic block")
         self.content_text.configure(state="normal")
         self.content_text.delete("1.0", "end")
         self.content_text.insert("1.0", "Select a semantic block to inspect it here.")

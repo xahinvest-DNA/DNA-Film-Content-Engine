@@ -1,5 +1,22 @@
 # Codex Worklog
 
+## 2026-04-08 - F-015 completed and semantic neighbor context became visible
+
+### Completed
+- completed the semantic review adjacent context peek packet as one bounded follow-up to the focus-step semantic workspace;
+- added one compact adjacent-context cue that shows the immediate previous and next semantic neighbors around the selected block inside the existing inspector surface;
+- derived neighbors from canonical semantic sequence order rather than a separate ranking or focus-only model;
+- kept adjacent context coherent under focus-mode filtering, focused navigation, reorder, and split changes without adding new persistence or history layers;
+- verified middle, boundary, focus-mode, and structure-change adjacent-context behavior through local app-level tests alongside prior packet regressions;
+- synchronized the repository state layer after real implementation progress.
+
+### Repository effect
+- the repository now contains a more legible semantic review workspace where editors can read local semantic transitions around the selected block without leaving the current local-first surface;
+- adjacent context remains local-first, deterministic, and derived live from the current semantic map rather than from a broader workflow or navigation subsystem;
+- the implementation remains intentionally narrow and does not open matching, backend, or downstream-output execution work.
+
+### Recommended next step
+Execute `F-016 Semantic Review Focus-Span Summary`
 ## 2026-04-08 - G-001 completed and manager review doctrine became repository-owned
 
 ### Completed

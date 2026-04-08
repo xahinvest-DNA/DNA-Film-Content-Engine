@@ -1,21 +1,27 @@
 ﻿# Codex Tasks
 
 Last updated: 2026-04-08
-Current focus: F-015 semantic review adjacent context peek
+Current focus: F-016 semantic review focus-span summary
 
 ## Working rule
 Tasks should be bounded, product-visible, and small enough to preserve continuity without turning the repository into micro-slice overload.
 
 ## Active task
 
-### F-015
+### F-016
 - Status: active
-- Module: semantic review adjacent context peek
-- Goal: extend the semantic workspace with one minimal adjacent-context cue so editors can see the immediate previous and next semantic neighbors around the selected block without drifting into matching, backend, or downstream execution.
+- Module: semantic review focus-span summary
+- Goal: extend the semantic workspace with one minimal summary cue so editors can read the shape of the current focused review subset without drifting into matching, backend, or downstream execution.
 - Input documents: `00_INDEX.md`, `01_MASTER/CURRENT_STATE.md`, `01_MASTER/DECISIONS.md`, `01_MASTER/ROADMAP.md`, `01_MASTER/SSOT_MAP.md`, `05_CODEX/NEXT_TASK.md`, `02_PRODUCT/MVP_DESKTOP_INTERFACE.md`, `02_PRODUCT/NAVIGATION_BEHAVIOR.md`, `03_MODULES/DNA_SEMANTIC_ENGINE.md`
-- Expected result: one minimal semantic workspace update where adjacent review context becomes easier to read without scope explosion.
+- Expected result: one minimal semantic workspace update where the active focused review slice becomes easier to read without scope explosion.
 
 ## Completed tasks
+
+### F-015
+- Status: completed
+- Module: semantic review adjacent context peek
+- Goal: extend the semantic workspace with one minimal adjacent-context cue so editors can see the immediate previous and next semantic neighbors around the selected block without drifting into matching, backend, or downstream execution.
+- Outcome: added a compact adjacent-context cue inside the inspector, derived previous and next semantic neighbors from canonical sequence order, kept the cue coherent under focus modes and focused navigation, recomputed adjacent context after reorder and split changes, added local validation for context behavior, and kept the packet intentionally narrow.
 
 ### G-001
 - Status: completed

@@ -2,10 +2,10 @@
 
 Last updated: 2026-04-08
 Status: active
-Current stage: G-001 manager review depth and efficiency-gate fixation is completed
-Active module: F-015 semantic review adjacent context peek
-Active frontier: F-015 Semantic Review Adjacent Context Peek
-Active question: how to expose the immediate previous/next semantic context around the selected block so editors can review transitions faster without opening a larger workflow or dashboard surface
+Current stage: F-015 semantic review adjacent context peek is completed
+Active module: F-016 semantic review focus-span summary
+Active frontier: F-016 Semantic Review Focus-Span Summary
+Active question: how to summarize the current focused semantic review subset as a compact span-level cue so editors can understand the shape of the active review slice without opening a dashboard or planning layer
 
 ## Where the project is now
 
@@ -28,8 +28,8 @@ At this point:
 - ChatGPT owns strongest-next-step selection;
 - Codex owns repository execution and state synchronization;
 - manager review depth and next-step efficiency-gate doctrine are now fixed in repository governance documents rather than left to chat memory;
-- F-014 is completed and no longer the active runtime frontier;
-- the current active frontier remains `F-015 Semantic Review Adjacent Context Peek`.
+- F-015 is completed and no longer the active runtime frontier;
+- the current active frontier is now `F-016 Semantic Review Focus-Span Summary`.
 
 ## Accepted boundaries right now
 
@@ -48,13 +48,13 @@ At this point:
 
 ## Open items
 
-- add one minimal adjacent-context cue for the selected semantic block inside Semantic Map Workspace or the inspector;
-- keep previous/next block context readable while moving through the current focused review set;
-- improve review flow without introducing a broader navigation subsystem, timeline, or dashboard surface.
+- add one minimal span-level summary for the current focused semantic review subset inside Semantic Map Workspace;
+- keep the active focus slice readable as a compact range/count cue while preserving the existing selected-block and adjacent-context surfaces;
+- improve review orientation without introducing a dashboard surface, planning panel, or broader navigation subsystem.
 
 ## Next step
 
-Open and execute one bounded packet for `F-015 Semantic Review Adjacent Context Peek`.
+Open and execute one bounded packet for `F-016 Semantic Review Focus-Span Summary`.
 
 ## What must not be lost in a new chat
 
@@ -63,6 +63,6 @@ Open and execute one bounded packet for `F-015 Semantic Review Adjacent Context 
 - manager-led execution model is fixed.
 - MVP main surface is `Semantic Map Workspace`.
 - product, domain, schema, project-file, asset, and downstream output-boundary layers are fixed.
-- F-014 is completed with bounded previous/next controls for the current focused review set, a compact focused-position cue, stable boundary behavior, and coherent selection across focus changes in the local-first workspace.
+- F-015 is completed with a compact adjacent-context cue that shows canonical previous/next semantic neighbors around the selected block and updates coherently after focus changes, navigation, reorder, and split behavior.
 - ChatGPT must read Codex handoffs as management signals about capability gained, capability unlocked, unresolved gap, and packet-size efficiency before choosing what comes next.
-- the next strong active runtime step remains `F-015 Semantic Review Adjacent Context Peek` unless a stronger efficiency-gated alternative is explicitly justified.
+- the next strong active runtime step is `F-016 Semantic Review Focus-Span Summary` unless a stronger efficiency-gated alternative is explicitly justified.

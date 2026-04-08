@@ -649,5 +649,135 @@ class DNAFilmAppTests(unittest.TestCase):
                 root.destroy()
 
 
+    def test_app_adjacent_context_shows_middle_and_boundary_neighbors(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Adjacent Context Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+
+                first_block_id = app.project.semantic_blocks[0]["record_id"]
+                second_block = app.project.semantic_blocks[1]
+                third_block = app.project.semantic_blocks[2]
+
+                app._select_block_by_id(second_block["record_id"])
+                self.assertIn("01.", app.previous_context_text.get())
+                self.assertIn("03.", app.next_context_text.get())
+                self.assertNotIn(second_block["title"], app.previous_context_text.get())
+                self.assertNotIn(second_block["title"], app.next_context_text.get())
+
+                app._select_block_by_id(first_block_id)
+                self.assertEqual(app.previous_context_text.get(), "Previous: No previous semantic block")
+                self.assertIn("02.", app.next_context_text.get())
+
+                app._select_block_by_id(third_block["record_id"])
+                self.assertIn("02.", app.previous_context_text.get())
+                self.assertEqual(app.next_context_text.get(), "Next: No next semantic block")
+            finally:
+                root.destroy()
+
+    def test_app_adjacent_context_stays_canonical_under_focus_mode(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Canonical Neighbor Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+
+                    first_block, second_block, third_block = app.project.semantic_blocks
+                    project = app.store.update_semantic_block(
+                        app.project.project_dir,
+                        second_block["record_id"],
+                        second_block["title"],
+                        second_block["semantic_role"],
+                        "Editor clarification added.",
+                        output_suitability={
+                            "long_video": "strong",
+                            "shorts_reels": "candidate",
+                            "carousel": "weak",
+                            "packaging": "weak",
+                        },
+                    )
+                    project = app.store.update_semantic_block(
+                        app.project.project_dir,
+                        third_block["record_id"],
+                        third_block["title"],
+                        third_block["semantic_role"],
+                        "Editor clarification added.",
+                        output_suitability={
+                            "long_video": "weak",
+                            "shorts_reels": "strong",
+                            "carousel": "strong",
+                            "packaging": "not_suitable",
+                        },
+                    )
+                    app._load_project_into_ui(project)
+
+                target_block_id = app.project.semantic_blocks[1]["record_id"]
+                app.focus_mode_var.set("Long video focus")
+                app.apply_focus_mode()
+
+                self.assertEqual(app.selected_block_id, target_block_id)
+                self.assertIn("01.", app.previous_context_text.get())
+                self.assertIn("03.", app.next_context_text.get())
+                self.assertEqual(app.semantic_list.size(), 1)
+            finally:
+                root.destroy()
+
+    def test_app_adjacent_context_recomputes_after_reorder_and_split(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Context Recompute Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+
+                    second_block_id = app.project.semantic_blocks[1]["record_id"]
+                    app._select_block_by_id(second_block_id)
+                    app.reorder_selected_block("up")
+                    self.assertEqual(app.selected_block_id, second_block_id)
+                    self.assertEqual(app.previous_context_text.get(), "Previous: No previous semantic block")
+                    self.assertIn("02.", app.next_context_text.get())
+
+                    first_block_id = app.project.semantic_blocks[0]["record_id"]
+                    app._select_block_by_id(first_block_id)
+                    app.split_sentence_var.set("1")
+                    app.split_selected_block()
+
+                self.assertEqual(app.selected_block_id, first_block_id)
+                self.assertEqual(app.previous_context_text.get(), "Previous: No previous semantic block")
+                self.assertIn("02.", app.next_context_text.get())
+            finally:
+                root.destroy()
+
+
 if __name__ == "__main__":
     unittest.main()

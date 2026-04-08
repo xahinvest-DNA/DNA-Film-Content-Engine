@@ -2,25 +2,25 @@
 
 Last updated: 2026-04-08
 Status: ready
-Task ID: F-015
+Task ID: F-016
 Task type: implementation
-Title: Semantic Review Adjacent Context Peek
+Title: Semantic Review Focus-Span Summary
 
 ## Goal
 
-Extend the local-first semantic workspace with one minimal adjacent-context cue so the editor can see the immediate previous and next semantic neighbors around the selected block without opening broader workflow, backend/API, or dashboard scope.
+Extend the local-first semantic workspace with one minimal focus-span summary so the editor can see a compact summary of the currently active review subset without opening broader workflow, backend/API, or dashboard scope.
 
 ## Why this is next
 
-The repository now has bounded focus controls plus previous/next movement through the current focused review set. The strongest next bounded step is to make that movement more intelligible by surfacing nearby semantic context around the selected block inside the existing review surface, rather than broadening into matching, downstream planning, or a larger workflow layer.
+The repository now has bounded focus modes, step-through navigation within the current focused subset, and adjacent semantic context around the selected block. The strongest next bounded step is to make the active review slice itself easier to read by surfacing one small span-level cue about the current focused set, rather than broadening into matching, planning, or a larger review surface.
 
 ## In scope
 
-- one bounded follow-up packet on top of the completed F-014 runtime slice
-- one minimal adjacent-context cue for the currently selected semantic block
-- lightweight previous/next block visibility where it improves focused review clarity
-- only the runtime and local-state touches required to keep adjacent context coherent after navigation, edits, or focus changes
-- local tests covering adjacent-context behavior without regressing prior packets
+- one bounded follow-up packet on top of the completed F-015 runtime slice
+- one minimal summary cue for the current focused semantic-review subset
+- lightweight visibility such as subset size, visible sequence span, or equivalent compact range information where it improves review orientation
+- only the runtime and local-state touches required to keep the summary coherent after focus changes, navigation, or structural edits
+- local tests covering focus-span summary behavior without regressing prior packets
 
 ## Out of scope
 
@@ -30,15 +30,15 @@ The repository now has bounded focus controls plus previous/next movement throug
 - backend or API design
 - generalized workflow queue or review engine
 - broad navigation expansion
-- packet expansion beyond semantic review adjacent context peek
+- packet expansion beyond semantic review focus-span summary
 
 ## Recommended validation
 
 Validate that the resulting packet delivers:
 
-- one clear adjacent-context cue inside the desktop-facing semantic workspace or inspector
-- better readability of semantic transitions while moving through focused review subsets
-- coherent behavior after focus changes, edits, and boundary cases
+- one clear focus-span summary cue inside the desktop-facing semantic workspace
+- better readability of the active focused review slice without dashboard sprawl
+- coherent updates after focus changes, navigation, and structural edits
 - no scope explosion into matching, backend, or downstream-output implementation
 
 ## Required handoff format
