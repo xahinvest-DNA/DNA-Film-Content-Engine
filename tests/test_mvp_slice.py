@@ -779,5 +779,142 @@ class DNAFilmAppTests(unittest.TestCase):
                 root.destroy()
 
 
+    def test_app_focus_span_summary_covers_full_and_filtered_ranges(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Focus Span Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+
+                    first_block, second_block, third_block = app.project.semantic_blocks
+                    project = app.store.update_semantic_block(
+                        app.project.project_dir,
+                        second_block["record_id"],
+                        second_block["title"],
+                        second_block["semantic_role"],
+                        "Editor clarification added.",
+                        output_suitability={
+                            "long_video": "strong",
+                            "shorts_reels": "candidate",
+                            "carousel": "weak",
+                            "packaging": "weak",
+                        },
+                    )
+                    project = app.store.update_semantic_block(
+                        app.project.project_dir,
+                        third_block["record_id"],
+                        third_block["title"],
+                        third_block["semantic_role"],
+                        "Editor clarification added.",
+                        output_suitability={
+                            "long_video": "weak",
+                            "shorts_reels": "strong",
+                            "carousel": "strong",
+                            "packaging": "not_suitable",
+                        },
+                    )
+                    app._load_project_into_ui(project)
+
+                self.assertEqual(app.focus_span_text.get(), "Focus span: 3 blocks | seq 01-03")
+
+                app.focus_mode_var.set("Review-ready")
+                app.apply_focus_mode()
+                self.assertEqual(app.focus_span_text.get(), "Focus span: 2 blocks | seq 02-03")
+
+                app.focus_mode_var.set("Long video focus")
+                app.apply_focus_mode()
+                self.assertEqual(app.focus_span_text.get(), "Focus span: 1 block | seq 02")
+            finally:
+                root.destroy()
+
+    def test_app_focus_span_summary_handles_empty_subset(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Empty Span Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+
+                    project = app.project
+                    for block in list(project.semantic_blocks):
+                        project = app.store.update_semantic_block(
+                            project.project_dir,
+                            block["record_id"],
+                            block["title"],
+                            block["semantic_role"],
+                            "Editor clarification added.",
+                            output_suitability={
+                                "long_video": "candidate",
+                                "shorts_reels": "candidate",
+                                "carousel": "candidate",
+                                "packaging": "not_suitable",
+                            },
+                        )
+                    app._load_project_into_ui(project)
+
+                app.focus_mode_var.set("Packaging focus")
+                app.apply_focus_mode()
+                self.assertEqual(app.focus_span_text.get(), "Focus span: no matching blocks")
+            finally:
+                root.destroy()
+
+    def test_app_focus_span_summary_recomputes_after_structure_changes(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Structure Span Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+
+                    self.assertEqual(app.focus_span_text.get(), "Focus span: 3 blocks | seq 01-03")
+
+                    second_block_id = app.project.semantic_blocks[1]["record_id"]
+                    app._select_block_by_id(second_block_id)
+                    app.reorder_selected_block("up")
+                    self.assertEqual(app.focus_span_text.get(), "Focus span: 3 blocks | seq 01-03")
+
+                    first_block_id = app.project.semantic_blocks[0]["record_id"]
+                    app._select_block_by_id(first_block_id)
+                    app.split_sentence_var.set("1")
+                    app.split_selected_block()
+                    self.assertEqual(app.focus_span_text.get(), "Focus span: 4 blocks | seq 01-04")
+
+                    current_first = app.project.semantic_blocks[0]["record_id"]
+                    app._select_block_by_id(current_first)
+                    app.merge_selected_block("down")
+
+                self.assertEqual(app.focus_span_text.get(), "Focus span: 3 blocks | seq 01-03")
+            finally:
+                root.destroy()
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -58,6 +58,7 @@ class DNAFilmApp:
         self.readiness_text = tk.StringVar(value="Approval readiness: not_ready")
         self.focus_mode_var = tk.StringVar(value=FOCUS_MODES[0])
         self.focus_status_text = tk.StringVar(value="Focus: All blocks | showing 0 of 0 blocks.")
+        self.focus_span_text = tk.StringVar(value="Focus span: no matching blocks")
         self.focus_position_text = tk.StringVar(value="Focused item: 0 of 0")
         self.previous_context_text = tk.StringVar(value="Previous: No previous semantic block")
         self.next_context_text = tk.StringVar(value="Next: No next semantic block")
@@ -266,11 +267,12 @@ class DNAFilmApp:
         self.semantic_list.grid(row=2, column=0, sticky="nsew", pady=(0, 12))
         self.semantic_list.bind("<<ListboxSelect>>", self.on_block_selected)
         ttk.Label(frame, textvariable=self.focus_status_text, wraplength=760).grid(row=3, column=0, sticky="w")
-        ttk.Label(frame, textvariable=self.summary_text, wraplength=760).grid(row=4, column=0, sticky="w")
-        ttk.Label(frame, textvariable=self.issues_summary_text, wraplength=760).grid(row=5, column=0, sticky="w")
-        ttk.Label(frame, textvariable=self.approval_message_text, wraplength=760).grid(row=6, column=0, sticky="w")
-        ttk.Label(frame, textvariable=self.approval_reason_text, wraplength=760).grid(row=7, column=0, sticky="w")
-        ttk.Label(frame, textvariable=self.reopen_text, wraplength=760).grid(row=8, column=0, sticky="w")
+        ttk.Label(frame, textvariable=self.focus_span_text, wraplength=760).grid(row=4, column=0, sticky="w")
+        ttk.Label(frame, textvariable=self.summary_text, wraplength=760).grid(row=5, column=0, sticky="w")
+        ttk.Label(frame, textvariable=self.issues_summary_text, wraplength=760).grid(row=6, column=0, sticky="w")
+        ttk.Label(frame, textvariable=self.approval_message_text, wraplength=760).grid(row=7, column=0, sticky="w")
+        ttk.Label(frame, textvariable=self.approval_reason_text, wraplength=760).grid(row=8, column=0, sticky="w")
+        ttk.Label(frame, textvariable=self.reopen_text, wraplength=760).grid(row=9, column=0, sticky="w")
         return frame
 
     def _switch_view(self, name: str) -> None:
@@ -340,6 +342,7 @@ class DNAFilmApp:
             self._set_structure_enabled(False, False, False, False, False)
             self._set_focus_navigation_enabled(False, False)
             self.focus_position_text.set("Focused item: 0 of 0")
+            self.focus_span_text.set("Focus span: no matching blocks")
             self.previous_context_text.set("Previous: No previous semantic block")
             self.next_context_text.set("Next: No next semantic block")
             self.block_issues_text.set("Block issues: none")
@@ -493,6 +496,7 @@ class DNAFilmApp:
         if self.project is None:
             self.focus_status_text.set(f"Focus: {self.focus_mode_var.get()} | showing 0 of 0 blocks.")
             self.focus_position_text.set("Focused item: 0 of 0")
+            self.focus_span_text.set("Focus span: no matching blocks")
             self.previous_context_text.set("Previous: No previous semantic block")
             self.next_context_text.set("Next: No next semantic block")
             self._set_focus_navigation_enabled(False, False)
@@ -506,6 +510,7 @@ class DNAFilmApp:
             self.semantic_list.delete(0, "end")
             self.focus_status_text.set(f"Focus: {self.focus_mode_var.get()} | showing 0 of 0 blocks.")
             self.focus_position_text.set("Focused item: 0 of 0")
+            self.focus_span_text.set("Focus span: no matching blocks")
             self.previous_context_text.set("Previous: No previous semantic block")
             self.next_context_text.set("Next: No next semantic block")
             self._set_focus_navigation_enabled(False, False)
@@ -526,6 +531,7 @@ class DNAFilmApp:
             self.focus_status_text.set(f"Focus: {focus_mode} | showing {shown_blocks} of {total_blocks} blocks.")
         else:
             self.focus_status_text.set(f"Focus: {focus_mode} | {self._focus_empty_message(focus_mode)}")
+        self.focus_span_text.set(self._focus_span_summary())
 
         if self.visible_blocks:
             preferred_id = select_block_id or self.selected_block_id
@@ -539,12 +545,22 @@ class DNAFilmApp:
             self.block_status_var.set(self._focus_empty_message(focus_mode))
             self.block_issues_text.set("Block issues: none")
             self.focus_position_text.set("Focused item: 0 of 0")
+            self.focus_span_text.set("Focus span: no matching blocks")
             self.previous_context_text.set("Previous: No previous semantic block")
             self.next_context_text.set("Next: No next semantic block")
             self._set_editor_enabled(False)
             self._set_structure_enabled(False, False, False, False, False)
             self._set_focus_navigation_enabled(False, False)
             self._clear_block_editor()
+
+    def _focus_span_summary(self) -> str:
+        if not self.visible_blocks:
+            return "Focus span: no matching blocks"
+        sequences = [block["sequence"] for block in self.visible_blocks]
+        count = len(self.visible_blocks)
+        if count == 1:
+            return f"Focus span: 1 block | seq {sequences[0]:02d}"
+        return f"Focus span: {count} blocks | seq {min(sequences):02d}-{max(sequences):02d}"
 
     def _visible_blocks_for_focus(self, semantic_blocks: list[dict]) -> list[dict]:
         focus_mode = self.focus_mode_var.get()
@@ -621,6 +637,7 @@ class DNAFilmApp:
         self._set_structure_enabled(False, False, False, False, False)
         self._set_focus_navigation_enabled(False, False)
         self.focus_position_text.set("Focused item: 0 of 0")
+        self.focus_span_text.set("Focus span: no matching blocks")
         self.previous_context_text.set("Previous: No previous semantic block")
         self.next_context_text.set("Next: No next semantic block")
         self.block_issues_text.set("Block issues: none")
@@ -705,6 +722,7 @@ class DNAFilmApp:
         self.notes_text.delete("1.0", "end")
         self.notes_text.configure(state="disabled")
         self.block_issues_text.set("Block issues: none")
+        self.focus_span_text.set("Focus span: no matching blocks")
         self.previous_context_text.set("Previous: No previous semantic block")
         self.next_context_text.set("Next: No next semantic block")
         self.content_text.configure(state="normal")

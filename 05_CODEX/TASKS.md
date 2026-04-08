@@ -1,21 +1,27 @@
 ﻿# Codex Tasks
 
 Last updated: 2026-04-08
-Current focus: F-016 semantic review focus-span summary
+Current focus: F-017 semantic review lane markers
 
 ## Working rule
 Tasks should be bounded, product-visible, and small enough to preserve continuity without turning the repository into micro-slice overload.
 
 ## Active task
 
-### F-016
+### F-017
 - Status: active
-- Module: semantic review focus-span summary
-- Goal: extend the semantic workspace with one minimal summary cue so editors can read the shape of the current focused review subset without drifting into matching, backend, or downstream execution.
+- Module: semantic review lane markers
+- Goal: extend the semantic workspace with one minimal lane-marker cue so editors can read the currently active review lane without drifting into matching, backend, or downstream execution.
 - Input documents: `00_INDEX.md`, `01_MASTER/CURRENT_STATE.md`, `01_MASTER/DECISIONS.md`, `01_MASTER/ROADMAP.md`, `01_MASTER/SSOT_MAP.md`, `05_CODEX/NEXT_TASK.md`, `02_PRODUCT/MVP_DESKTOP_INTERFACE.md`, `02_PRODUCT/NAVIGATION_BEHAVIOR.md`, `03_MODULES/DNA_SEMANTIC_ENGINE.md`
-- Expected result: one minimal semantic workspace update where the active focused review slice becomes easier to read without scope explosion.
+- Expected result: one minimal semantic workspace update where the current review lane becomes easier to read without scope explosion.
 
 ## Completed tasks
+
+### F-016
+- Status: completed
+- Module: semantic review focus-span summary
+- Goal: extend the semantic workspace with one minimal summary cue so editors can read the shape of the current focused review subset without drifting into matching, backend, or downstream execution.
+- Outcome: added a compact focus-span summary cue derived from the visible subset, surfaced count and canonical sequence span, kept the cue coherent after focus changes and structure edits, added local validation for full-range, filtered, singleton, and empty states, and kept the packet intentionally narrow.
 
 ### F-015
 - Status: completed

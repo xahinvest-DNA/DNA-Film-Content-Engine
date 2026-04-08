@@ -1,5 +1,22 @@
 # Codex Worklog
 
+## 2026-04-08 - F-016 completed and focused review slice became legible as a span
+
+### Completed
+- completed the semantic review focus-span summary packet as one bounded follow-up to the adjacent-context semantic workspace;
+- added one compact focus-span cue that summarizes the currently visible semantic review subset by count and canonical sequence span;
+- kept the summary derived live from the active visible subset rather than adding new persistence, dashboards, or planning surfaces;
+- kept the summary coherent after focus changes, focused navigation, reorder, split, merge, and empty focused subsets;
+- verified full-range, filtered-range, singleton, empty, and structure-change span behavior through local app-level tests alongside prior packet regressions;
+- synchronized the repository state layer after real implementation progress.
+
+### Repository effect
+- the repository now contains a more legible semantic review workspace where editors can read the shape of the current focused subset without leaving the existing local-first surface;
+- focus-span visibility remains local-first, deterministic, and narrowly derived from the active semantic map rather than from a broader workflow or analytics subsystem;
+- the implementation remains intentionally narrow and does not open matching, backend, or downstream-output execution work.
+
+### Recommended next step
+Execute `F-017 Semantic Review Lane Markers`
 ## 2026-04-08 - F-015 completed and semantic neighbor context became visible
 
 ### Completed

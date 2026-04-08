@@ -2,10 +2,10 @@
 
 Last updated: 2026-04-08
 Status: active
-Current stage: F-015 semantic review adjacent context peek is completed
-Active module: F-016 semantic review focus-span summary
-Active frontier: F-016 Semantic Review Focus-Span Summary
-Active question: how to summarize the current focused semantic review subset as a compact span-level cue so editors can understand the shape of the active review slice without opening a dashboard or planning layer
+Current stage: F-016 semantic review focus-span summary is completed
+Active module: F-017 semantic review lane markers
+Active frontier: F-017 Semantic Review Lane Markers
+Active question: how to add one compact lane-marker cue for the active focus mode so editors can immediately read which review lane they are in without expanding the workspace into a dashboard or planner
 
 ## Where the project is now
 
@@ -28,8 +28,8 @@ At this point:
 - ChatGPT owns strongest-next-step selection;
 - Codex owns repository execution and state synchronization;
 - manager review depth and next-step efficiency-gate doctrine are now fixed in repository governance documents rather than left to chat memory;
-- F-015 is completed and no longer the active runtime frontier;
-- the current active frontier is now `F-016 Semantic Review Focus-Span Summary`.
+- F-016 is completed and no longer the active runtime frontier;
+- the current active frontier is now `F-017 Semantic Review Lane Markers`.
 
 ## Accepted boundaries right now
 
@@ -48,13 +48,13 @@ At this point:
 
 ## Open items
 
-- add one minimal span-level summary for the current focused semantic review subset inside Semantic Map Workspace;
-- keep the active focus slice readable as a compact range/count cue while preserving the existing selected-block and adjacent-context surfaces;
-- improve review orientation without introducing a dashboard surface, planning panel, or broader navigation subsystem.
+- add one compact lane-marker cue that makes the currently active review mode read more explicitly inside Semantic Map Workspace;
+- keep the current focus mode and review lane semantics readable without adding a planning panel or dashboard surface;
+- improve review orientation while preserving the existing selected-block, adjacent-context, and focus-span surfaces.
 
 ## Next step
 
-Open and execute one bounded packet for `F-016 Semantic Review Focus-Span Summary`.
+Open and execute one bounded packet for `F-017 Semantic Review Lane Markers`.
 
 ## What must not be lost in a new chat
 
@@ -63,6 +63,6 @@ Open and execute one bounded packet for `F-016 Semantic Review Focus-Span Summar
 - manager-led execution model is fixed.
 - MVP main surface is `Semantic Map Workspace`.
 - product, domain, schema, project-file, asset, and downstream output-boundary layers are fixed.
-- F-015 is completed with a compact adjacent-context cue that shows canonical previous/next semantic neighbors around the selected block and updates coherently after focus changes, navigation, reorder, and split behavior.
+- F-016 is completed with a compact focus-span summary that shows the size and canonical sequence range of the current focused semantic subset and updates coherently after focus, navigation, reorder, split, and merge changes.
 - ChatGPT must read Codex handoffs as management signals about capability gained, capability unlocked, unresolved gap, and packet-size efficiency before choosing what comes next.
-- the next strong active runtime step is `F-016 Semantic Review Focus-Span Summary` unless a stronger efficiency-gated alternative is explicitly justified.
+- the next strong active runtime step is `F-017 Semantic Review Lane Markers` unless a stronger efficiency-gated alternative is explicitly justified.
