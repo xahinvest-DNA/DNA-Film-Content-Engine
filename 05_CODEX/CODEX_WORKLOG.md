@@ -1,5 +1,24 @@
 # Codex Worklog
 
+## 2026-04-08 - F-017R completed and semantic-to-matching-prep readiness became explicit
+
+### Completed
+- completed the semantic review to matching prep readiness gate packet as one bounded efficiency-gated replacement for the weaker lane-marker follow-up;
+- added one compact matching-prep readiness cue inside the existing local-first semantic workspace;
+- derived the gate entirely from existing intake, semantic completeness, semantic review, approval, and reopen-after-change state rather than introducing a new matching subsystem or persistence family;
+- surfaced blocked, conditionally plausible, and ready states with one compact dominant reason;
+- verified gate behavior across no-map, mixed review, approved, reopened-after-change, reorder, split, and merge scenarios through local app-level tests alongside prior regressions;
+- synchronized the repository state layer after real implementation progress.
+
+### Repository effect
+- the repository now makes the boundary between semantic review and later matching prep legible inside the current desktop-facing runtime;
+- semantic review micro-orientation is no longer the strongest next gain by inertia alone, because the workspace now tells the editor when later matching prep is structurally blocked, still under review, or ready to open;
+- the implementation remains intentionally narrow and does not introduce actual matching prep behavior, backend expansion, or a workflow engine.
+
+### Recommended next step
+Execute `F-018 First Matching Prep Entry Slice`
+
+
 ## 2026-04-08 - F-016 completed and focused review slice became legible as a span
 
 ### Completed

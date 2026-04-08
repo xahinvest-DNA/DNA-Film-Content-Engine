@@ -2,44 +2,48 @@
 
 Last updated: 2026-04-08
 Status: ready
-Task ID: F-017
+Task ID: F-018
 Task type: implementation
-Title: Semantic Review Lane Markers
+Title: First Matching Prep Entry Slice
 
 ## Goal
 
-Extend the local-first semantic workspace with one minimal lane-marker cue so the editor can read the currently active semantic review lane more explicitly without opening broader workflow, backend/API, or dashboard scope.
+Open the first minimal local-first `Matching Prep` entry surface so an approved semantic map can feed one real downstream-facing handoff slice without implementing scene matching automation, backend/API work, or a broader planning workflow.
 
 ## Why this is next
 
-The repository now has focus modes, step-through navigation, adjacent semantic context, and a compact focus-span summary. The strongest next bounded step is to make the current review lane itself read more intentionally by surfacing one compact lane-marker cue tied to the active focus mode, rather than broadening into matching, planning, or a larger review surface.
+The repository now has a bounded semantic workspace with explicit review state, approval guardrails, reopen-after-change clarity, completeness and issue visibility, suitability review, focused navigation, adjacent context, focus-span summary, and a compact readiness gate that says whether the current semantic map is structurally ready for later matching prep.
+
+That means the strongest next bounded gain is no longer another semantic review micro-cue. The next stronger step is to prove that this approved semantic state can open one real entry surface for the later lane, while still staying local-first and intentionally narrow.
 
 ## In scope
 
-- one bounded follow-up packet on top of the completed F-016 runtime slice
-- one minimal lane-marker cue for the current focus mode inside the semantic workspace
-- lightweight language or visual labeling that makes the active review lane more legible without redesigning the workspace
-- only the runtime and local-state touches required to keep lane markers coherent after focus changes and empty-state transitions
-- local tests covering lane-marker behavior without regressing prior packets
+- one bounded follow-up packet on top of completed `F-017R`
+- one minimal `Matching Prep` entry surface inside the current desktop-facing runtime
+- one local-first handoff view derived from the approved semantic map only
+- one narrow blocked-vs-open transition between semantic approval state and matching-prep entry
+- only the smallest local data/runtime changes required to make that entry slice executable or testable
+- local tests covering approved-entry behavior, blocked behavior, and reload coherence where applicable
 
 ## Out of scope
 
-- matching prep implementation
-- scene-matching automation
-- downstream output generation
+- scene matching automation
+- shot or asset matching logic
 - backend or API design
-- generalized workflow queue or review engine
-- broad navigation expansion
-- packet expansion beyond semantic review lane markers
+- workflow queues or planning dashboards
+- downstream output generation
+- generalized matching-prep subsystem buildout
+- packet expansion beyond the first bounded matching-prep entry slice
 
 ## Recommended validation
 
 Validate that the resulting packet delivers:
 
-- one clear lane-marker cue inside the desktop-facing semantic workspace
-- better readability of which review lane is currently active without dashboard sprawl
-- coherent updates after focus changes and empty-state transitions
-- no scope explosion into matching, backend, or downstream-output implementation
+- one clear local-first `Matching Prep` entry path tied to the current semantic project state
+- blocked behavior while the semantic map is not yet structurally ready
+- open behavior once the semantic map is approved and matching-prep-ready
+- one narrow downstream-facing handoff surface without matching automation or backend expansion
+- no scope explosion into scene matching, backend, or downstream-output implementation
 
 ## Required handoff format
 

@@ -1,21 +1,27 @@
-﻿# Codex Tasks
+# Codex Tasks
 
 Last updated: 2026-04-08
-Current focus: F-017 semantic review lane markers
+Current focus: F-018 first matching prep entry slice
 
 ## Working rule
 Tasks should be bounded, product-visible, and small enough to preserve continuity without turning the repository into micro-slice overload.
 
 ## Active task
 
-### F-017
+### F-018
 - Status: active
-- Module: semantic review lane markers
-- Goal: extend the semantic workspace with one minimal lane-marker cue so editors can read the currently active review lane without drifting into matching, backend, or downstream execution.
+- Module: first matching prep entry slice
+- Goal: open one minimal local-first `Matching Prep` entry surface so an approved semantic map can feed a real downstream-facing handoff slice without drifting into scene matching automation, backend, or downstream execution buildout.
 - Input documents: `00_INDEX.md`, `01_MASTER/CURRENT_STATE.md`, `01_MASTER/DECISIONS.md`, `01_MASTER/ROADMAP.md`, `01_MASTER/SSOT_MAP.md`, `05_CODEX/NEXT_TASK.md`, `02_PRODUCT/MVP_DESKTOP_INTERFACE.md`, `02_PRODUCT/NAVIGATION_BEHAVIOR.md`, `03_MODULES/DNA_SEMANTIC_ENGINE.md`
-- Expected result: one minimal semantic workspace update where the current review lane becomes easier to read without scope explosion.
+- Expected result: one bounded local-first runtime update where the semantic workspace can open the first real matching-prep entry boundary without scope explosion.
 
 ## Completed tasks
+
+### F-017R
+- Status: completed
+- Module: semantic review to matching prep readiness gate
+- Goal: add one compact readiness gate that tells the editor whether the semantic map is structurally ready to feed later matching prep and, if not, why not.
+- Outcome: added a compact matching-prep readiness cue derived from existing intake, semantic completeness, review-state, approval, and reopen signals; surfaced blocked, conditionally plausible, and ready states in the current workspace; verified coherent gate behavior across approval, reopen-after-change, reorder, split, and merge paths; and replaced the weaker lane-marker step by explicit efficiency-gate reasoning.
 
 ### F-016
 - Status: completed
@@ -38,8 +44,8 @@ Tasks should be bounded, product-visible, and small enough to preserve continuit
 ### F-014
 - Status: completed
 - Module: semantic review next-issue navigation and focus-step controls
-- Goal: extend the semantic workspace with one minimal next/previous control so editors can move through the current focused review set without drifting into matching, backend, or downstream execution.
-- Outcome: added bounded previous/next controls tied to the current focused semantic list, surfaced a compact focused-position cue, disabled navigation cleanly at focused-set boundaries, kept selection coherent across focus changes, added local validation for focused navigation behavior, and kept the packet intentionally narrow.
+- Goal: extend the semantic workspace with one minimal step-through control so editors can move through the currently focused semantic review subset without broadening navigation scope.
+- Outcome: added bounded previous/next controls tied to the visible focused subset, added a compact current-position cue, kept navigation stable at subset boundaries and after focus changes, added local validation, and preserved the narrow local-first workspace boundary.
 
 ### F-013
 - Status: completed

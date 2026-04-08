@@ -2,10 +2,10 @@
 
 Last updated: 2026-04-08
 Status: active
-Current stage: F-016 semantic review focus-span summary is completed
-Active module: F-017 semantic review lane markers
-Active frontier: F-017 Semantic Review Lane Markers
-Active question: how to add one compact lane-marker cue for the active focus mode so editors can immediately read which review lane they are in without expanding the workspace into a dashboard or planner
+Current stage: F-017R semantic review to matching prep readiness gate is completed
+Active module: F-018 first matching prep entry slice
+Active frontier: F-018 First Matching Prep Entry Slice
+Active question: what is the smallest local-first matching-prep entry surface that can consume an approved semantic map without opening scene matching automation, backend/API scope, or a broader downstream workflow lane
 
 ## Where the project is now
 
@@ -21,15 +21,16 @@ At this point:
 - data schema, project file format, and asset-pipeline boundaries are completed through `DATA_SCHEMA.md`, `PROJECT_FILE_FORMAT.md`, and `ASSET_PIPELINE.md`;
 - render/export-facing schema and downstream output boundaries are completed through `RENDER_EXPORT_SCHEMA.md`, `LONG_VIDEO_BUILDER.md`, `SHORTS_REELS_BUILDER.md`, `CAROUSEL_BUILDER.md`, and `PACKAGING_ENGINE.md`;
 - the first bounded MVP implementation slice is real through a local-first runtime that can create a project, accept analysis text, derive semantic blocks, persist them on disk, and inspect them in a desktop-facing semantic workspace;
-- the semantic workspace now supports persisted selected-block editing, project-level review state, persisted ordering, approval-readiness visibility, one approval guardrail, explicit reopened-after-change visibility that survives reload, persisted semantic boundary editing through minimal split/merge controls, deterministic completeness / issue visibility across the project and selected-block inspector, and persisted output-suitability review controls for long video, shorts/reels, carousel, and packaging;
+- the semantic workspace now supports persisted selected-block editing, project-level review state, persisted ordering, approval-readiness visibility, one approval guardrail, explicit reopened-after-change visibility that survives reload, persisted semantic boundary editing through minimal split/merge controls, deterministic completeness and issue visibility, persisted output-suitability review controls, bounded focus filtering, focused next/previous navigation, adjacent canonical context, focus-span summary, and one explicit matching-prep readiness gate derived from existing semantic-review state;
+- the matching-prep readiness gate now makes blocked, conditionally plausible, and ready-for-later-matching-prep states legible inside the current local-first semantic workspace without introducing actual matching prep behavior;
 - the main MVP operating surface remains fixed as `Semantic Map Workspace`;
 - the meaning-first architecture is now explicit across product, domain, schema, project-package, asset, downstream output, and implementation layers;
 - the project now uses a manager-led execution model;
 - ChatGPT owns strongest-next-step selection;
 - Codex owns repository execution and state synchronization;
 - manager review depth and next-step efficiency-gate doctrine are now fixed in repository governance documents rather than left to chat memory;
-- F-016 is completed and no longer the active runtime frontier;
-- the current active frontier is now `F-017 Semantic Review Lane Markers`.
+- F-017R is completed and no longer the active runtime frontier;
+- the current active frontier is now `F-018 First Matching Prep Entry Slice`.
 
 ## Accepted boundaries right now
 
@@ -48,13 +49,13 @@ At this point:
 
 ## Open items
 
-- add one compact lane-marker cue that makes the currently active review mode read more explicitly inside Semantic Map Workspace;
-- keep the current focus mode and review lane semantics readable without adding a planning panel or dashboard surface;
-- improve review orientation while preserving the existing selected-block, adjacent-context, and focus-span surfaces.
+- open one minimal local-first matching-prep entry surface that consumes an approved semantic map without implementing scene matching automation;
+- make the transition from semantic approval to matching-prep entry concrete enough to prove the next lane can open for real rather than only through summary text;
+- keep the next packet bounded to one entry slice, one local handoff shape, and one narrow desktop-facing surface update.
 
 ## Next step
 
-Open and execute one bounded packet for `F-017 Semantic Review Lane Markers`.
+Open and execute one bounded packet for `F-018 First Matching Prep Entry Slice`.
 
 ## What must not be lost in a new chat
 
@@ -63,6 +64,6 @@ Open and execute one bounded packet for `F-017 Semantic Review Lane Markers`.
 - manager-led execution model is fixed.
 - MVP main surface is `Semantic Map Workspace`.
 - product, domain, schema, project-file, asset, and downstream output-boundary layers are fixed.
-- F-016 is completed with a compact focus-span summary that shows the size and canonical sequence range of the current focused semantic subset and updates coherently after focus, navigation, reorder, split, and merge changes.
+- F-017R is completed with one compact matching-prep readiness gate that derives blocked, conditionally plausible, and ready states from existing semantic-review state and keeps that gate coherent after approval, reopen-after-change, reorder, split, and merge behavior.
 - ChatGPT must read Codex handoffs as management signals about capability gained, capability unlocked, unresolved gap, and packet-size efficiency before choosing what comes next.
-- the next strong active runtime step is `F-017 Semantic Review Lane Markers` unless a stronger efficiency-gated alternative is explicitly justified.
+- the next strong active runtime step is `F-018 First Matching Prep Entry Slice`, because the semantic workspace is now sufficiently legible and the stronger next gain is to open the first bounded downstream entry surface rather than continue semantic micro-orientation by inertia.

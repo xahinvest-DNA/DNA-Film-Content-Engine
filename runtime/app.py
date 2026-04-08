@@ -65,6 +65,7 @@ class DNAFilmApp:
         self.approval_message_text = tk.StringVar(value="Approval message: Semantic map remains under edit.")
         self.approval_reason_text = tk.StringVar(value="Approval reason: Approve is blocked until semantic review is moved to ready_for_review.")
         self.reopen_text = tk.StringVar(value="Reopen state: none")
+        self.matching_prep_text = tk.StringVar(value="Matching prep readiness: blocked | semantic map not established yet")
         self.placeholder_text = tk.StringVar(value="Available after semantic-map approval in a later bounded packet.")
 
         self.project_name_var = tk.StringVar()
@@ -105,6 +106,7 @@ class DNAFilmApp:
         ttk.Label(header, textvariable=self.approval_message_text, wraplength=980).grid(row=7, column=0, sticky="w")
         ttk.Label(header, textvariable=self.approval_reason_text, wraplength=980).grid(row=8, column=0, sticky="w")
         ttk.Label(header, textvariable=self.reopen_text, wraplength=980).grid(row=9, column=0, sticky="w")
+        ttk.Label(header, textvariable=self.matching_prep_text, wraplength=980).grid(row=10, column=0, sticky="w")
 
         nav = ttk.Frame(self.root, padding=(12, 8))
         nav.grid(row=1, column=0, sticky="nsw")
@@ -220,9 +222,10 @@ class DNAFilmApp:
         ttk.Label(frame, textvariable=self.completeness_text, wraplength=700).grid(row=8, column=0, columnspan=2, sticky="w", pady=(4, 0))
         ttk.Label(frame, textvariable=self.issues_summary_text, wraplength=700).grid(row=9, column=0, columnspan=2, sticky="w", pady=(4, 0))
         ttk.Label(frame, textvariable=self.readiness_text, wraplength=700).grid(row=10, column=0, columnspan=2, sticky="w", pady=(4, 0))
-        ttk.Label(frame, textvariable=self.approval_message_text, wraplength=700).grid(row=11, column=0, columnspan=2, sticky="w", pady=(4, 0))
-        ttk.Label(frame, textvariable=self.approval_reason_text, wraplength=700).grid(row=12, column=0, columnspan=2, sticky="w", pady=(4, 0))
-        ttk.Label(frame, textvariable=self.reopen_text, wraplength=700).grid(row=13, column=0, columnspan=2, sticky="w", pady=(4, 0))
+        ttk.Label(frame, textvariable=self.matching_prep_text, wraplength=700).grid(row=11, column=0, columnspan=2, sticky="w", pady=(4, 0))
+        ttk.Label(frame, textvariable=self.approval_message_text, wraplength=700).grid(row=12, column=0, columnspan=2, sticky="w", pady=(4, 0))
+        ttk.Label(frame, textvariable=self.approval_reason_text, wraplength=700).grid(row=13, column=0, columnspan=2, sticky="w", pady=(4, 0))
+        ttk.Label(frame, textvariable=self.reopen_text, wraplength=700).grid(row=14, column=0, columnspan=2, sticky="w", pady=(4, 0))
         return frame
 
     def _build_intake_view(self, parent: ttk.Frame) -> ttk.Frame:
@@ -270,9 +273,10 @@ class DNAFilmApp:
         ttk.Label(frame, textvariable=self.focus_span_text, wraplength=760).grid(row=4, column=0, sticky="w")
         ttk.Label(frame, textvariable=self.summary_text, wraplength=760).grid(row=5, column=0, sticky="w")
         ttk.Label(frame, textvariable=self.issues_summary_text, wraplength=760).grid(row=6, column=0, sticky="w")
-        ttk.Label(frame, textvariable=self.approval_message_text, wraplength=760).grid(row=7, column=0, sticky="w")
-        ttk.Label(frame, textvariable=self.approval_reason_text, wraplength=760).grid(row=8, column=0, sticky="w")
-        ttk.Label(frame, textvariable=self.reopen_text, wraplength=760).grid(row=9, column=0, sticky="w")
+        ttk.Label(frame, textvariable=self.matching_prep_text, wraplength=760).grid(row=7, column=0, sticky="w")
+        ttk.Label(frame, textvariable=self.approval_message_text, wraplength=760).grid(row=8, column=0, sticky="w")
+        ttk.Label(frame, textvariable=self.approval_reason_text, wraplength=760).grid(row=9, column=0, sticky="w")
+        ttk.Label(frame, textvariable=self.reopen_text, wraplength=760).grid(row=10, column=0, sticky="w")
         return frame
 
     def _switch_view(self, name: str) -> None:
@@ -478,11 +482,13 @@ class DNAFilmApp:
         reopen_reason = project.semantic_review_record.get("reopen_reason", "") or "none"
         reopened = "reopened" if project.semantic_review_record.get("reopened_after_change") else "not_reopened"
         self.reopen_text.set(f"Reopen state: {reopened} | reason: {reopen_reason}")
+        matching_prep_gate = self._matching_prep_gate_text(project)
+        self.matching_prep_text.set(matching_prep_gate)
         warnings = project.intake_record.get("intake_warnings", [])
         warning_text = f"Warnings: {', '.join(warnings)}" if warnings else "Warnings: none"
         suitability_summary = self._project_suitability_summary(project)
         self.summary_text.set(
-            f"Project status: {project.project_record['project_status']} | Intake: {project.intake_record['intake_readiness']} | Semantic blocks: {len(project.semantic_blocks)} | Review: {project.semantic_review_record['review_status']} | Completeness: {completeness_label} | Readiness: {readiness} | Suitability: {suitability_summary} | {warning_text}"
+            f"Project status: {project.project_record['project_status']} | Intake: {project.intake_record['intake_readiness']} | Semantic blocks: {len(project.semantic_blocks)} | Review: {project.semantic_review_record['review_status']} | Completeness: {completeness_label} | Readiness: {readiness} | {matching_prep_gate} | Suitability: {suitability_summary} | {warning_text}"
         )
 
         self.analysis_text.delete("1.0", "end")
@@ -742,6 +748,35 @@ class DNAFilmApp:
             return "reopened_after_change"
         completeness_label, _, _ = semantic_completeness(project.intake_record, project.semantic_blocks)
         return {"Incomplete": "premature", "Mixed": "mixed"}.get(completeness_label, "plausibly_reasonable")
+
+    def _matching_prep_gate(self, project: ProjectSlice) -> tuple[str, str]:
+        if project.intake_record["intake_readiness"] != "ready":
+            return ("blocked", "semantic map not established yet")
+        if not project.semantic_blocks:
+            return ("blocked", "semantic map has no blocks yet")
+        if project.semantic_review_record.get("reopened_after_change"):
+            return ("blocked", "semantic approval was reopened after change")
+
+        completeness_label, issue_count, _ = semantic_completeness(project.intake_record, project.semantic_blocks)
+        review_status = project.semantic_review_record["review_status"]
+
+        if review_status == "approved":
+            return ("ready", "semantic map approved")
+        if completeness_label == "Incomplete":
+            return ("blocked", "semantic issues remain")
+        if completeness_label == "Mixed":
+            return ("conditionally plausible", "semantic map is mixed and should be tightened")
+        if review_status == "under_edit":
+            return ("blocked", "semantic map is still under edit")
+        if review_status == "ready_for_review":
+            if issue_count:
+                return ("conditionally plausible", "semantic review is staged but issues remain visible")
+            return ("conditionally plausible", "semantic review is staged but approval is still pending")
+        return ("conditionally plausible", "semantic review looks plausibly ready but is not yet approved")
+
+    def _matching_prep_gate_text(self, project: ProjectSlice) -> str:
+        state, reason = self._matching_prep_gate(project)
+        return f"Matching prep readiness: {state} | {reason}"
 
     def _suitability_summary(self, block: dict) -> str:
         short = {

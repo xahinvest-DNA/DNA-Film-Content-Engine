@@ -916,5 +916,133 @@ class DNAFilmAppTests(unittest.TestCase):
                 root.destroy()
 
 
+    def test_app_matching_prep_gate_tracks_under_edit_to_approved(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Matching Gate Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+
+                    self.assertEqual(app.matching_prep_text.get(), "Matching prep readiness: blocked | semantic map not established yet")
+
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+                    self.assertEqual(app.matching_prep_text.get(), "Matching prep readiness: conditionally plausible | semantic map is mixed and should be tightened")
+
+                    project = app.project
+                    for block in list(project.semantic_blocks):
+                        project = app.store.update_semantic_block(
+                            project.project_dir,
+                            block["record_id"],
+                            block["title"],
+                            block["semantic_role"],
+                            "Editor clarification added.",
+                        )
+                    app._load_project_into_ui(project)
+                    self.assertEqual(app.matching_prep_text.get(), "Matching prep readiness: blocked | semantic map is still under edit")
+
+                    app.review_status_var.set("ready_for_review")
+                    app.save_review_status()
+                    self.assertEqual(app.matching_prep_text.get(), "Matching prep readiness: conditionally plausible | semantic review is staged but approval is still pending")
+
+                    app.review_status_var.set("approved")
+                    app.save_review_status()
+                    self.assertEqual(app.matching_prep_text.get(), "Matching prep readiness: ready | semantic map approved")
+            finally:
+                root.destroy()
+
+    def test_app_matching_prep_gate_surfaces_reopen_and_structure_changes(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Reopen Gate Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+
+                    project = app.project
+                    for block in list(project.semantic_blocks):
+                        project = app.store.update_semantic_block(
+                            project.project_dir,
+                            block["record_id"],
+                            block["title"],
+                            block["semantic_role"],
+                            "Editor clarification added.",
+                        )
+                    app._load_project_into_ui(project)
+                    app.review_status_var.set("ready_for_review")
+                    app.save_review_status()
+                    app.review_status_var.set("approved")
+                    app.save_review_status()
+                    self.assertEqual(app.matching_prep_text.get(), "Matching prep readiness: ready | semantic map approved")
+
+                    second_block_id = app.project.semantic_blocks[1]["record_id"]
+                    app._select_block_by_id(second_block_id)
+                    app.reorder_selected_block("up")
+                    self.assertEqual(app.matching_prep_text.get(), "Matching prep readiness: blocked | semantic approval was reopened after change")
+
+                    reloaded = app.store.load_project(app.project.project_dir)
+                    self.assertTrue(reloaded.semantic_review_record["reopened_after_change"])
+                    self.assertEqual(app._matching_prep_gate_text(reloaded), "Matching prep readiness: blocked | semantic approval was reopened after change")
+            finally:
+                root.destroy()
+
+    def test_app_matching_prep_gate_handles_mixed_review_state(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Mixed Gate Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+
+                    first_block = app.project.semantic_blocks[0]
+                    second_block = app.project.semantic_blocks[1]
+                    project = app.store.update_semantic_block(
+                        app.project.project_dir,
+                        second_block["record_id"],
+                        second_block["title"],
+                        second_block["semantic_role"],
+                        "Editor clarification added.",
+                    )
+                    app._load_project_into_ui(project)
+                    self.assertEqual(app.matching_prep_text.get(), "Matching prep readiness: conditionally plausible | semantic map is mixed and should be tightened")
+
+                    app._select_block_by_id(first_block["record_id"])
+                    app.split_sentence_var.set("1")
+                    app.split_selected_block()
+                    self.assertEqual(app.matching_prep_text.get(), "Matching prep readiness: conditionally plausible | semantic map is mixed and should be tightened")
+
+                    current_first = app.project.semantic_blocks[0]["record_id"]
+                    app._select_block_by_id(current_first)
+                    app.merge_selected_block("down")
+                    self.assertEqual(app.matching_prep_text.get(), "Matching prep readiness: conditionally plausible | semantic map is mixed and should be tightened")
+            finally:
+                root.destroy()
+
 if __name__ == "__main__":
     unittest.main()
