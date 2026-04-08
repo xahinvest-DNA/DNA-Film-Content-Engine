@@ -1163,5 +1163,117 @@ class DNAFilmAppTests(unittest.TestCase):
             finally:
                 root.destroy()
 
+
+    def test_app_matching_prep_asset_registration_persists_after_reload(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Matching Prep Asset Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+
+                    project = app.project
+                    for block in list(project.semantic_blocks):
+                        project = app.store.update_semantic_block(
+                            project.project_dir,
+                            block["record_id"],
+                            block["title"],
+                            block["semantic_role"],
+                            "Editor clarification added.",
+                        )
+                    app._load_project_into_ui(project)
+                    app.review_status_var.set("ready_for_review")
+                    app.save_review_status()
+                    app.review_status_var.set("approved")
+                    app.save_review_status()
+
+                    app._switch_view("Matching Prep")
+                    app.asset_label_var.set("Main subtitle file")
+                    app.asset_type_var.set("subtitle_reference")
+                    app.asset_reference_var.set("E:/demo/subtitles.srt")
+                    app.asset_notes_text.insert("1.0", "Russian subtitle reference for later matching review.")
+                    app.add_matching_prep_asset()
+
+                    app.asset_label_var.set("Film scene folder")
+                    app.asset_type_var.set("film_asset_reference")
+                    app.asset_reference_var.set("E:/demo/scene-stills")
+                    app.asset_notes_text.insert("1.0", "Folder with manually prepared scene stills.")
+                    app.add_matching_prep_asset()
+
+                handoff = app.matching_prep_handoff.get("1.0", "end").strip()
+                reloaded = app.store.load_project(app.project.project_dir)
+
+                self.assertEqual(len(reloaded.matching_prep_assets), 2)
+                self.assertIn("semantic-plus-asset registration present", app.matching_prep_summary_text.get())
+                self.assertIn("2 prep input(s) registered", app.matching_asset_summary_text.get())
+                self.assertIn("Main subtitle file", handoff)
+                self.assertIn("Film scene folder", handoff)
+                self.assertIn("E:/demo/subtitles.srt", handoff)
+                self.assertEqual(reloaded.matching_prep_assets[0]["asset_type"], "subtitle_reference")
+                self.assertEqual(reloaded.matching_prep_assets[1]["asset_type"], "film_asset_reference")
+            finally:
+                root.destroy()
+
+    def test_app_matching_prep_shows_registered_inputs_while_semantic_state_is_gated(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Matching Prep Gated Asset Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+
+                    project = app.project
+                    for block in list(project.semantic_blocks):
+                        project = app.store.update_semantic_block(
+                            project.project_dir,
+                            block["record_id"],
+                            block["title"],
+                            block["semantic_role"],
+                            "Editor clarification added.",
+                        )
+                    app._load_project_into_ui(project)
+                    app.review_status_var.set("ready_for_review")
+                    app.save_review_status()
+                    app.review_status_var.set("approved")
+                    app.save_review_status()
+
+                    app._switch_view("Matching Prep")
+                    app.asset_label_var.set("Transcript reference")
+                    app.asset_type_var.set("transcript_reference")
+                    app.asset_reference_var.set("E:/demo/transcript.txt")
+                    app.asset_notes_text.insert("1.0", "Transcript prepared for later semantic-to-scene review.")
+                    app.add_matching_prep_asset()
+
+                    target_block_id = app.project.semantic_blocks[1]["record_id"]
+                    app._select_block_by_id(target_block_id)
+                    app.reorder_selected_block("up")
+                    app._switch_view("Matching Prep")
+
+                handoff = app.matching_prep_handoff.get("1.0", "end").strip()
+                self.assertEqual(app.matching_prep_text.get(), "Matching prep readiness: blocked | semantic approval was reopened after change")
+                self.assertIn("1 prep input(s) registered but currently gated", app.matching_asset_summary_text.get())
+                self.assertIn("Transcript reference", handoff)
+                self.assertIn("semantic approval was reopened after change", handoff)
+            finally:
+                root.destroy()
+
 if __name__ == "__main__":
     unittest.main()

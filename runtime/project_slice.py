@@ -11,6 +11,7 @@ from pathlib import Path
 PROJECT_FORMAT_VERSION = "0.4"
 ANALYSIS_RECORD_FILENAME = "analysis_source.json"
 REVIEW_RECORD_FILENAME = "semantic_review.json"
+MATCHING_PREP_ASSET_FILENAME = "asset_references.json"
 ALLOWED_SEMANTIC_ROLES = (
     "claim",
     "insight",
@@ -26,6 +27,12 @@ ALLOWED_REVIEW_STATES = (
 ALLOWED_REORDER_DIRECTIONS = ("up", "down")
 ALLOWED_MERGE_DIRECTIONS = ("up", "down")
 ALLOWED_OUTPUT_SUITABILITY = ("candidate", "strong", "weak", "not_suitable")
+ALLOWED_MATCHING_ASSET_TYPES = (
+    "film_asset_reference",
+    "subtitle_reference",
+    "transcript_reference",
+    "other_prep_reference",
+)
 
 
 APPROVAL_READY_REASON = "Semantic map is ready for approval."
@@ -204,6 +211,7 @@ class ProjectSlice:
     analysis_source_record: dict | None
     semantic_review_record: dict
     semantic_blocks: list[dict]
+    matching_prep_assets: list[dict]
 
 
 class ProjectSliceStore:
@@ -261,7 +269,7 @@ class ProjectSliceStore:
         }
         semantic_review_record = self._default_review_record(project_id, created_at)
 
-        self._write_project_state(project_dir, manifest, project_record, intake_record, None, semantic_review_record, [])
+        self._write_project_state(project_dir, manifest, project_record, intake_record, None, semantic_review_record, [], [])
         return self.load_project(project_dir)
 
     def load_project(self, project_dir: Path) -> ProjectSlice:
@@ -272,6 +280,7 @@ class ProjectSliceStore:
         legacy_analysis_record_path = project_dir / "records" / "intake" / "analysis.txt.json"
         semantic_record_path = project_dir / "records" / "semantic" / "semantic_blocks.json"
         review_record_path = project_dir / "records" / "review" / REVIEW_RECORD_FILENAME
+        matching_prep_asset_path = project_dir / "records" / "matching_prep" / MATCHING_PREP_ASSET_FILENAME
 
         if analysis_record_path.exists():
             analysis_source_record = read_json(analysis_record_path)
@@ -288,6 +297,7 @@ class ProjectSliceStore:
 
         semantic_blocks = read_json(semantic_record_path)["blocks"] if semantic_record_path.exists() else []
         semantic_blocks = normalize_semantic_blocks(semantic_blocks)
+        matching_prep_assets = read_json(matching_prep_asset_path)["entries"] if matching_prep_asset_path.exists() else []
         return ProjectSlice(
             project_dir=project_dir,
             manifest=manifest,
@@ -296,6 +306,7 @@ class ProjectSliceStore:
             analysis_source_record=analysis_source_record,
             semantic_review_record=semantic_review_record,
             semantic_blocks=semantic_blocks,
+            matching_prep_assets=matching_prep_assets,
         )
 
     def save_analysis_text(
@@ -356,6 +367,7 @@ class ProjectSliceStore:
             analysis_source_record,
             semantic_review_record,
             semantic_blocks,
+            project.matching_prep_assets,
         )
         (project_dir / "sources" / "analysis").mkdir(parents=True, exist_ok=True)
         (project_dir / "sources" / "analysis" / source_label).write_text(normalized_text + "\n", encoding="utf-8")
@@ -561,6 +573,7 @@ class ProjectSliceStore:
                 analysis_source_record,
                 semantic_review_record,
                 project.semantic_blocks,
+                project.matching_prep_assets,
             )
             return self.load_project(project_dir)
 
@@ -588,6 +601,66 @@ class ProjectSliceStore:
             analysis_source_record,
             semantic_review_record,
             project.semantic_blocks,
+            project.matching_prep_assets,
+        )
+        return self.load_project(project_dir)
+
+    def add_matching_prep_asset(
+        self,
+        project_dir: Path,
+        asset_label: str,
+        asset_type: str,
+        reference_value: str = "",
+        notes: str = "",
+    ) -> ProjectSlice:
+        clean_label = asset_label.strip()
+        clean_type = asset_type.strip()
+        clean_reference = reference_value.strip()
+        clean_notes = notes.strip()
+        if not clean_label:
+            raise ValueError("Asset label is required for Matching Prep registration.")
+        if clean_type not in ALLOWED_MATCHING_ASSET_TYPES:
+            raise ValueError("Asset type is invalid for this Matching Prep slice.")
+        if not clean_reference and not clean_notes:
+            raise ValueError("Add either a local path/reference or notes for this Matching Prep entry.")
+
+        project = self.load_project(project_dir)
+        now = utc_now()
+        entries = [dict(entry) for entry in project.matching_prep_assets]
+        entries.append(
+            {
+                "project_id": project.manifest["project_id"],
+                "record_id": f"prep-asset-{len(entries) + 1:03d}",
+                "record_type": "matching_prep_asset_reference",
+                "asset_label": clean_label,
+                "asset_type": clean_type,
+                "reference_value": clean_reference,
+                "notes": clean_notes,
+                "created_at": now,
+                "updated_at": now,
+            }
+        )
+
+        manifest = dict(project.manifest)
+        manifest["updated_at"] = now
+        project_record = dict(project.project_record)
+        project_record["updated_at"] = now
+        intake_record = dict(project.intake_record)
+        intake_record["updated_at"] = now
+        analysis_source_record = self._copy_analysis_record(project.analysis_source_record, now)
+        semantic_review_record = dict(project.semantic_review_record)
+        semantic_review_record["updated_at"] = now
+
+        self._apply_project_summary(project_record, intake_record, project.semantic_blocks, semantic_review_record)
+        self._write_project_state(
+            project_dir,
+            manifest,
+            project_record,
+            intake_record,
+            analysis_source_record,
+            semantic_review_record,
+            project.semantic_blocks,
+            entries,
         )
         return self.load_project(project_dir)
 
@@ -619,6 +692,7 @@ class ProjectSliceStore:
             analysis_source_record,
             semantic_review_record,
             semantic_blocks,
+            project.matching_prep_assets,
         )
         return self.load_project(project_dir)
 
@@ -650,6 +724,7 @@ class ProjectSliceStore:
         analysis_source_record: dict | None,
         semantic_review_record: dict,
         semantic_blocks: list[dict],
+        matching_prep_assets: list[dict],
     ) -> None:
         semantic_blocks = normalize_semantic_blocks(semantic_blocks)
         write_json(project_dir / "project.manifest", manifest)
@@ -660,6 +735,7 @@ class ProjectSliceStore:
             write_json(project_dir / "records" / "intake" / ANALYSIS_RECORD_FILENAME, analysis_source_record)
         write_json(project_dir / "records" / "review" / REVIEW_RECORD_FILENAME, semantic_review_record)
         write_json(project_dir / "records" / "semantic" / "semantic_blocks.json", {"blocks": semantic_blocks})
+        write_json(project_dir / "records" / "matching_prep" / MATCHING_PREP_ASSET_FILENAME, {"entries": matching_prep_assets})
 
     def _status_payload(
         self,

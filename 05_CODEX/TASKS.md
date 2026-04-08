@@ -1,21 +1,27 @@
 # Codex Tasks
 
 Last updated: 2026-04-08
-Current focus: F-019 matching prep asset registration slice
+Current focus: F-020 first manual match candidate stub slice
 
 ## Working rule
 Tasks should be bounded, product-visible, and small enough to preserve continuity without turning the repository into micro-slice overload.
 
 ## Active task
 
-### F-019
+### F-020
 - Status: active
-- Module: matching prep asset registration slice
-- Goal: add one minimal local-first film-side input registration surface so Matching Prep can hold both an approved semantic handoff and one explicit asset-side entry boundary without drifting into scene matching automation, backend, or downstream execution buildout.
+- Module: first manual match candidate stub slice
+- Goal: add one minimal local-first manual semantic-to-asset candidate stub inside Matching Prep without drifting into scene matching automation, ranking, timecode, backend, or downstream execution buildout.
 - Input documents: `00_INDEX.md`, `01_MASTER/CURRENT_STATE.md`, `01_MASTER/DECISIONS.md`, `01_MASTER/ROADMAP.md`, `01_MASTER/SSOT_MAP.md`, `05_CODEX/NEXT_TASK.md`, `02_PRODUCT/MVP_DESKTOP_INTERFACE.md`, `02_PRODUCT/NAVIGATION_BEHAVIOR.md`, `03_MODULES/SCENE_MATCHING.md`
-- Expected result: one bounded local-first runtime update where Matching Prep gains one explicit film-side registration slice without scope explosion.
+- Expected result: one bounded local-first runtime update where Matching Prep gains one explicit manual candidate artifact without scope explosion.
 
 ## Completed tasks
+
+### F-019
+- Status: completed
+- Module: matching prep asset registration slice
+- Goal: add one minimal local-first film-side input registration surface so Matching Prep can hold both an approved semantic handoff and one explicit asset-side entry boundary without drifting into scene matching automation, backend, or downstream execution buildout.
+- Outcome: added one persisted film-side prep input registration path inside Matching Prep, stored registered references locally in the project package, surfaced semantic-only versus semantic-plus-asset visibility in the prep lane, kept gated/open semantic logic intact, verified registration and reload coherence through local tests, and kept the packet intentionally narrow.
 
 ### F-018
 - Status: completed

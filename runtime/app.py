@@ -5,6 +5,7 @@ from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 
 from runtime.project_slice import (
+    ALLOWED_MATCHING_ASSET_TYPES,
     ALLOWED_OUTPUT_SUITABILITY,
     ALLOWED_REVIEW_STATES,
     ALLOWED_SEMANTIC_ROLES,
@@ -68,6 +69,7 @@ class DNAFilmApp:
         self.matching_prep_text = tk.StringVar(value="Matching prep readiness: blocked | semantic map not established yet")
         self.matching_prep_status_text = tk.StringVar(value="Matching Prep is blocked until the semantic map is approved.")
         self.matching_prep_summary_text = tk.StringVar(value="Prep handoff: 0 approved semantic blocks available.")
+        self.matching_asset_summary_text = tk.StringVar(value="Film-side registration: no prep inputs registered yet.")
         self.placeholder_text = tk.StringVar(value="Available after semantic-map approval in a later bounded packet.")
 
         self.project_name_var = tk.StringVar()
@@ -83,6 +85,9 @@ class DNAFilmApp:
         self.shorts_reels_var = tk.StringVar(value=ALLOWED_OUTPUT_SUITABILITY[0])
         self.carousel_var = tk.StringVar(value=ALLOWED_OUTPUT_SUITABILITY[0])
         self.packaging_var = tk.StringVar(value=ALLOWED_OUTPUT_SUITABILITY[0])
+        self.asset_label_var = tk.StringVar()
+        self.asset_type_var = tk.StringVar(value=ALLOWED_MATCHING_ASSET_TYPES[0])
+        self.asset_reference_var = tk.StringVar()
 
         self._build_layout()
         self._switch_view("Project Home")
@@ -286,14 +291,31 @@ class DNAFilmApp:
         frame = ttk.Frame(parent, padding=12)
         frame.grid(row=0, column=0, sticky="nsew")
         frame.columnconfigure(0, weight=1)
-        frame.rowconfigure(4, weight=1)
+        frame.rowconfigure(6, weight=1)
 
         ttk.Label(frame, text="Matching Prep", font=("Segoe UI", 14, "bold")).grid(row=0, column=0, sticky="w")
         ttk.Label(frame, text="This is the first downstream-facing entry surface. It stays local-first and only opens as a real handoff when the semantic map is approved.", wraplength=760).grid(row=1, column=0, sticky="w", pady=(8, 6))
         ttk.Label(frame, textvariable=self.matching_prep_status_text, wraplength=760).grid(row=2, column=0, sticky="w", pady=(0, 4))
-        ttk.Label(frame, textvariable=self.matching_prep_summary_text, wraplength=760).grid(row=3, column=0, sticky="nw", pady=(0, 8))
-        self.matching_prep_handoff = tk.Text(frame, height=22, wrap="word")
-        self.matching_prep_handoff.grid(row=4, column=0, sticky="nsew")
+        ttk.Label(frame, textvariable=self.matching_prep_summary_text, wraplength=760).grid(row=3, column=0, sticky="nw", pady=(0, 4))
+        ttk.Label(frame, textvariable=self.matching_asset_summary_text, wraplength=760).grid(row=4, column=0, sticky="w", pady=(0, 8))
+
+        registration = ttk.LabelFrame(frame, text="Film-side input registration", padding=8)
+        registration.grid(row=5, column=0, sticky="ew", pady=(0, 8))
+        registration.columnconfigure(1, weight=1)
+        registration.columnconfigure(3, weight=1)
+        ttk.Label(registration, text="Label").grid(row=0, column=0, sticky="w")
+        ttk.Entry(registration, textvariable=self.asset_label_var, width=28).grid(row=0, column=1, sticky="ew", padx=(8, 12))
+        ttk.Label(registration, text="Type").grid(row=0, column=2, sticky="w")
+        ttk.Combobox(registration, textvariable=self.asset_type_var, values=ALLOWED_MATCHING_ASSET_TYPES, state="readonly", width=24).grid(row=0, column=3, sticky="ew")
+        ttk.Label(registration, text="Local path / reference").grid(row=1, column=0, sticky="w", pady=(8, 0))
+        ttk.Entry(registration, textvariable=self.asset_reference_var, width=28).grid(row=1, column=1, sticky="ew", padx=(8, 12), pady=(8, 0))
+        ttk.Label(registration, text="Notes").grid(row=1, column=2, sticky="w", pady=(8, 0))
+        self.asset_notes_text = tk.Text(registration, height=3, wrap="word")
+        self.asset_notes_text.grid(row=1, column=3, sticky="ew", pady=(8, 0))
+        ttk.Button(registration, text="Register Prep Input", command=self.add_matching_prep_asset).grid(row=2, column=0, columnspan=4, sticky="w", pady=(8, 0))
+
+        self.matching_prep_handoff = tk.Text(frame, height=18, wrap="word")
+        self.matching_prep_handoff.grid(row=6, column=0, sticky="nsew")
         self.matching_prep_handoff.configure(state="disabled")
         return frame
 
@@ -462,6 +484,31 @@ class DNAFilmApp:
         self._switch_view("Semantic Map")
         self.block_status_var.set(f"Selected block was merged {direction} and the semantic structure was persisted to disk.")
         messagebox.showinfo("Semantic map", f"Selected block was merged {direction} with its adjacent neighbor.")
+
+    def add_matching_prep_asset(self) -> None:
+        if self.project is None:
+            messagebox.showerror("Matching Prep", "Create or open a project first.")
+            return
+        try:
+            project = self.store.add_matching_prep_asset(
+                self.project.project_dir,
+                self.asset_label_var.get(),
+                self.asset_type_var.get(),
+                self.asset_reference_var.get(),
+                self.asset_notes_text.get("1.0", "end").strip(),
+            )
+        except ValueError as exc:
+            messagebox.showerror("Matching Prep", str(exc))
+            return
+
+        current_block_id = self.selected_block_id
+        self._load_project_into_ui(project, select_block_id=current_block_id)
+        self._switch_view("Matching Prep")
+        self.asset_label_var.set("")
+        self.asset_type_var.set(ALLOWED_MATCHING_ASSET_TYPES[0])
+        self.asset_reference_var.set("")
+        self.asset_notes_text.delete("1.0", "end")
+        messagebox.showinfo("Matching Prep", "Film-side prep input was registered in the local project package.")
 
     def save_review_status(self) -> None:
         if self.project is None:
@@ -799,28 +846,72 @@ class DNAFilmApp:
 
     def _update_matching_prep_surface(self, project: ProjectSlice) -> None:
         gate_state, gate_reason = self._matching_prep_gate(project)
+        asset_count = len(project.matching_prep_assets)
         if gate_state != "ready":
             self.matching_prep_status_text.set(f"Matching Prep is blocked: {gate_reason}.")
             self.matching_prep_summary_text.set("Prep handoff: 0 approved semantic blocks available.")
-            handoff_text = (
-                "Matching Prep remains blocked in this project state.\n\n"
-                f"Reason: {gate_reason}.\n\n"
-                "This first downstream-facing slice opens only after the semantic map is approved."
-            )
+            self.matching_asset_summary_text.set(f"Film-side registration: {asset_count} prep input(s) registered but currently gated.")
+            lines = [
+                "Matching Prep remains blocked in this project state.",
+                "",
+                f"Reason: {gate_reason}.",
+                "",
+                "Registered film-side inputs",
+            ]
+            if project.matching_prep_assets:
+                lines.append("")
+                for entry in project.matching_prep_assets:
+                    reference_value = entry.get("reference_value", "").strip() or "none"
+                    notes = entry.get("notes", "").strip() or "none"
+                    lines.extend(
+                        [
+                            f"- {entry['asset_label']} [{entry['asset_type']}]",
+                            f"  Reference: {reference_value}",
+                            f"  Notes: {notes}",
+                            "",
+                        ]
+                    )
+            else:
+                lines.extend(["- none yet", ""])
+            lines.append("This first downstream-facing slice opens only after the semantic map is approved.")
+            handoff_text = "\n".join(lines)
         else:
             block_count = len(project.semantic_blocks)
+            asset_state = "semantic-plus-asset registration present" if asset_count else "semantic-only handoff present"
             self.matching_prep_status_text.set(
                 "Matching Prep is open: approved semantic handoff is available for later scene matching work."
             )
             self.matching_prep_summary_text.set(
-                f"Prep handoff: {block_count} approved semantic block(s) ready for later matching prep."
+                f"Prep handoff: {block_count} approved semantic block(s) ready for later matching prep | {asset_state}."
             )
+            if asset_count:
+                self.matching_asset_summary_text.set(f"Film-side registration: {asset_count} prep input(s) registered.")
+            else:
+                self.matching_asset_summary_text.set("Film-side registration: no prep inputs registered yet.")
             lines = [
                 "Approved semantic handoff for later matching prep",
                 f"Project: {project.project_record['title']}",
                 f"Semantic blocks: {block_count}",
+                f"Registered prep inputs: {asset_count}",
                 "",
+                "Registered film-side inputs",
             ]
+            if project.matching_prep_assets:
+                lines.append("")
+                for entry in project.matching_prep_assets:
+                    reference_value = entry.get("reference_value", "").strip() or "none"
+                    notes = entry.get("notes", "").strip() or "none"
+                    lines.extend(
+                        [
+                            f"- {entry['asset_label']} [{entry['asset_type']}]",
+                            f"  Reference: {reference_value}",
+                            f"  Notes: {notes}",
+                            "",
+                        ]
+                    )
+            else:
+                lines.extend(["- none yet", ""])
+            lines.extend(["Approved semantic handoff", ""])
             for block in project.semantic_blocks:
                 notes = block.get("notes", "").strip() or "none"
                 lines.extend(

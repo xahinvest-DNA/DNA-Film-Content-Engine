@@ -2,10 +2,10 @@
 
 Last updated: 2026-04-08
 Status: active
-Current stage: F-018 first matching prep entry slice is completed
-Active module: F-019 matching prep asset registration slice
-Active frontier: F-019 Matching Prep Asset Registration Slice
-Active question: what is the smallest local-first way to register film-side inputs or references so Matching Prep has both an approved semantic handoff and one explicit asset-side entry boundary without opening scene matching automation or backend scope
+Current stage: F-019 matching prep asset registration slice is completed
+Active module: F-020 first manual match candidate stub slice
+Active frontier: F-020 First Manual Match Candidate Stub Slice
+Active question: what is the smallest local-first way to create one explicit manual semantic-to-asset candidate stub inside Matching Prep now that both approved semantic handoff and film-side registration boundaries exist
 
 ## Where the project is now
 
@@ -22,16 +22,16 @@ At this point:
 - render/export-facing schema and downstream output boundaries are completed through `RENDER_EXPORT_SCHEMA.md`, `LONG_VIDEO_BUILDER.md`, `SHORTS_REELS_BUILDER.md`, `CAROUSEL_BUILDER.md`, and `PACKAGING_ENGINE.md`;
 - the first bounded MVP implementation slice is real through a local-first runtime that can create a project, accept analysis text, derive semantic blocks, persist them on disk, and inspect them in a desktop-facing semantic workspace;
 - the semantic workspace now supports persisted selected-block editing, project-level review state, persisted ordering, approval-readiness visibility, one approval guardrail, explicit reopened-after-change visibility that survives reload, persisted semantic boundary editing through minimal split/merge controls, deterministic completeness and issue visibility, persisted output-suitability review controls, bounded focus filtering, focused next/previous navigation, adjacent canonical context, focus-span summary, and one explicit matching-prep readiness gate derived from existing semantic-review state;
-- Matching Prep is no longer placeholder-only: it now opens one real blocked/open entry surface in the desktop runtime and shows one prep-facing local handoff view derived from an approved semantic map only;
-- the current runtime now proves that approved semantic state can cross one real local-first boundary into the next lane without introducing scene matching automation;
+- Matching Prep now has both sides of the future bridge in minimal form: one approved semantic handoff surface and one persisted film-side input registration surface inside the same local-first lane;
+- the current runtime now proves that later matching work can start from honest local inputs on both sides without introducing scene matching automation, ranking, or backend orchestration;
 - the main MVP operating surface remains fixed as `Semantic Map Workspace`;
 - the meaning-first architecture is now explicit across product, domain, schema, project-package, asset, downstream output, and implementation layers;
 - the project now uses a manager-led execution model;
 - ChatGPT owns strongest-next-step selection;
 - Codex owns repository execution and state synchronization;
 - manager review depth and next-step efficiency-gate doctrine are now fixed in repository governance documents rather than left to chat memory;
-- F-018 is completed and no longer the active runtime frontier;
-- the current active frontier is now `F-019 Matching Prep Asset Registration Slice`.
+- F-019 is completed and no longer the active runtime frontier;
+- the current active frontier is now `F-020 First Manual Match Candidate Stub Slice`.
 
 ## Accepted boundaries right now
 
@@ -40,7 +40,7 @@ At this point:
 - Live project state is owned by this file.
 - The active implementation packet is owned by `05_CODEX/NEXT_TASK.md`.
 - The project starts desktop-first.
-- MVP is centered on project creation, source intake, semantic blocks, semantic-map review, the first matching-prep entry boundary, and the approved semantic-first desktop operating surface.
+- MVP is centered on project creation, source intake, semantic blocks, semantic-map review, the first matching-prep entry boundary, the first film-side registration boundary, and the approved semantic-first desktop operating surface.
 - manager-led execution model is fixed.
 - ChatGPT must review Codex handoffs at completion level and management level before selecting the next packet.
 - strongest-next-step selection must pass an efficiency gate rather than follow previous recommendations by inertia alone.
@@ -50,13 +50,13 @@ At this point:
 
 ## Open items
 
-- add one minimal local-first film-side input registration slice so Matching Prep has an explicit asset-side entry boundary rather than only a semantic-side handoff;
-- keep film-side registration narrow enough to support later matching work without introducing candidate generation, timecodes, or scene matching automation;
-- preserve the blocked/open meaning of Matching Prep while making the next lane more concrete than a semantic-only handoff.
+- open one minimal manual semantic-to-asset candidate stub inside Matching Prep now that both semantic and film-side inputs exist locally;
+- keep candidate creation explicitly manual and bounded so the project does not jump early into matching automation, ranking, or timecode logic;
+- prove one honest next-step scene-matching precondition beyond separate input presence alone.
 
 ## Next step
 
-Open and execute one bounded packet for `F-019 Matching Prep Asset Registration Slice`.
+Open and execute one bounded packet for `F-020 First Manual Match Candidate Stub Slice`.
 
 ## What must not be lost in a new chat
 
@@ -65,6 +65,6 @@ Open and execute one bounded packet for `F-019 Matching Prep Asset Registration 
 - manager-led execution model is fixed.
 - MVP main surface is `Semantic Map Workspace`.
 - product, domain, schema, project-file, asset, and downstream output-boundary layers are fixed.
-- F-018 is completed with one real local-first Matching Prep entry surface that stays blocked until semantic approval is ready and opens one honest prep-facing handoff view once the map is approved.
+- F-019 is completed with one persisted local-first film-side registration slice inside Matching Prep, so the lane now shows both semantic-only versus semantic-plus-asset presence and survives reload.
 - ChatGPT must read Codex handoffs as management signals about capability gained, capability unlocked, unresolved gap, and packet-size efficiency before choosing what comes next.
-- the next strong active runtime step is `F-019 Matching Prep Asset Registration Slice`, because after the first semantic-to-matching handoff opens, the stronger next bounded gain is to add one explicit film-side input boundary rather than jump early into candidate generation or scene matching automation.
+- the next strong active runtime step is `F-020 First Manual Match Candidate Stub Slice`, because after both sides of the bridge exist, the stronger next bounded gain is one honest manual candidate stub rather than more prep-only ornamentation or premature automation.

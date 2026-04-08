@@ -1,5 +1,24 @@
 # Codex Worklog
 
+## 2026-04-08 - F-019 completed and Matching Prep gained a film-side registration boundary
+
+### Completed
+- completed the matching prep asset registration slice as one bounded follow-up to the first semantic-only Matching Prep entry surface;
+- added one local-first film-side input registration path inside Matching Prep with a persisted record family in the project package;
+- surfaced registered prep inputs directly in the Matching Prep lane so the runtime now distinguishes semantic-only handoff from semantic-plus-asset registration presence;
+- kept the semantic blocked/open truth intact while still making registered film-side inputs visible even when the lane is gated after a reopen event;
+- verified registration, multiple-entry persistence, reload coherence, and gated/open visibility through local app-level tests alongside prior regressions;
+- synchronized the repository state layer after real implementation progress.
+
+### Repository effect
+- the repository now holds both sides of the future matching bridge in real local-first form without introducing scene matching automation or a generalized asset-management subsystem;
+- Matching Prep is no longer semantic-only, because approved semantic handoff and registered film-side inputs can now coexist inside the same bounded lane;
+- the strongest next bounded gain is one honest manual semantic-to-asset candidate stub so the project can hold its first explicit matching-prep artifact without pretending that automatic matching already exists.
+
+### Recommended next step
+Execute `F-020 First Manual Match Candidate Stub Slice`
+
+
 ## 2026-04-08 - F-018 completed and Matching Prep became a real entry surface
 
 ### Completed
