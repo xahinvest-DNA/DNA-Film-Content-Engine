@@ -1,21 +1,27 @@
 # Codex Tasks
 
 Last updated: 2026-04-08
-Current focus: F-018 first matching prep entry slice
+Current focus: F-019 matching prep asset registration slice
 
 ## Working rule
 Tasks should be bounded, product-visible, and small enough to preserve continuity without turning the repository into micro-slice overload.
 
 ## Active task
 
-### F-018
+### F-019
 - Status: active
-- Module: first matching prep entry slice
-- Goal: open one minimal local-first `Matching Prep` entry surface so an approved semantic map can feed a real downstream-facing handoff slice without drifting into scene matching automation, backend, or downstream execution buildout.
-- Input documents: `00_INDEX.md`, `01_MASTER/CURRENT_STATE.md`, `01_MASTER/DECISIONS.md`, `01_MASTER/ROADMAP.md`, `01_MASTER/SSOT_MAP.md`, `05_CODEX/NEXT_TASK.md`, `02_PRODUCT/MVP_DESKTOP_INTERFACE.md`, `02_PRODUCT/NAVIGATION_BEHAVIOR.md`, `03_MODULES/DNA_SEMANTIC_ENGINE.md`
-- Expected result: one bounded local-first runtime update where the semantic workspace can open the first real matching-prep entry boundary without scope explosion.
+- Module: matching prep asset registration slice
+- Goal: add one minimal local-first film-side input registration surface so Matching Prep can hold both an approved semantic handoff and one explicit asset-side entry boundary without drifting into scene matching automation, backend, or downstream execution buildout.
+- Input documents: `00_INDEX.md`, `01_MASTER/CURRENT_STATE.md`, `01_MASTER/DECISIONS.md`, `01_MASTER/ROADMAP.md`, `01_MASTER/SSOT_MAP.md`, `05_CODEX/NEXT_TASK.md`, `02_PRODUCT/MVP_DESKTOP_INTERFACE.md`, `02_PRODUCT/NAVIGATION_BEHAVIOR.md`, `03_MODULES/SCENE_MATCHING.md`
+- Expected result: one bounded local-first runtime update where Matching Prep gains one explicit film-side registration slice without scope explosion.
 
 ## Completed tasks
+
+### F-018
+- Status: completed
+- Module: first matching prep entry slice
+- Goal: open one minimal local-first `Matching Prep` entry surface so an approved semantic map can feed a real downstream-facing handoff slice without drifting into scene matching automation, backend, or downstream execution buildout.
+- Outcome: turned `Matching Prep` from a placeholder into a real blocked/open runtime surface, derived blocked/open behavior from existing semantic-review state, exposed one local-first approved semantic handoff view for later matching work, verified blocked, approved, reopened, and reload-coherent behavior through local tests, and kept the packet intentionally narrow.
 
 ### F-017R
 - Status: completed

@@ -1044,5 +1044,124 @@ class DNAFilmAppTests(unittest.TestCase):
             finally:
                 root.destroy()
 
+
+    def test_app_matching_prep_view_stays_blocked_without_semantic_map(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Matching Prep Blocked Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+
+                app._switch_view("Matching Prep")
+                handoff = app.matching_prep_handoff.get("1.0", "end").strip()
+
+                self.assertEqual(app.current_view.get(), "Matching Prep")
+                self.assertEqual(app.matching_prep_text.get(), "Matching prep readiness: blocked | semantic map not established yet")
+                self.assertIn("blocked", app.matching_prep_status_text.get().lower())
+                self.assertIn("0 approved semantic blocks", app.matching_prep_summary_text.get())
+                self.assertIn("Matching Prep remains blocked", handoff)
+            finally:
+                root.destroy()
+
+    def test_app_matching_prep_view_opens_with_approved_semantic_handoff(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Matching Prep Open Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+
+                    project = app.project
+                    for block in list(project.semantic_blocks):
+                        project = app.store.update_semantic_block(
+                            project.project_dir,
+                            block["record_id"],
+                            block["title"],
+                            block["semantic_role"],
+                            "Editor clarification added.",
+                        )
+                    app._load_project_into_ui(project)
+                    app.review_status_var.set("ready_for_review")
+                    app.save_review_status()
+                    app.review_status_var.set("approved")
+                    app.save_review_status()
+
+                app._switch_view("Matching Prep")
+                handoff = app.matching_prep_handoff.get("1.0", "end").strip()
+
+                self.assertEqual(app.current_view.get(), "Matching Prep")
+                self.assertEqual(app.next_action.get(), "Next action: Open Matching Prep")
+                self.assertEqual(app.matching_prep_text.get(), "Matching prep readiness: ready | semantic map approved")
+                self.assertIn("Matching Prep is open", app.matching_prep_status_text.get())
+                self.assertIn("3 approved semantic block(s)", app.matching_prep_summary_text.get())
+                self.assertIn("Approved semantic handoff for later matching prep", handoff)
+                self.assertIn("01.", handoff)
+                self.assertIn("Notes: Editor clarification added.", handoff)
+            finally:
+                root.destroy()
+
+    def test_app_matching_prep_view_returns_to_blocked_after_reopen(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Matching Prep Reopen Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+
+                    project = app.project
+                    for block in list(project.semantic_blocks):
+                        project = app.store.update_semantic_block(
+                            project.project_dir,
+                            block["record_id"],
+                            block["title"],
+                            block["semantic_role"],
+                            "Editor clarification added.",
+                        )
+                    app._load_project_into_ui(project)
+                    app.review_status_var.set("ready_for_review")
+                    app.save_review_status()
+                    app.review_status_var.set("approved")
+                    app.save_review_status()
+
+                    target_block_id = app.project.semantic_blocks[1]["record_id"]
+                    app._select_block_by_id(target_block_id)
+                    app.reorder_selected_block("up")
+
+                app._switch_view("Matching Prep")
+                handoff = app.matching_prep_handoff.get("1.0", "end").strip()
+
+                self.assertEqual(app.matching_prep_text.get(), "Matching prep readiness: blocked | semantic approval was reopened after change")
+                self.assertIn("blocked", app.matching_prep_status_text.get().lower())
+                self.assertIn("0 approved semantic blocks", app.matching_prep_summary_text.get())
+                self.assertIn("semantic approval was reopened after change", handoff)
+            finally:
+                root.destroy()
+
 if __name__ == "__main__":
     unittest.main()

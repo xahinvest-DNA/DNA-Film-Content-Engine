@@ -2,47 +2,47 @@
 
 Last updated: 2026-04-08
 Status: ready
-Task ID: F-018
+Task ID: F-019
 Task type: implementation
-Title: First Matching Prep Entry Slice
+Title: Matching Prep Asset Registration Slice
 
 ## Goal
 
-Open the first minimal local-first `Matching Prep` entry surface so an approved semantic map can feed one real downstream-facing handoff slice without implementing scene matching automation, backend/API work, or a broader planning workflow.
+Add one minimal local-first film-side input registration slice so Matching Prep can hold both an approved semantic handoff and one explicit asset-side entry boundary without implementing scene matching automation, backend/API work, or a broader workflow lane.
 
 ## Why this is next
 
-The repository now has a bounded semantic workspace with explicit review state, approval guardrails, reopen-after-change clarity, completeness and issue visibility, suitability review, focused navigation, adjacent context, focus-span summary, and a compact readiness gate that says whether the current semantic map is structurally ready for later matching prep.
+The repository now has a real blocked/open Matching Prep entry surface driven by approved semantic state. That proves the semantic side of the next lane can open honestly.
 
-That means the strongest next bounded gain is no longer another semantic review micro-cue. The next stronger step is to prove that this approved semantic state can open one real entry surface for the later lane, while still staying local-first and intentionally narrow.
+The strongest next bounded gain is not candidate generation yet. It is to give Matching Prep one equally narrow film-side input boundary, because later scene matching logically requires both approved semantic input and some film-side material or reference presence.
 
 ## In scope
 
-- one bounded follow-up packet on top of completed `F-017R`
-- one minimal `Matching Prep` entry surface inside the current desktop-facing runtime
-- one local-first handoff view derived from the approved semantic map only
-- one narrow blocked-vs-open transition between semantic approval state and matching-prep entry
-- only the smallest local data/runtime changes required to make that entry slice executable or testable
-- local tests covering approved-entry behavior, blocked behavior, and reload coherence where applicable
+- one bounded follow-up packet on top of completed `F-018`
+- one minimal local-first asset or film-side input registration surface inside the current runtime
+- one narrow persisted representation of registered film-side inputs or references
+- one compact Matching Prep visibility update showing whether semantic handoff only or semantic-plus-asset registration is present
+- only the smallest runtime and local-storage changes required to make that asset registration slice executable or testable
+- local tests covering registration, reload persistence, and blocked/open coherence
 
 ## Out of scope
 
 - scene matching automation
-- shot or asset matching logic
+- candidate generation or ranking
+- timecode logic
 - backend or API design
 - workflow queues or planning dashboards
 - downstream output generation
-- generalized matching-prep subsystem buildout
-- packet expansion beyond the first bounded matching-prep entry slice
+- generalized asset management subsystem buildout
+- packet expansion beyond the first bounded asset registration slice
 
 ## Recommended validation
 
 Validate that the resulting packet delivers:
 
-- one clear local-first `Matching Prep` entry path tied to the current semantic project state
-- blocked behavior while the semantic map is not yet structurally ready
-- open behavior once the semantic map is approved and matching-prep-ready
-- one narrow downstream-facing handoff surface without matching automation or backend expansion
+- one clear local-first film-side registration path inside the current Matching Prep lane
+- one persisted asset-side entry boundary that survives reload
+- coherent visibility between semantic-only readiness and semantic-plus-asset registration readiness
 - no scope explosion into scene matching, backend, or downstream-output implementation
 
 ## Required handoff format

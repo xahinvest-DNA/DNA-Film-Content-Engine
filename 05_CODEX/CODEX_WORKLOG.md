@@ -1,5 +1,24 @@
 # Codex Worklog
 
+## 2026-04-08 - F-018 completed and Matching Prep became a real entry surface
+
+### Completed
+- completed the first matching prep entry slice packet as one bounded downstream-facing follow-up to the semantic review workspace;
+- turned `Matching Prep` from a placeholder into a real local-first blocked/open runtime surface;
+- kept blocked behavior tied to the existing semantic-review readiness gate rather than introducing a new workflow layer;
+- opened one honest prep-facing handoff view derived from the approved semantic map only, including ordered semantic blocks, review notes, and suitability context for later matching work;
+- verified blocked, approved, reopened-after-change, and reload-coherent Matching Prep behavior through local app-level tests alongside prior regressions;
+- synchronized the repository state layer after real implementation progress.
+
+### Repository effect
+- the repository now proves that approved semantic state can cross one real local-first boundary into the next lane without pretending that scene matching automation already exists;
+- Matching Prep is now meaningfully openable in MVP depth, while still remaining narrow, file-based, and honest about what is and is not implemented;
+- the strongest next bounded gain is to add one explicit film-side registration boundary so Matching Prep is not semantic-only before later scene matching work is considered.
+
+### Recommended next step
+Execute `F-019 Matching Prep Asset Registration Slice`
+
+
 ## 2026-04-08 - F-017R completed and semantic-to-matching-prep readiness became explicit
 
 ### Completed
