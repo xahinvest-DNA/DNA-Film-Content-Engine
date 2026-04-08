@@ -58,6 +58,7 @@ class DNAFilmApp:
         self.readiness_text = tk.StringVar(value="Approval readiness: not_ready")
         self.focus_mode_var = tk.StringVar(value=FOCUS_MODES[0])
         self.focus_status_text = tk.StringVar(value="Focus: All blocks | showing 0 of 0 blocks.")
+        self.focus_position_text = tk.StringVar(value="Focused item: 0 of 0")
         self.approval_message_text = tk.StringVar(value="Approval message: Semantic map remains under edit.")
         self.approval_reason_text = tk.StringVar(value="Approval reason: Approve is blocked until semantic review is moved to ready_for_review.")
         self.reopen_text = tk.StringVar(value="Reopen state: none")
@@ -81,6 +82,7 @@ class DNAFilmApp:
         self._switch_view("Project Home")
         self._set_editor_enabled(False)
         self._set_structure_enabled(False, False, False, False, False)
+        self._set_focus_navigation_enabled(False, False)
 
     def _build_layout(self) -> None:
         self.root.columnconfigure(1, weight=1)
@@ -238,8 +240,13 @@ class DNAFilmApp:
         toolbar.grid(row=1, column=0, sticky="ew", pady=(10, 10))
         ttk.Label(toolbar, text="Focus").pack(side="left")
         self.focus_mode_combo = ttk.Combobox(toolbar, textvariable=self.focus_mode_var, values=FOCUS_MODES, state="readonly", width=20)
-        self.focus_mode_combo.pack(side="left", padx=(8, 16))
+        self.focus_mode_combo.pack(side="left", padx=(8, 8))
         self.focus_mode_combo.bind("<<ComboboxSelected>>", self.apply_focus_mode)
+        self.previous_focus_button = ttk.Button(toolbar, text="Previous", command=lambda: self.navigate_focus("previous"))
+        self.previous_focus_button.pack(side="left", padx=(8, 0))
+        self.next_focus_button = ttk.Button(toolbar, text="Next", command=lambda: self.navigate_focus("next"))
+        self.next_focus_button.pack(side="left", padx=(8, 16))
+        ttk.Label(toolbar, textvariable=self.focus_position_text).pack(side="left", padx=(0, 16))
         ttk.Label(toolbar, text="Project semantic review").pack(side="left")
         self.review_status_combo = ttk.Combobox(toolbar, textvariable=self.review_status_var, values=ALLOWED_REVIEW_STATES, state="readonly", width=18)
         self.review_status_combo.pack(side="left", padx=(8, 8))
@@ -324,10 +331,29 @@ class DNAFilmApp:
             self.selected_block_id = None
             self._set_editor_enabled(False)
             self._set_structure_enabled(False, False, False, False, False)
+            self._set_focus_navigation_enabled(False, False)
+            self.focus_position_text.set("Focused item: 0 of 0")
             self.block_issues_text.set("Block issues: none")
             return
         block = self.visible_blocks[selection[0]]
         self._show_block(block)
+
+    def navigate_focus(self, direction: str) -> None:
+        if not self.visible_blocks or self.selected_block_id is None:
+            return
+        current_index = next((index for index, block in enumerate(self.visible_blocks) if block["record_id"] == self.selected_block_id), None)
+        if current_index is None:
+            return
+        if direction == "previous":
+            target_index = current_index - 1
+        elif direction == "next":
+            target_index = current_index + 1
+        else:
+            raise ValueError("Navigation direction must be 'previous' or 'next'.")
+        if target_index < 0 or target_index >= len(self.visible_blocks):
+            self._update_focus_navigation_state()
+            return
+        self._select_block_by_id(self.visible_blocks[target_index]["record_id"])
 
     def save_selected_block(self) -> None:
         if self.project is None or self.selected_block_id is None:
@@ -457,6 +483,8 @@ class DNAFilmApp:
     def apply_focus_mode(self, _event: object | None = None) -> None:
         if self.project is None:
             self.focus_status_text.set(f"Focus: {self.focus_mode_var.get()} | showing 0 of 0 blocks.")
+            self.focus_position_text.set("Focused item: 0 of 0")
+            self._set_focus_navigation_enabled(False, False)
             return
         preferred_block_id = self.selected_block_id
         self._refresh_semantic_list(preferred_block_id)
@@ -466,6 +494,8 @@ class DNAFilmApp:
             self.visible_blocks = []
             self.semantic_list.delete(0, "end")
             self.focus_status_text.set(f"Focus: {self.focus_mode_var.get()} | showing 0 of 0 blocks.")
+            self.focus_position_text.set("Focused item: 0 of 0")
+            self._set_focus_navigation_enabled(False, False)
             return
 
         self.visible_blocks = self._visible_blocks_for_focus(self.project.semantic_blocks)
@@ -495,8 +525,10 @@ class DNAFilmApp:
             self.selected_block_id = None
             self.block_status_var.set(self._focus_empty_message(focus_mode))
             self.block_issues_text.set("Block issues: none")
+            self.focus_position_text.set("Focused item: 0 of 0")
             self._set_editor_enabled(False)
             self._set_structure_enabled(False, False, False, False, False)
+            self._set_focus_navigation_enabled(False, False)
             self._clear_block_editor()
 
     def _visible_blocks_for_focus(self, semantic_blocks: list[dict]) -> list[dict]:
@@ -555,6 +587,7 @@ class DNAFilmApp:
             f"Editing {block['record_id']} | sequence: {block['sequence']} | review state: {self.project.semantic_review_record['review_status']} | issues: {len(block.get('warning_flags', []))}{status_suffix}"
         )
         self._set_editor_enabled(True)
+        self._update_focus_navigation_state()
 
     def _select_block_by_id(self, block_id: str) -> None:
         if self.project is None:
@@ -570,7 +603,27 @@ class DNAFilmApp:
         self.selected_block_id = None
         self._set_editor_enabled(False)
         self._set_structure_enabled(False, False, False, False, False)
+        self._set_focus_navigation_enabled(False, False)
+        self.focus_position_text.set("Focused item: 0 of 0")
         self.block_issues_text.set("Block issues: none")
+
+    def _update_focus_navigation_state(self) -> None:
+        total = len(self.visible_blocks)
+        if total == 0 or self.selected_block_id is None:
+            self.focus_position_text.set("Focused item: 0 of 0")
+            self._set_focus_navigation_enabled(False, False)
+            return
+        current_index = next((index for index, block in enumerate(self.visible_blocks) if block["record_id"] == self.selected_block_id), None)
+        if current_index is None:
+            self.focus_position_text.set(f"Focused item: 0 of {total}")
+            self._set_focus_navigation_enabled(False, False)
+            return
+        self.focus_position_text.set(f"Focused item: {current_index + 1} of {total}")
+        self._set_focus_navigation_enabled(current_index > 0, current_index < total - 1)
+
+    def _set_focus_navigation_enabled(self, can_move_previous: bool, can_move_next: bool) -> None:
+        self.previous_focus_button.configure(state="normal" if can_move_previous else "disabled")
+        self.next_focus_button.configure(state="normal" if can_move_next else "disabled")
 
     def _set_editor_enabled(self, enabled: bool) -> None:
         entry_state = "normal" if enabled else "disabled"

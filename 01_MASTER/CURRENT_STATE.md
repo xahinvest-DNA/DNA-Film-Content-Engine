@@ -2,10 +2,10 @@
 
 Last updated: 2026-04-06
 Status: active
-Current stage: F-013 semantic review filters and focus cues are completed
-Active module: F-014 semantic review next-issue navigation and focus-step controls
-Active frontier: F-014 Semantic Review Next-Issue Navigation and Focus-Step Controls
-Active question: how to let editors step through the currently focused semantic review set with minimal next/previous controls so issue-driven review moves faster without turning the workspace into a workflow engine or dashboard
+Current stage: F-014 semantic review next-issue navigation and focus-step controls are completed
+Active module: F-015 semantic review adjacent context peek
+Active frontier: F-015 Semantic Review Adjacent Context Peek
+Active question: how to expose the immediate previous/next semantic context around the selected block so editors can review transitions faster without opening a larger workflow or dashboard surface
 
 ## Where the project is now
 
@@ -27,8 +27,8 @@ At this point:
 - the project now uses a manager-led execution model;
 - ChatGPT owns strongest-next-step selection;
 - Codex owns repository execution and state synchronization;
-- F-013 is completed and no longer the active frontier;
-- the current active frontier is now `F-014 Semantic Review Next-Issue Navigation and Focus-Step Controls`.
+- F-014 is completed and no longer the active frontier;
+- the current active frontier is now `F-015 Semantic Review Adjacent Context Peek`.
 
 ## Accepted boundaries right now
 
@@ -45,13 +45,13 @@ At this point:
 
 ## Open items
 
-- add one minimal next/previous navigation control for the current focused semantic review set inside Semantic Map Workspace;
-- keep movement through issue-focused, review-ready, or suitability-focused subsets stable and legible;
-- improve review flow without introducing a workflow queue, dashboard surface, or broader navigation subsystem.
+- add one minimal adjacent-context cue for the selected semantic block inside Semantic Map Workspace or the inspector;
+- keep previous/next block context readable while moving through the current focused review set;
+- improve review flow without introducing a broader navigation subsystem, timeline, or dashboard surface.
 
 ## Next step
 
-Open and execute one bounded packet for `F-014 Semantic Review Next-Issue Navigation and Focus-Step Controls`.
+Open and execute one bounded packet for `F-015 Semantic Review Adjacent Context Peek`.
 
 ## What must not be lost in a new chat
 
@@ -60,5 +60,5 @@ Open and execute one bounded packet for `F-014 Semantic Review Next-Issue Naviga
 - manager-led execution model is fixed.
 - MVP main surface is `Semantic Map Workspace`.
 - product, domain, schema, project-file, asset, and downstream output-boundary layers are fixed.
-- F-013 is completed with one bounded focus control, filtered semantic-list visibility for issues/review-ready/suitability modes, coherent selection behavior, and concise empty-state cues in the local-first workspace.
-- the next strong step is `F-014 Semantic Review Next-Issue Navigation and Focus-Step Controls`, not broad runtime/backend depth.
+- F-014 is completed with bounded previous/next controls for the current focused review set, a compact focused-position cue, stable boundary behavior, and coherent selection across focus changes in the local-first workspace.
+- the next strong step is `F-015 Semantic Review Adjacent Context Peek`, not broad runtime/backend depth.

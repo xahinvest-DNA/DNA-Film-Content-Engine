@@ -528,5 +528,126 @@ class DNAFilmAppTests(unittest.TestCase):
                 root.destroy()
 
 
+    def test_app_focus_navigation_moves_within_all_blocks_and_respects_boundaries(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Focus Navigation Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+
+                first_block_id = app.project.semantic_blocks[0]["record_id"]
+                second_block_id = app.project.semantic_blocks[1]["record_id"]
+                third_block_id = app.project.semantic_blocks[2]["record_id"]
+
+                self.assertEqual(app.selected_block_id, first_block_id)
+                self.assertEqual(app.focus_position_text.get(), "Focused item: 1 of 3")
+                self.assertEqual(str(app.previous_focus_button.cget("state")), "disabled")
+                self.assertEqual(str(app.next_focus_button.cget("state")), "normal")
+
+                app.navigate_focus("next")
+                self.assertEqual(app.selected_block_id, second_block_id)
+                self.assertEqual(app.focus_position_text.get(), "Focused item: 2 of 3")
+                self.assertEqual(str(app.previous_focus_button.cget("state")), "normal")
+                self.assertEqual(str(app.next_focus_button.cget("state")), "normal")
+
+                app.navigate_focus("next")
+                self.assertEqual(app.selected_block_id, third_block_id)
+                self.assertEqual(app.focus_position_text.get(), "Focused item: 3 of 3")
+                self.assertEqual(str(app.previous_focus_button.cget("state")), "normal")
+                self.assertEqual(str(app.next_focus_button.cget("state")), "disabled")
+
+                app.navigate_focus("next")
+                self.assertEqual(app.selected_block_id, third_block_id)
+            finally:
+                root.destroy()
+
+    def test_app_focus_navigation_tracks_issue_and_suitability_subsets(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Focus Subset Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+
+                    first_block, second_block, third_block = app.project.semantic_blocks
+                    project = app.store.update_semantic_block(
+                        app.project.project_dir,
+                        second_block["record_id"],
+                        second_block["title"],
+                        second_block["semantic_role"],
+                        "Editor clarification added.",
+                        output_suitability={
+                            "long_video": "strong",
+                            "shorts_reels": "candidate",
+                            "carousel": "weak",
+                            "packaging": "weak",
+                        },
+                    )
+                    project = app.store.update_semantic_block(
+                        app.project.project_dir,
+                        third_block["record_id"],
+                        third_block["title"],
+                        third_block["semantic_role"],
+                        "Editor clarification added.",
+                        output_suitability={
+                            "long_video": "weak",
+                            "shorts_reels": "strong",
+                            "carousel": "strong",
+                            "packaging": "not_suitable",
+                        },
+                    )
+                    app._load_project_into_ui(project)
+
+                issue_block_id = app.project.semantic_blocks[0]["record_id"]
+                long_video_block_id = app.project.semantic_blocks[1]["record_id"]
+                third_block_id = app.project.semantic_blocks[2]["record_id"]
+
+                app.focus_mode_var.set("Issues present")
+                app.apply_focus_mode()
+                self.assertEqual(app.selected_block_id, issue_block_id)
+                self.assertEqual(app.focus_position_text.get(), "Focused item: 1 of 1")
+                self.assertEqual(str(app.previous_focus_button.cget("state")), "disabled")
+                self.assertEqual(str(app.next_focus_button.cget("state")), "disabled")
+
+                app.focus_mode_var.set("Review-ready")
+                app.apply_focus_mode()
+                self.assertEqual(app.selected_block_id, long_video_block_id)
+                self.assertEqual(app.focus_position_text.get(), "Focused item: 1 of 2")
+                self.assertEqual(str(app.previous_focus_button.cget("state")), "disabled")
+                self.assertEqual(str(app.next_focus_button.cget("state")), "normal")
+
+                app.navigate_focus("next")
+                self.assertEqual(app.selected_block_id, third_block_id)
+                self.assertEqual(app.focus_position_text.get(), "Focused item: 2 of 2")
+
+                app.focus_mode_var.set("Long video focus")
+                app.apply_focus_mode()
+                self.assertEqual(app.selected_block_id, long_video_block_id)
+                self.assertEqual(app.focus_position_text.get(), "Focused item: 1 of 1")
+                self.assertEqual(str(app.previous_focus_button.cget("state")), "disabled")
+                self.assertEqual(str(app.next_focus_button.cget("state")), "disabled")
+            finally:
+                root.destroy()
+
+
 if __name__ == "__main__":
     unittest.main()

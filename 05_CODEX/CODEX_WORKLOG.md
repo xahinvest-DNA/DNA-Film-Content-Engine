@@ -1,5 +1,23 @@
 # Codex Worklog
 
+## 2026-04-08 - F-014 completed and focused semantic review became step-through navigable
+
+### Completed
+- completed the semantic review next-issue navigation and focus-step controls packet as one bounded follow-up to the focus-filtered semantic workspace;
+- added one compact `Previous` / `Next` control pair that navigates only within the currently visible focused semantic subset;
+- surfaced a small focused-position cue so editors can see where they are inside the current focused review set;
+- kept navigation stable at focused-set boundaries by disabling movement cleanly at the start and end of the current visible subset;
+- kept selection coherent across focus changes and focused navigation while preserving prior local-first review behavior;
+- verified the new focused navigation behavior through local app-level tests alongside prior packet regressions;
+- synchronized the repository state layer after real implementation progress.
+
+### Repository effect
+- the repository now contains a more traversable semantic review workspace where editors can move through the current focused subset without leaving the existing local-first surface;
+- focused navigation remains local-first, deterministic, and bounded to the already visible semantic review list rather than a broader workflow or queue subsystem;
+- the implementation remains intentionally narrow and does not open matching, backend, or downstream-output execution work.
+
+### Recommended next step
+Execute `F-015 Semantic Review Adjacent Context Peek`
 ## 2026-04-06 - F-013 completed and semantic review focus became navigable
 
 ### Completed

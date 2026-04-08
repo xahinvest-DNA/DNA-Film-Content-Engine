@@ -1,21 +1,27 @@
 ﻿# Codex Tasks
 
 Last updated: 2026-04-06
-Current focus: F-014 semantic review next-issue navigation and focus-step controls
+Current focus: F-015 semantic review adjacent context peek
 
 ## Working rule
 Tasks should be bounded, product-visible, and small enough to preserve continuity without turning the repository into micro-slice overload.
 
 ## Active task
 
-### F-014
+### F-015
 - Status: active
-- Module: semantic review next-issue navigation and focus-step controls
-- Goal: extend the semantic workspace with one minimal next/previous control so editors can move through the current focused review set without drifting into matching, backend, or downstream execution.
+- Module: semantic review adjacent context peek
+- Goal: extend the semantic workspace with one minimal adjacent-context cue so editors can see the immediate previous and next semantic neighbors around the selected block without drifting into matching, backend, or downstream execution.
 - Input documents: `00_INDEX.md`, `01_MASTER/CURRENT_STATE.md`, `01_MASTER/DECISIONS.md`, `01_MASTER/ROADMAP.md`, `01_MASTER/SSOT_MAP.md`, `05_CODEX/NEXT_TASK.md`, `02_PRODUCT/MVP_DESKTOP_INTERFACE.md`, `02_PRODUCT/NAVIGATION_BEHAVIOR.md`, `03_MODULES/DNA_SEMANTIC_ENGINE.md`
-- Expected result: one minimal semantic workspace update where focused review navigation becomes easier without scope explosion.
+- Expected result: one minimal semantic workspace update where adjacent review context becomes easier to read without scope explosion.
 
 ## Completed tasks
+
+### F-014
+- Status: completed
+- Module: semantic review next-issue navigation and focus-step controls
+- Goal: extend the semantic workspace with one minimal next/previous control so editors can move through the current focused review set without drifting into matching, backend, or downstream execution.
+- Outcome: added bounded previous/next controls tied to the current focused semantic list, surfaced a compact focused-position cue, disabled navigation cleanly at focused-set boundaries, kept selection coherent across focus changes, added local validation for focused navigation behavior, and kept the packet intentionally narrow.
 
 ### F-013
 - Status: completed
