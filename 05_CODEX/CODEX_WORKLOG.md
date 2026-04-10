@@ -1,5 +1,23 @@
 # Codex Worklog
 
+## 2026-04-10 - F-026 completed and Matching Prep gained manual candidate stub removal
+
+### Completed
+- completed the manual candidate stub removal slice as one bounded follow-up to the existing candidate creation, review, focus, readiness, and rationale surfaces;
+- added one direct remove path on the existing manual candidate stub persistence family rather than introducing soft-delete, archive, or deletion-history semantics;
+- exposed one minimal `Remove Selected Candidate Stub` action for the currently selected stub inside Matching Prep;
+- recalculated candidate summary, selected-first handoff, preferred-subset readiness cue, and selected rationale visibility automatically after removal;
+- verified tentative removal, selected removal with cue recomputation, reload coherence, and gated-after-reopen visibility through local store-level and app-level tests alongside prior regressions;
+- synchronized the repository state layer after real implementation progress.
+
+### Repository effect
+- the repository now lets editors clean up erroneous or obsolete manual candidate links without opening a candidate-management subsystem;
+- Matching Prep gained one operational cleanup capability without opening ranking, accepted-reference semantics, backend/API, timecodes, or workflow execution scope;
+- the next bounded packet should now be selected by manager review against current repository capability rather than assumed by inertia.
+
+### Recommended next step
+ChatGPT should select one strongest next bounded packet after reviewing `F-026`.
+
 ## 2026-04-10 - F-025 completed and Matching Prep gained selected-candidate rationale visibility
 
 ### Completed

@@ -351,7 +351,9 @@ class DNAFilmApp:
         self.candidate_status_combo = ttk.Combobox(candidate_frame, textvariable=self.candidate_status_var, values=ALLOWED_CANDIDATE_REVIEW_STATUSES, state="readonly", width=28)
         self.candidate_status_combo.grid(row=3, column=3, sticky="ew", pady=(10, 0))
         self.save_candidate_status_button = ttk.Button(candidate_frame, text="Save Candidate Review Status", command=self.save_matching_candidate_status)
-        self.save_candidate_status_button.grid(row=4, column=0, columnspan=4, sticky="w", pady=(8, 0))
+        self.save_candidate_status_button.grid(row=4, column=0, columnspan=2, sticky="w", pady=(8, 0))
+        self.remove_candidate_button = ttk.Button(candidate_frame, text="Remove Selected Candidate Stub", command=self.remove_matching_candidate_stub)
+        self.remove_candidate_button.grid(row=4, column=2, columnspan=2, sticky="w", pady=(8, 0))
         ttk.Label(candidate_frame, text="Preferred rationale").grid(row=5, column=0, sticky="w", pady=(10, 0))
         ttk.Entry(candidate_frame, textvariable=self.candidate_rationale_var, width=48).grid(row=5, column=1, columnspan=2, sticky="ew", padx=(8, 12), pady=(10, 0))
         self.save_candidate_rationale_button = ttk.Button(candidate_frame, text="Save Preferred Rationale", command=self.save_matching_candidate_rationale)
@@ -643,6 +645,26 @@ class DNAFilmApp:
                 self.candidate_rationale_var.set(updated_stub.get("preferred_rationale", ""))
         messagebox.showinfo("Matching Prep", "Manual candidate preferred rationale was saved in the local project package.")
 
+    def remove_matching_candidate_stub(self) -> None:
+        if self.project is None:
+            messagebox.showerror("Matching Prep", "Create or open a project first.")
+            return
+        candidate_stub_id = self.candidate_stub_options.get(self.candidate_stub_var.get(), "")
+        try:
+            project = self.store.remove_matching_candidate_stub(
+                self.project.project_dir,
+                candidate_stub_id,
+            )
+        except ValueError as exc:
+            messagebox.showerror("Matching Prep", str(exc))
+            return
+
+        current_block_id = self.selected_block_id
+        self._load_project_into_ui(project, select_block_id=current_block_id)
+        self._switch_view("Matching Prep")
+        self.candidate_rationale_var.set("")
+        messagebox.showinfo("Matching Prep", "Manual candidate stub was removed from the local project package.")
+
     def on_candidate_stub_selected(self, _event: object | None = None) -> None:
         if self.project is None:
             self.candidate_status_var.set(ALLOWED_CANDIDATE_REVIEW_STATUSES[0])
@@ -911,6 +933,7 @@ class DNAFilmApp:
         self.candidate_stub_combo.configure(state=review_combo_state)
         self.candidate_status_combo.configure(state=review_combo_state)
         self.save_candidate_status_button.configure(state="normal" if review_enabled else "disabled")
+        self.remove_candidate_button.configure(state="normal" if review_enabled else "disabled")
 
     def _set_editor_enabled(self, enabled: bool) -> None:
         entry_state = "normal" if enabled else "disabled"

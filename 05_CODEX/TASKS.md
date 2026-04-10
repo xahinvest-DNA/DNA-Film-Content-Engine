@@ -1,16 +1,22 @@
 # Codex Tasks
 
 Last updated: 2026-04-10
-Current focus: manager review and next bounded packet selection after F-025
+Current focus: manager review and next bounded packet selection after F-026
 
 ## Working rule
 Tasks should be bounded, product-visible, and small enough to preserve continuity without turning the repository into micro-slice overload.
 
 ## Active task
 
-- No new implementation packet is active until ChatGPT selects the next bounded step after reviewing the completed `F-025` handoff.
+- No new implementation packet is active until ChatGPT selects the next bounded step after reviewing the completed `F-026` handoff.
 
 ## Completed tasks
+
+### F-026
+- Status: completed
+- Module: manual candidate stub removal slice
+- Goal: add one minimal remove path for the current manual candidate stub inside Matching Prep without drifting into archive/history, candidate management, ranking, accepted-reference semantics, backend, or workflow execution buildout.
+- Outcome: added one direct removal path on the existing candidate stub persistence family, exposed one minimal remove action for the currently selected stub, recalculated candidate summary, selected-first handoff, preferred-subset readiness cue, and rationale visibility after deletion, verified tentative removal, selected removal, reload coherence, and gated-after-reopen behavior through local tests, and kept the packet intentionally narrow.
 
 ### F-025
 - Status: completed
