@@ -2,10 +2,10 @@
 
 Last updated: 2026-04-10
 Status: active
-Current stage: F-022 manual candidate status focus slice is completed
+Current stage: F-023 selected candidate dominant handoff slice is completed
 Active module: manager review and next bounded packet selection
-Active frontier: post-F-022 state synchronization
-Active question: which one strongest bounded packet should follow now that Matching Prep can hold manual candidate existence, manual status intent, and one compact status-based visibility focus without opening ranking or workflow scope
+Active frontier: post-F-023 state synchronization
+Active question: which one strongest bounded packet should follow now that Matching Prep can hold candidate existence, manual status intent, status-based focus, and one selected-first dominant handoff cue without opening accepted-reference or ranking scope
 
 ## Where the project is now
 
@@ -27,13 +27,14 @@ At this point:
 - the current runtime now proves that later matching work can start from honest local inputs on both sides plus one explicit proposed semantic-to-asset relationship without introducing scene matching automation, ranking, or backend orchestration;
 - Matching Prep now also distinguishes manual candidate intent in one bounded way, because each existing manual candidate stub can persist a minimal review status of `tentative`, `selected`, or `rejected` across reload and gated/open state transitions;
 - Matching Prep now also exposes one compact status-based focus control so editors can narrow visible candidate stubs to `all`, `tentative`, `selected`, or `rejected` without opening a candidate-management surface or extending persistence;
+- Matching Prep now also surfaces selected candidates as the current preferred-for-review subset through one dominant summary and handoff cue, while keeping `selected` explicitly below accepted-reference or final-match semantics;
 - the main MVP operating surface remains fixed as `Semantic Map Workspace`;
 - the meaning-first architecture is now explicit across product, domain, schema, project-package, asset, downstream output, and implementation layers;
 - the project now uses a manager-led execution model;
 - ChatGPT owns strongest-next-step selection;
 - Codex owns repository execution and state synchronization;
 - manager review depth and next-step efficiency-gate doctrine are now fixed in repository governance documents rather than left to chat memory;
-- F-022 is completed and no longer the active runtime frontier;
+- F-023 is completed and no longer the active runtime frontier;
 - the repository is now waiting for ChatGPT to select the next strongest bounded packet.
 
 ## Accepted boundaries right now
@@ -43,7 +44,7 @@ At this point:
 - Live project state is owned by this file.
 - The active implementation packet is owned by `05_CODEX/NEXT_TASK.md`.
 - The project starts desktop-first.
-- MVP is centered on project creation, source intake, semantic blocks, semantic-map review, the first matching-prep entry boundary, the first film-side registration boundary, the first manual candidate-stub boundary, the first manual candidate review-status boundary, the first manual candidate status-focus boundary, and the approved semantic-first desktop operating surface.
+- MVP is centered on project creation, source intake, semantic blocks, semantic-map review, the first matching-prep entry boundary, the first film-side registration boundary, the first manual candidate-stub boundary, the first manual candidate review-status boundary, the first manual candidate status-focus boundary, the first selected-dominant handoff boundary, and the approved semantic-first desktop operating surface.
 - manager-led execution model is fixed.
 - ChatGPT must review Codex handoffs at completion level and management level before selecting the next packet.
 - strongest-next-step selection must pass an efficiency gate rather than follow previous recommendations by inertia alone.
@@ -53,9 +54,9 @@ At this point:
 
 ## Open items
 
-- preserve the new candidate status-focus layer as a bounded visibility slice rather than letting it drift into a candidate queue or management subsystem;
-- choose one strongest next bounded packet now that Matching Prep can express candidate presence, explicit manual intent, and one operationally readable focused subset;
-- keep later matching work explicitly outside ranking, accepted-reference semantics, timecodes, backend, dashboard, and workflow-engine scope until a stronger packet justifies opening them.
+- preserve the new selected-dominant cue as a bounded handoff readability slice rather than letting it drift into winner-selection or accepted-reference conversion;
+- choose one strongest next bounded packet now that Matching Prep can express candidate presence, explicit manual intent, focused readability, and one current preferred subset cue;
+- keep later matching work explicitly outside accepted-reference semantics, ranking, timecodes, backend, dashboard, and workflow-engine scope until a stronger packet justifies opening them.
 
 ## Next step
 
@@ -68,6 +69,6 @@ ChatGPT should review the completed `F-021 Manual Match Candidate Review Status 
 - manager-led execution model is fixed.
 - MVP main surface is `Semantic Map Workspace`.
 - product, domain, schema, project-file, asset, and downstream output-boundary layers are fixed.
-- F-022 is completed with one compact non-persisted status focus on manual candidate stubs inside Matching Prep, so the lane now holds candidate existence, explicit tentative/selected/rejected intent, and one readable filtered subset without adding a new subsystem.
+- F-023 is completed with one selected-first dominant handoff cue inside Matching Prep, so the lane now holds candidate existence, explicit tentative/selected/rejected intent, readable filtered subsets, and one current preferred subset signal without adding a new record family or accepted-reference layer.
 - ChatGPT must read Codex handoffs as management signals about capability gained, capability unlocked, unresolved gap, and packet-size efficiency before choosing what comes next.
 - the next strong active runtime step must be re-selected from current repository capability rather than assumed by inertia from the just-completed matching-prep status slice.

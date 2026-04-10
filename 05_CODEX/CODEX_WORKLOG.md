@@ -1,5 +1,23 @@
 # Codex Worklog
 
+## 2026-04-10 - F-023 completed and Matching Prep gained selected-dominant handoff readability
+
+### Completed
+- completed the selected candidate dominant handoff slice as one bounded follow-up to the manual candidate status focus layer;
+- added one explicit selected-candidate summary cue inside Matching Prep that tells the editor whether manually preferred candidates currently exist;
+- added one selected-first handoff section above the broader candidate listing so manually selected candidates read as the current preferred subset for later review;
+- kept the selected cue presentation-only and did not convert selected candidates into accepted references, final matches, or ranking winners;
+- verified selected-present, selected-absent, reload-coherent, and gated-after-reopen dominant readability through local app-level tests alongside prior regressions;
+- synchronized the repository state layer after real implementation progress.
+
+### Repository effect
+- the repository now answers the practical downstream question of whether a manually preferred candidate subset already exists and should be looked at first;
+- Matching Prep gained one dominant handoff readability layer without opening accepted-reference semantics, ranking, timecodes, backend/API, or a candidate-management subsystem;
+- the next bounded packet should now be selected by manager review against current repository capability rather than assumed by inertia.
+
+### Recommended next step
+ChatGPT should select one strongest next bounded packet after reviewing `F-023`.
+
 ## 2026-04-10 - F-022 completed and Matching Prep gained manual candidate status focus
 
 ### Completed

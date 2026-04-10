@@ -1036,6 +1036,45 @@ class DNAFilmApp:
             counts[entry.get("review_status", ALLOWED_CANDIDATE_REVIEW_STATUSES[0])] += 1
         return ", ".join(f"{status} {counts[status]}" for status in ALLOWED_CANDIDATE_REVIEW_STATUSES if counts[status])
 
+    def _selected_candidate_stubs(self, project: ProjectSlice) -> list[dict]:
+        return [
+            entry
+            for entry in project.matching_candidate_stubs
+            if entry.get("review_status", ALLOWED_CANDIDATE_REVIEW_STATUSES[0]) == "selected"
+        ]
+
+    def _selected_candidate_summary(self, project: ProjectSlice) -> str:
+        selected_count = len(self._selected_candidate_stubs(project))
+        if selected_count:
+            return f"Selected candidates currently preferred for review: {selected_count} present."
+        return "Selected candidates currently preferred for review: none yet."
+
+    def _candidate_entry_lines(self, project: ProjectSlice, entry: dict) -> list[str]:
+        block_lookup = {block['record_id']: block for block in project.semantic_blocks}
+        asset_lookup = {asset['record_id']: asset for asset in project.matching_prep_assets}
+        block = block_lookup.get(entry.get("semantic_block_id"))
+        asset = asset_lookup.get(entry.get("prep_asset_id"))
+        block_label = f"{block['sequence']:02d}. {block['title']}" if block else entry.get("semantic_block_id", "unknown semantic block")
+        asset_label = f"{asset['asset_label']} [{asset['asset_type']}]" if asset else entry.get("prep_asset_id", "unknown prep input")
+        note = entry.get("note", "").strip() or "none"
+        review_status = entry.get("review_status", ALLOWED_CANDIDATE_REVIEW_STATUSES[0])
+        return [
+            f"- {block_label} -> {asset_label}",
+            f"  Review status: {review_status}",
+            f"  Note: {note}",
+            f"  Stub id: {entry['record_id']}",
+            "",
+        ]
+
+    def _selected_candidate_lines(self, project: ProjectSlice) -> list[str]:
+        selected_entries = self._selected_candidate_stubs(project)
+        if not selected_entries:
+            return ["- none selected yet", ""]
+        lines: list[str] = [""]
+        for entry in selected_entries:
+            lines.extend(self._candidate_entry_lines(project, entry))
+        return lines
+
     def _visible_candidate_stubs(self, project: ProjectSlice) -> list[dict]:
         focus = self.candidate_focus_var.get() if self.candidate_focus_var.get() in CANDIDATE_STATUS_FOCUS_OPTIONS else CANDIDATE_STATUS_FOCUS_OPTIONS[0]
         if focus == "all":
@@ -1052,25 +1091,9 @@ class DNAFilmApp:
         visible_entries = self._visible_candidate_stubs(project)
         if not visible_entries:
             return [f"- none in current focus ({self._candidate_focus_label()})", ""]
-        block_lookup = {block['record_id']: block for block in project.semantic_blocks}
-        asset_lookup = {entry['record_id']: entry for entry in project.matching_prep_assets}
         lines: list[str] = [""]
         for entry in visible_entries:
-            block = block_lookup.get(entry.get("semantic_block_id"))
-            asset = asset_lookup.get(entry.get("prep_asset_id"))
-            block_label = f"{block['sequence']:02d}. {block['title']}" if block else entry.get("semantic_block_id", "unknown semantic block")
-            asset_label = f"{asset['asset_label']} [{asset['asset_type']}]" if asset else entry.get("prep_asset_id", "unknown prep input")
-            note = entry.get("note", "").strip() or "none"
-            review_status = entry.get("review_status", ALLOWED_CANDIDATE_REVIEW_STATUSES[0])
-            lines.extend(
-                [
-                    f"- {block_label} -> {asset_label}",
-                    f"  Review status: {review_status}",
-                    f"  Note: {note}",
-                    f"  Stub id: {entry['record_id']}",
-                    "",
-                ]
-            )
+            lines.extend(self._candidate_entry_lines(project, entry))
         return lines
 
     def _update_matching_prep_surface(self, project: ProjectSlice) -> None:
@@ -1087,7 +1110,7 @@ class DNAFilmApp:
             else:
                 self.matching_asset_summary_text.set("Film-side registration: no prep inputs registered yet.")
             if candidate_count:
-                self.matching_candidate_summary_text.set(f"Manual candidate stubs: {visible_candidate_count} visible of {candidate_count} stored but currently gated | focus: {focus_label} | {self._candidate_status_summary(project)}.")
+                self.matching_candidate_summary_text.set(f"{self._selected_candidate_summary(project)} | Manual candidate stubs: {visible_candidate_count} visible of {candidate_count} stored but currently gated | focus: {focus_label} | {self._candidate_status_summary(project)}.")
             else:
                 self.matching_candidate_summary_text.set("Manual candidate stubs: none yet.")
             lines = [
@@ -1112,7 +1135,7 @@ class DNAFilmApp:
                     )
             else:
                 lines.extend(["- none yet", ""])
-            lines.extend([f"Manual candidate stubs | focus: {focus_label}", *self._candidate_stub_lines(project)])
+            lines.extend(["Selected candidates currently preferred for review", *self._selected_candidate_lines(project), f"Manual candidate stubs | focus: {focus_label}", *self._candidate_stub_lines(project)])
             lines.append("This first downstream-facing slice opens only after the semantic map is approved.")
             handoff_text = "\n".join(lines).rstrip()
         else:
@@ -1129,7 +1152,7 @@ class DNAFilmApp:
             else:
                 self.matching_asset_summary_text.set("Film-side registration: no prep inputs registered yet.")
             if candidate_count:
-                self.matching_candidate_summary_text.set(f"Manual candidate stubs: {visible_candidate_count} visible of {candidate_count} saved in this project | focus: {focus_label} | {self._candidate_status_summary(project)}.")
+                self.matching_candidate_summary_text.set(f"{self._selected_candidate_summary(project)} | Manual candidate stubs: {visible_candidate_count} visible of {candidate_count} saved in this project | focus: {focus_label} | {self._candidate_status_summary(project)}.")
             else:
                 self.matching_candidate_summary_text.set("Manual candidate stubs: no manual candidate stubs yet.")
             lines = [
@@ -1156,7 +1179,7 @@ class DNAFilmApp:
                     )
             else:
                 lines.extend(["- none yet", ""])
-            lines.extend([f"Manual candidate stubs | focus: {focus_label}", *self._candidate_stub_lines(project)])
+            lines.extend(["Selected candidates currently preferred for review", *self._selected_candidate_lines(project), f"Manual candidate stubs | focus: {focus_label}", *self._candidate_stub_lines(project)])
             lines.extend(["Approved semantic handoff", ""])
             for block in project.semantic_blocks:
                 notes = block.get("notes", "").strip() or "none"

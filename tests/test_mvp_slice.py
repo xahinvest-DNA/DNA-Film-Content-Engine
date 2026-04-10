@@ -1379,6 +1379,241 @@ class DNAFilmAppTests(unittest.TestCase):
             finally:
                 root.destroy()
 
+    def test_app_matching_prep_selected_candidates_get_dominant_handoff_readability(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Matching Selected Dominant Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+
+                    project = app.project
+                    for block in list(project.semantic_blocks):
+                        project = app.store.update_semantic_block(
+                            project.project_dir,
+                            block["record_id"],
+                            block["title"],
+                            block["semantic_role"],
+                            "Editor clarification added.",
+                        )
+                    app._load_project_into_ui(project)
+                    app.review_status_var.set("ready_for_review")
+                    app.save_review_status()
+                    app.review_status_var.set("approved")
+                    app.save_review_status()
+
+                    app._switch_view("Matching Prep")
+                    app.asset_label_var.set("Transcript reference")
+                    app.asset_type_var.set("transcript_reference")
+                    app.asset_reference_var.set("E:/demo/transcript.txt")
+                    app.asset_notes_text.insert("1.0", "Transcript prepared for manual linking.")
+                    app.add_matching_prep_asset()
+
+                    app.candidate_block_var.set(app.candidate_block_combo["values"][0])
+                    app.candidate_asset_var.set(app.candidate_asset_combo["values"][0])
+                    app.candidate_note_var.set("Tentative candidate for comparison.")
+                    app.add_matching_candidate_stub()
+
+                    app.candidate_block_var.set(app.candidate_block_combo["values"][1])
+                    app.candidate_asset_var.set(app.candidate_asset_combo["values"][0])
+                    app.candidate_note_var.set("Selected candidate should lead handoff.")
+                    app.add_matching_candidate_stub()
+
+                    app.candidate_stub_var.set(app.candidate_stub_combo["values"][1])
+                    app.on_candidate_stub_selected()
+                    app.candidate_status_var.set("selected")
+                    app.save_matching_candidate_status()
+
+                handoff = app.matching_prep_handoff.get("1.0", "end").strip()
+                self.assertIn("Selected candidates currently preferred for review: 1 present.", app.matching_candidate_summary_text.get())
+                self.assertIn("Selected candidates currently preferred for review", handoff)
+                self.assertIn("Selected candidate should lead handoff.", handoff)
+                self.assertTrue(handoff.index("Selected candidates currently preferred for review") < handoff.index("Manual candidate stubs | focus: all candidate stubs"))
+            finally:
+                root.destroy()
+
+    def test_app_matching_prep_explicitly_shows_no_selected_candidates_yet(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Matching No Selected Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+
+                    project = app.project
+                    for block in list(project.semantic_blocks):
+                        project = app.store.update_semantic_block(
+                            project.project_dir,
+                            block["record_id"],
+                            block["title"],
+                            block["semantic_role"],
+                            "Editor clarification added.",
+                        )
+                    app._load_project_into_ui(project)
+                    app.review_status_var.set("ready_for_review")
+                    app.save_review_status()
+                    app.review_status_var.set("approved")
+                    app.save_review_status()
+
+                    app._switch_view("Matching Prep")
+                    app.asset_label_var.set("Main subtitle file")
+                    app.asset_type_var.set("subtitle_reference")
+                    app.asset_reference_var.set("E:/demo/subtitles.srt")
+                    app.asset_notes_text.insert("1.0", "Subtitle reference for manual candidate linking.")
+                    app.add_matching_prep_asset()
+
+                    app.candidate_block_var.set(app.candidate_block_combo["values"][0])
+                    app.candidate_asset_var.set(app.candidate_asset_combo["values"][0])
+                    app.candidate_note_var.set("Tentative candidate only.")
+                    app.add_matching_candidate_stub()
+
+                handoff = app.matching_prep_handoff.get("1.0", "end").strip()
+                self.assertIn("Selected candidates currently preferred for review: none yet.", app.matching_candidate_summary_text.get())
+                self.assertIn("Selected candidates currently preferred for review", handoff)
+                self.assertIn("- none selected yet", handoff)
+            finally:
+                root.destroy()
+
+    def test_app_matching_prep_selected_dominant_readability_survives_reload(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Matching Selected Reload Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+
+                    project = app.project
+                    for block in list(project.semantic_blocks):
+                        project = app.store.update_semantic_block(
+                            project.project_dir,
+                            block["record_id"],
+                            block["title"],
+                            block["semantic_role"],
+                            "Editor clarification added.",
+                        )
+                    app._load_project_into_ui(project)
+                    app.review_status_var.set("ready_for_review")
+                    app.save_review_status()
+                    app.review_status_var.set("approved")
+                    app.save_review_status()
+
+                    app._switch_view("Matching Prep")
+                    app.asset_label_var.set("Transcript reference")
+                    app.asset_type_var.set("transcript_reference")
+                    app.asset_reference_var.set("E:/demo/transcript.txt")
+                    app.asset_notes_text.insert("1.0", "Transcript prepared for manual linking.")
+                    app.add_matching_prep_asset()
+
+                    app.candidate_block_var.set(app.candidate_block_combo["values"][0])
+                    app.candidate_asset_var.set(app.candidate_asset_combo["values"][0])
+                    app.candidate_note_var.set("Selected candidate after reload.")
+                    app.add_matching_candidate_stub()
+
+                    app.candidate_stub_var.set(app.candidate_stub_combo["values"][0])
+                    app.on_candidate_stub_selected()
+                    app.candidate_status_var.set("selected")
+                    app.save_matching_candidate_status()
+
+                reloaded_project = app.store.load_project(app.project.project_dir)
+                app._load_project_into_ui(reloaded_project)
+                app._switch_view("Matching Prep")
+                handoff = app.matching_prep_handoff.get("1.0", "end").strip()
+
+                self.assertIn("Selected candidates currently preferred for review: 1 present.", app.matching_candidate_summary_text.get())
+                self.assertIn("Selected candidate after reload.", handoff)
+                self.assertTrue(handoff.index("Selected candidates currently preferred for review") < handoff.index("Manual candidate stubs | focus: all candidate stubs"))
+            finally:
+                root.destroy()
+
+    def test_app_matching_prep_selected_dominant_readability_remains_when_gated(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Matching Selected Gated Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+
+                    project = app.project
+                    for block in list(project.semantic_blocks):
+                        project = app.store.update_semantic_block(
+                            project.project_dir,
+                            block["record_id"],
+                            block["title"],
+                            block["semantic_role"],
+                            "Editor clarification added.",
+                        )
+                    app._load_project_into_ui(project)
+                    app.review_status_var.set("ready_for_review")
+                    app.save_review_status()
+                    app.review_status_var.set("approved")
+                    app.save_review_status()
+
+                    app._switch_view("Matching Prep")
+                    app.asset_label_var.set("Transcript reference")
+                    app.asset_type_var.set("transcript_reference")
+                    app.asset_reference_var.set("E:/demo/transcript.txt")
+                    app.asset_notes_text.insert("1.0", "Transcript prepared for manual linking.")
+                    app.add_matching_prep_asset()
+
+                    app.candidate_block_var.set(app.candidate_block_combo["values"][0])
+                    app.candidate_asset_var.set(app.candidate_asset_combo["values"][0])
+                    app.candidate_note_var.set("Selected candidate remains dominant while gated.")
+                    app.add_matching_candidate_stub()
+
+                    app.candidate_stub_var.set(app.candidate_stub_combo["values"][0])
+                    app.on_candidate_stub_selected()
+                    app.candidate_status_var.set("selected")
+                    app.save_matching_candidate_status()
+
+                    target_block_id = app.project.semantic_blocks[1]["record_id"]
+                    app._select_block_by_id(target_block_id)
+                    app.reorder_selected_block("up")
+                    app._switch_view("Matching Prep")
+
+                handoff = app.matching_prep_handoff.get("1.0", "end").strip()
+                self.assertIn("Selected candidates currently preferred for review: 1 present.", app.matching_candidate_summary_text.get())
+                self.assertIn("Selected candidate remains dominant while gated.", handoff)
+                self.assertIn("Selected candidates currently preferred for review", handoff)
+                self.assertTrue(handoff.index("Selected candidates currently preferred for review") < handoff.index("Manual candidate stubs | focus: all candidate stubs"))
+            finally:
+                root.destroy()
+
     def test_app_matching_prep_candidate_status_focus_filters_visible_subset(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = tk.Tk()
@@ -1476,11 +1711,13 @@ class DNAFilmAppTests(unittest.TestCase):
                 self.assertIn("focus: tentative only", tentative_summary)
                 self.assertIn("focus: tentative only", tentative_handoff)
                 self.assertIn("Tentative opening candidate.", tentative_handoff)
-                self.assertNotIn("Selected semantic-to-asset stub.", tentative_handoff)
+                self.assertIn("Selected candidates currently preferred for review", tentative_handoff)
+                self.assertTrue(tentative_handoff.index("Selected candidates currently preferred for review") < tentative_handoff.index("Manual candidate stubs | focus: tentative only"))
                 self.assertIn("focus: rejected only", rejected_summary)
                 self.assertIn("focus: rejected only", rejected_handoff)
                 self.assertIn("Rejected semantic-to-asset stub.", rejected_handoff)
-                self.assertNotIn("Selected semantic-to-asset stub.", rejected_handoff)
+                self.assertIn("Selected candidates currently preferred for review", rejected_handoff)
+                self.assertTrue(rejected_handoff.index("Selected candidates currently preferred for review") < rejected_handoff.index("Manual candidate stubs | focus: rejected only"))
                 self.assertIn("focus: all candidate stubs", all_summary)
                 self.assertIn("focus: all candidate stubs", all_handoff)
                 self.assertIn("Tentative opening candidate.", all_handoff)
