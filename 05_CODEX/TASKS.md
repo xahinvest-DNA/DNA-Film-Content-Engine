@@ -1,16 +1,22 @@
 # Codex Tasks
 
 Last updated: 2026-04-10
-Current focus: manager review and next bounded packet selection after F-028
+Current focus: manager review and next bounded packet selection after F-029
 
 ## Working rule
 Tasks should be bounded, product-visible, and small enough to preserve continuity without turning the repository into micro-slice overload.
 
 ## Active task
 
-- No new implementation packet is active until ChatGPT selects the next bounded step after reviewing the completed `F-028` handoff.
+- No new implementation packet is active until ChatGPT selects the next bounded step after reviewing the completed `F-029` handoff.
 
 ## Completed tasks
+
+### F-029
+- Status: completed
+- Module: selected candidate to accepted reference boundary slice
+- Goal: add one bounded local-first accepted-reference promotion path so one selected manual candidate stub can become one explicit downstream-facing accepted reference without drifting into ranking, automation, timecodes, backend, or workflow-engine buildout.
+- Outcome: added one singular persisted accepted-reference record in the existing Matching Prep lane, restricted promotion to currently selected candidate stubs only, replaced prior accepted reference cleanly on new promotion, surfaced accepted-reference present/absent state plus dominant handoff visibility in open and gated-after-reopen states, verified store-level promotion/replacement/persistence rules and app-level visibility through local tests, and kept the packet intentionally narrow.
 
 ### F-028
 - Status: completed

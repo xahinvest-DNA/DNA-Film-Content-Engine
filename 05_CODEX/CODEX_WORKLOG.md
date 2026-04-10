@@ -1,5 +1,23 @@
 # Codex Worklog
 
+## 2026-04-10 - F-029 completed and Matching Prep gained a singular accepted-reference boundary
+
+### Completed
+- completed the selected candidate to accepted reference boundary slice as one bounded follow-up to the existing manual candidate creation, review, cleanup, and integrity surfaces;
+- added one singular persisted accepted-reference record inside the existing Matching Prep lane so one selected manual candidate stub can become one explicit downstream-facing accepted reference for later matching work;
+- restricted promotion to currently selected candidate stubs only and replaced the prior accepted reference cleanly when a different selected candidate was promoted;
+- surfaced accepted-reference present versus absent visibility plus one dominant accepted-reference handoff section in both open and gated-after-reopen Matching Prep states;
+- verified promotion, blocked tentative/rejected promotion, replacement, reload persistence, and app-level open/gated visibility through local store-level and app-level tests alongside prior regressions;
+- synchronized the repository state layer after real implementation progress.
+
+### Repository effect
+- the repository now distinguishes between raw candidate presence, manually preferred selected intent, and one explicit accepted reference for later matching work;
+- Matching Prep gained its first stronger downstream-facing scene-reference boundary without opening ranking, timecodes, backend/API, or workflow-engine scope;
+- the next bounded packet should now be selected by manager review against current repository capability rather than assumed by inertia.
+
+### Recommended next step
+ChatGPT should select one strongest next bounded packet after reviewing `F-029`.
+
 ## 2026-04-10 - F-028 completed and Matching Prep gained exact-pair duplicate guard
 
 ### Completed

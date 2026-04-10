@@ -13,6 +13,7 @@ ANALYSIS_RECORD_FILENAME = "analysis_source.json"
 REVIEW_RECORD_FILENAME = "semantic_review.json"
 MATCHING_PREP_ASSET_FILENAME = "asset_references.json"
 MATCHING_CANDIDATE_FILENAME = "candidate_stubs.json"
+ACCEPTED_REFERENCE_FILENAME = "accepted_reference.json"
 ALLOWED_SEMANTIC_ROLES = (
     "claim",
     "insight",
@@ -49,6 +50,7 @@ REOPEN_SOURCE_REASON = "Approval was reopened because the analysis source was re
 REOPEN_STRUCTURE_REASON = "Approval was reopened because semantic block boundaries changed after approval."
 REOPEN_SUITABILITY_REASON = "Approval was reopened because output suitability changed after approval."
 SEVERE_WARNING_FLAGS = {"missing_title", "missing_semantic_role", "very_short_content"}
+KEEP_EXISTING = object()
 
 
 def utc_now() -> str:
@@ -169,6 +171,15 @@ def normalize_matching_candidate_stubs(matching_candidate_stubs: list[dict]) -> 
     return normalized
 
 
+def normalize_accepted_reference(accepted_reference: dict | None) -> dict | None:
+    if not accepted_reference:
+        return None
+    current = dict(accepted_reference)
+    current["acceptance_state"] = current.get("acceptance_state", "accepted_for_later_matching_work_only").strip() or "accepted_for_later_matching_work_only"
+    current["accepted_from_candidate_review_status"] = current.get("accepted_from_candidate_review_status", "selected").strip() or "selected"
+    return current
+
+
 def semantic_completeness(intake_record: dict, semantic_blocks: list[dict]) -> tuple[str, int, int]:
     if intake_record.get("intake_readiness") != "ready" or not semantic_blocks:
         return ("Incomplete", 0, 0)
@@ -230,6 +241,7 @@ class ProjectSlice:
     semantic_blocks: list[dict]
     matching_prep_assets: list[dict]
     matching_candidate_stubs: list[dict]
+    accepted_reference: dict | None
 
 
 class ProjectSliceStore:
@@ -300,6 +312,7 @@ class ProjectSliceStore:
         review_record_path = project_dir / "records" / "review" / REVIEW_RECORD_FILENAME
         matching_prep_asset_path = project_dir / "records" / "matching_prep" / MATCHING_PREP_ASSET_FILENAME
         matching_candidate_path = project_dir / "records" / "matching_prep" / MATCHING_CANDIDATE_FILENAME
+        accepted_reference_path = project_dir / "records" / "matching_prep" / ACCEPTED_REFERENCE_FILENAME
 
         if analysis_record_path.exists():
             analysis_source_record = read_json(analysis_record_path)
@@ -319,6 +332,7 @@ class ProjectSliceStore:
         matching_prep_assets = read_json(matching_prep_asset_path)["entries"] if matching_prep_asset_path.exists() else []
         matching_candidate_stubs = read_json(matching_candidate_path)["entries"] if matching_candidate_path.exists() else []
         matching_candidate_stubs = normalize_matching_candidate_stubs(matching_candidate_stubs)
+        accepted_reference = normalize_accepted_reference(read_json(accepted_reference_path) if accepted_reference_path.exists() else None)
         return ProjectSlice(
             project_dir=project_dir,
             manifest=manifest,
@@ -329,6 +343,7 @@ class ProjectSliceStore:
             semantic_blocks=semantic_blocks,
             matching_prep_assets=matching_prep_assets,
             matching_candidate_stubs=matching_candidate_stubs,
+            accepted_reference=accepted_reference,
         )
 
     def save_analysis_text(
@@ -799,6 +814,7 @@ class ProjectSliceStore:
         if not updated:
             raise ValueError("Selected manual candidate stub was not found for this Matching Prep slice.")
 
+        accepted_reference = self._reconcile_accepted_reference(project.accepted_reference, entries)
         manifest = dict(project.manifest)
         manifest["updated_at"] = now
         project_record = dict(project.project_record)
@@ -820,6 +836,7 @@ class ProjectSliceStore:
             project.semantic_blocks,
             project.matching_prep_assets,
             entries,
+            accepted_reference,
         )
         return self.load_project(project_dir)
 
@@ -876,6 +893,64 @@ class ProjectSliceStore:
         )
         return self.load_project(project_dir)
 
+    def promote_matching_candidate_stub_to_accepted_reference(
+        self,
+        project_dir: Path,
+        candidate_stub_id: str,
+    ) -> ProjectSlice:
+        clean_stub_id = candidate_stub_id.strip()
+        if not clean_stub_id:
+            raise ValueError("Select one selected manual candidate stub before promoting an accepted reference.")
+
+        project = self.load_project(project_dir)
+        if project.semantic_review_record.get("review_status") != "approved" or project.semantic_review_record.get("reopened_after_change"):
+            raise ValueError("Accepted reference promotion is only available while Matching Prep is open from an approved semantic map.")
+
+        selected_stub = next((entry for entry in project.matching_candidate_stubs if entry["record_id"] == clean_stub_id), None)
+        if selected_stub is None:
+            raise ValueError("Selected manual candidate stub was not found for accepted reference promotion.")
+        if selected_stub.get("review_status", ALLOWED_CANDIDATE_REVIEW_STATUSES[0]) != "selected":
+            raise ValueError("Only selected manual candidate stubs can be promoted to an accepted reference.")
+
+        now = utc_now()
+        accepted_reference = {
+            "project_id": project.manifest["project_id"],
+            "record_id": "accepted-reference-current",
+            "record_type": "accepted_scene_reference",
+            "source_candidate_stub_id": selected_stub["record_id"],
+            "semantic_block_id": selected_stub["semantic_block_id"],
+            "prep_asset_id": selected_stub["prep_asset_id"],
+            "acceptance_state": "accepted_for_later_matching_work_only",
+            "accepted_from_candidate_review_status": "selected",
+            "created_at": now,
+            "updated_at": now,
+        }
+
+        manifest = dict(project.manifest)
+        manifest["updated_at"] = now
+        project_record = dict(project.project_record)
+        project_record["updated_at"] = now
+        intake_record = dict(project.intake_record)
+        intake_record["updated_at"] = now
+        analysis_source_record = self._copy_analysis_record(project.analysis_source_record, now)
+        semantic_review_record = dict(project.semantic_review_record)
+        semantic_review_record["updated_at"] = now
+
+        self._apply_project_summary(project_record, intake_record, project.semantic_blocks, semantic_review_record)
+        self._write_project_state(
+            project_dir,
+            manifest,
+            project_record,
+            intake_record,
+            analysis_source_record,
+            semantic_review_record,
+            project.semantic_blocks,
+            project.matching_prep_assets,
+            project.matching_candidate_stubs,
+            accepted_reference,
+        )
+        return self.load_project(project_dir)
+
     def remove_matching_candidate_stub(
         self,
         project_dir: Path,
@@ -901,6 +976,7 @@ class ProjectSliceStore:
         if not removed:
             raise ValueError("Selected manual candidate stub was not found for this Matching Prep slice.")
 
+        accepted_reference = self._reconcile_accepted_reference(project.accepted_reference, entries)
         manifest = dict(project.manifest)
         manifest["updated_at"] = now
         project_record = dict(project.project_record)
@@ -922,8 +998,30 @@ class ProjectSliceStore:
             project.semantic_blocks,
             project.matching_prep_assets,
             entries,
+            accepted_reference,
         )
         return self.load_project(project_dir)
+
+    def _reconcile_accepted_reference(
+        self,
+        accepted_reference: dict | None,
+        matching_candidate_stubs: list[dict],
+    ) -> dict | None:
+        normalized_reference = normalize_accepted_reference(accepted_reference)
+        if normalized_reference is None:
+            return None
+        source_candidate_stub_id = normalized_reference.get("source_candidate_stub_id", "").strip()
+        if not source_candidate_stub_id:
+            return None
+        source_candidate = next((entry for entry in matching_candidate_stubs if entry.get("record_id") == source_candidate_stub_id), None)
+        if source_candidate is None:
+            return None
+        if source_candidate.get("review_status", ALLOWED_CANDIDATE_REVIEW_STATUSES[0]) != "selected":
+            return None
+        updated_reference = dict(normalized_reference)
+        updated_reference["semantic_block_id"] = source_candidate.get("semantic_block_id", "")
+        updated_reference["prep_asset_id"] = source_candidate.get("prep_asset_id", "")
+        return updated_reference
 
     def _persist_semantic_update(
         self,
@@ -988,8 +1086,14 @@ class ProjectSliceStore:
         semantic_blocks: list[dict],
         matching_prep_assets: list[dict],
         matching_candidate_stubs: list[dict],
+        accepted_reference: dict | None | object = KEEP_EXISTING,
     ) -> None:
         semantic_blocks = normalize_semantic_blocks(semantic_blocks)
+        accepted_reference_path = project_dir / "records" / "matching_prep" / ACCEPTED_REFERENCE_FILENAME
+        if accepted_reference is KEEP_EXISTING:
+            accepted_reference_payload = normalize_accepted_reference(read_json(accepted_reference_path) if accepted_reference_path.exists() else None)
+        else:
+            accepted_reference_payload = normalize_accepted_reference(accepted_reference if isinstance(accepted_reference, dict) else None)
         write_json(project_dir / "project.manifest", manifest)
         write_json(project_dir / "project.meta" / "status.json", self._status_payload(project_record, intake_record, semantic_review_record, semantic_blocks))
         write_json(project_dir / "records" / "project" / "project.json", project_record)
@@ -1000,6 +1104,10 @@ class ProjectSliceStore:
         write_json(project_dir / "records" / "semantic" / "semantic_blocks.json", {"blocks": semantic_blocks})
         write_json(project_dir / "records" / "matching_prep" / MATCHING_PREP_ASSET_FILENAME, {"entries": matching_prep_assets})
         write_json(project_dir / "records" / "matching_prep" / MATCHING_CANDIDATE_FILENAME, {"entries": matching_candidate_stubs})
+        if accepted_reference_payload is not None:
+            write_json(accepted_reference_path, accepted_reference_payload)
+        elif accepted_reference_path.exists():
+            accepted_reference_path.unlink()
 
     def _status_payload(
         self,

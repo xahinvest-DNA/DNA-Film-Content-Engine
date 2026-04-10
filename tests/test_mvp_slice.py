@@ -383,6 +383,208 @@ class ProjectSliceStoreTests(unittest.TestCase):
             self.assertEqual(len(reloaded.matching_candidate_stubs), 1)
             self.assertEqual(reloaded.matching_candidate_stubs[0]["note"], "Original manual candidate.")
 
+    def test_selected_candidate_can_be_promoted_to_accepted_reference_and_persist_after_reload(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = store.create_project("Accepted Reference Map", film_title="Demo Film", language="en")
+            project = store.save_analysis_text(project.project_dir, SAMPLE_ANALYSIS)
+
+            for block in list(project.semantic_blocks):
+                project = store.update_semantic_block(
+                    project.project_dir,
+                    block["record_id"],
+                    block["title"],
+                    block["semantic_role"],
+                    "Editor clarification added.",
+                )
+
+            project = store.update_semantic_review_status(project.project_dir, "ready_for_review")
+            project = store.update_semantic_review_status(project.project_dir, "approved")
+            project = store.add_matching_prep_asset(
+                project.project_dir,
+                "Main subtitle file",
+                "subtitle_reference",
+                "E:/demo/subtitles.srt",
+                "Primary subtitle reference.",
+            )
+            project = store.add_matching_candidate_stub(
+                project.project_dir,
+                project.semantic_blocks[0]["record_id"],
+                project.matching_prep_assets[0]["record_id"],
+                "Selected candidate promoted to accepted reference.",
+            )
+            project = store.update_matching_candidate_stub_status(
+                project.project_dir,
+                project.matching_candidate_stubs[0]["record_id"],
+                "selected",
+            )
+            project = store.update_matching_candidate_stub_rationale(
+                project.project_dir,
+                project.matching_candidate_stubs[0]["record_id"],
+                "Current strongest manual support for later matching work.",
+            )
+
+            promoted = store.promote_matching_candidate_stub_to_accepted_reference(
+                project.project_dir,
+                project.matching_candidate_stubs[0]["record_id"],
+            )
+
+            self.assertIsNotNone(promoted.accepted_reference)
+            self.assertEqual(promoted.accepted_reference["source_candidate_stub_id"], promoted.matching_candidate_stubs[0]["record_id"])
+            self.assertEqual(promoted.accepted_reference["record_type"], "accepted_scene_reference")
+            self.assertTrue((promoted.project_dir / "records" / "matching_prep" / "accepted_reference.json").exists())
+
+            reloaded = store.load_project(promoted.project_dir)
+            self.assertIsNotNone(reloaded.accepted_reference)
+            self.assertEqual(reloaded.accepted_reference["source_candidate_stub_id"], reloaded.matching_candidate_stubs[0]["record_id"])
+            self.assertEqual(reloaded.accepted_reference["semantic_block_id"], reloaded.matching_candidate_stubs[0]["semantic_block_id"])
+
+    def test_tentative_candidate_cannot_be_promoted_to_accepted_reference(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = store.create_project("Tentative Promotion Block", film_title="Demo Film", language="en")
+            project = store.save_analysis_text(project.project_dir, SAMPLE_ANALYSIS)
+
+            for block in list(project.semantic_blocks):
+                project = store.update_semantic_block(
+                    project.project_dir,
+                    block["record_id"],
+                    block["title"],
+                    block["semantic_role"],
+                    "Editor clarification added.",
+                )
+
+            project = store.update_semantic_review_status(project.project_dir, "ready_for_review")
+            project = store.update_semantic_review_status(project.project_dir, "approved")
+            project = store.add_matching_prep_asset(
+                project.project_dir,
+                "Main subtitle file",
+                "subtitle_reference",
+                "E:/demo/subtitles.srt",
+                "Primary subtitle reference.",
+            )
+            project = store.add_matching_candidate_stub(
+                project.project_dir,
+                project.semantic_blocks[0]["record_id"],
+                project.matching_prep_assets[0]["record_id"],
+                "Tentative candidate stays tentative.",
+            )
+
+            with self.assertRaisesRegex(ValueError, "Only selected manual candidate stubs can be promoted"):
+                store.promote_matching_candidate_stub_to_accepted_reference(
+                    project.project_dir,
+                    project.matching_candidate_stubs[0]["record_id"],
+                )
+
+    def test_rejected_candidate_cannot_be_promoted_to_accepted_reference(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = store.create_project("Rejected Promotion Block", film_title="Demo Film", language="en")
+            project = store.save_analysis_text(project.project_dir, SAMPLE_ANALYSIS)
+
+            for block in list(project.semantic_blocks):
+                project = store.update_semantic_block(
+                    project.project_dir,
+                    block["record_id"],
+                    block["title"],
+                    block["semantic_role"],
+                    "Editor clarification added.",
+                )
+
+            project = store.update_semantic_review_status(project.project_dir, "ready_for_review")
+            project = store.update_semantic_review_status(project.project_dir, "approved")
+            project = store.add_matching_prep_asset(
+                project.project_dir,
+                "Main subtitle file",
+                "subtitle_reference",
+                "E:/demo/subtitles.srt",
+                "Primary subtitle reference.",
+            )
+            project = store.add_matching_candidate_stub(
+                project.project_dir,
+                project.semantic_blocks[0]["record_id"],
+                project.matching_prep_assets[0]["record_id"],
+                "Rejected candidate cannot be promoted.",
+            )
+            project = store.update_matching_candidate_stub_status(
+                project.project_dir,
+                project.matching_candidate_stubs[0]["record_id"],
+                "rejected",
+            )
+
+            with self.assertRaisesRegex(ValueError, "Only selected manual candidate stubs can be promoted"):
+                store.promote_matching_candidate_stub_to_accepted_reference(
+                    project.project_dir,
+                    project.matching_candidate_stubs[0]["record_id"],
+                )
+
+    def test_new_selected_candidate_replaces_prior_accepted_reference(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = store.create_project("Accepted Reference Replacement", film_title="Demo Film", language="en")
+            project = store.save_analysis_text(project.project_dir, SAMPLE_ANALYSIS)
+
+            for block in list(project.semantic_blocks):
+                project = store.update_semantic_block(
+                    project.project_dir,
+                    block["record_id"],
+                    block["title"],
+                    block["semantic_role"],
+                    "Editor clarification added.",
+                )
+
+            project = store.update_semantic_review_status(project.project_dir, "ready_for_review")
+            project = store.update_semantic_review_status(project.project_dir, "approved")
+            project = store.add_matching_prep_asset(
+                project.project_dir,
+                "Main subtitle file",
+                "subtitle_reference",
+                "E:/demo/subtitles.srt",
+                "Primary subtitle reference.",
+            )
+            project = store.add_matching_prep_asset(
+                project.project_dir,
+                "Scene stills",
+                "film_asset_reference",
+                "E:/demo/scene-stills",
+                "Prepared stills for manual prep review.",
+            )
+            project = store.add_matching_candidate_stub(
+                project.project_dir,
+                project.semantic_blocks[0]["record_id"],
+                project.matching_prep_assets[0]["record_id"],
+                "First selected candidate.",
+            )
+            project = store.add_matching_candidate_stub(
+                project.project_dir,
+                project.semantic_blocks[1]["record_id"],
+                project.matching_prep_assets[1]["record_id"],
+                "Second selected candidate replaces first.",
+            )
+            project = store.update_matching_candidate_stub_status(
+                project.project_dir,
+                project.matching_candidate_stubs[0]["record_id"],
+                "selected",
+            )
+            project = store.update_matching_candidate_stub_status(
+                project.project_dir,
+                project.matching_candidate_stubs[1]["record_id"],
+                "selected",
+            )
+            project = store.promote_matching_candidate_stub_to_accepted_reference(
+                project.project_dir,
+                project.matching_candidate_stubs[0]["record_id"],
+            )
+            replaced = store.promote_matching_candidate_stub_to_accepted_reference(
+                project.project_dir,
+                project.matching_candidate_stubs[1]["record_id"],
+            )
+
+            self.assertIsNotNone(replaced.accepted_reference)
+            self.assertEqual(replaced.accepted_reference["source_candidate_stub_id"], replaced.matching_candidate_stubs[1]["record_id"])
+            self.assertEqual(replaced.accepted_reference["prep_asset_id"], replaced.matching_candidate_stubs[1]["prep_asset_id"])
+            self.assertEqual(replaced.accepted_reference["record_id"], "accepted-reference-current")
+
     def test_analysis_text_must_be_meaningful(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             store = ProjectSliceStore(Path(temp_dir))
@@ -1432,6 +1634,134 @@ class DNAFilmAppTests(unittest.TestCase):
                 self.assertEqual(reloaded.matching_candidate_stubs[0]["review_status"], "selected")
                 self.assertEqual(reloaded.matching_candidate_stubs[1]["record_id"], "candidate-stub-002")
                 self.assertEqual(reloaded.matching_candidate_stubs[1]["review_status"], "rejected")
+            finally:
+                root.destroy()
+
+    def test_app_matching_prep_shows_accepted_reference_after_selected_promotion(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Accepted Reference Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+
+                    project = app.project
+                    for block in list(project.semantic_blocks):
+                        project = app.store.update_semantic_block(
+                            project.project_dir,
+                            block["record_id"],
+                            block["title"],
+                            block["semantic_role"],
+                            "Editor clarification added.",
+                        )
+                    app._load_project_into_ui(project)
+                    app.review_status_var.set("ready_for_review")
+                    app.save_review_status()
+                    app.review_status_var.set("approved")
+                    app.save_review_status()
+
+                    app._switch_view("Matching Prep")
+                    app.asset_label_var.set("Main subtitle file")
+                    app.asset_type_var.set("subtitle_reference")
+                    app.asset_reference_var.set("E:/demo/subtitles.srt")
+                    app.asset_notes_text.insert("1.0", "Subtitle reference for accepted reference promotion.")
+                    app.add_matching_prep_asset()
+
+                    app.candidate_block_var.set(app.candidate_block_combo["values"][0])
+                    app.candidate_asset_var.set(app.candidate_asset_combo["values"][0])
+                    app.candidate_note_var.set("Selected candidate promoted in app flow.")
+                    app.add_matching_candidate_stub()
+
+                    app.candidate_stub_var.set(app.candidate_stub_combo["values"][0])
+                    app.on_candidate_stub_selected()
+                    app.candidate_status_var.set("selected")
+                    app.save_matching_candidate_status()
+                    app.candidate_rationale_var.set("Current strongest accepted prep reference.")
+                    app.save_matching_candidate_rationale()
+                    app.promote_matching_candidate_to_accepted_reference()
+
+                handoff = app.matching_prep_handoff.get("1.0", "end").strip()
+                reloaded = app.store.load_project(app.project.project_dir)
+                self.assertIsNotNone(reloaded.accepted_reference)
+                self.assertIn("current accepted reference exists", app.matching_accepted_reference_summary_text.get())
+                self.assertIn("Accepted reference for later matching work", handoff)
+                self.assertIn("Selected candidate promoted in app flow.", handoff)
+                self.assertIn("Current strongest accepted prep reference.", handoff)
+                self.assertIn("Accepted from selected candidate stub: candidate-stub-001", handoff)
+                self.assertIn("not a timecoded final match", handoff)
+            finally:
+                root.destroy()
+
+    def test_app_matching_prep_accepted_reference_remains_visible_when_lane_reopens(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Accepted Reference Reopen Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+
+                    project = app.project
+                    for block in list(project.semantic_blocks):
+                        project = app.store.update_semantic_block(
+                            project.project_dir,
+                            block["record_id"],
+                            block["title"],
+                            block["semantic_role"],
+                            "Editor clarification added.",
+                        )
+                    app._load_project_into_ui(project)
+                    app.review_status_var.set("ready_for_review")
+                    app.save_review_status()
+                    app.review_status_var.set("approved")
+                    app.save_review_status()
+
+                    app._switch_view("Matching Prep")
+                    app.asset_label_var.set("Transcript reference")
+                    app.asset_type_var.set("transcript_reference")
+                    app.asset_reference_var.set("E:/demo/transcript.txt")
+                    app.asset_notes_text.insert("1.0", "Transcript prepared for accepted reference visibility.")
+                    app.add_matching_prep_asset()
+
+                    app.candidate_block_var.set(app.candidate_block_combo["values"][0])
+                    app.candidate_asset_var.set(app.candidate_asset_combo["values"][0])
+                    app.candidate_note_var.set("Accepted reference remains visible when reopened.")
+                    app.add_matching_candidate_stub()
+
+                    app.candidate_stub_var.set(app.candidate_stub_combo["values"][0])
+                    app.on_candidate_stub_selected()
+                    app.candidate_status_var.set("selected")
+                    app.save_matching_candidate_status()
+                    app.promote_matching_candidate_to_accepted_reference()
+
+                    target_block_id = app.project.semantic_blocks[1]["record_id"]
+                    app._select_block_by_id(target_block_id)
+                    app.reorder_selected_block("up")
+                    app._switch_view("Matching Prep")
+
+                handoff = app.matching_prep_handoff.get("1.0", "end").strip()
+                self.assertEqual(app.matching_prep_text.get(), "Matching prep readiness: blocked | semantic approval was reopened after change")
+                self.assertIn("current accepted reference exists", app.matching_accepted_reference_summary_text.get())
+                self.assertIn("Accepted reference for later matching work", handoff)
+                self.assertIn("Accepted reference remains visible when reopened.", handoff)
+                self.assertIn("Accepted from selected candidate stub: candidate-stub-001", handoff)
             finally:
                 root.destroy()
 
