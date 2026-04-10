@@ -69,6 +69,7 @@ class DNAFilmApp:
         self.approval_reason_text = tk.StringVar(value="Approval reason: Approve is blocked until semantic review is moved to ready_for_review.")
         self.reopen_text = tk.StringVar(value="Reopen state: none")
         self.matching_prep_text = tk.StringVar(value="Matching prep readiness: blocked | semantic map not established yet")
+        self.scene_matching_text = tk.StringVar(value="Scene matching readiness: blocked | no accepted reference available yet")
         self.matching_prep_status_text = tk.StringVar(value="Matching Prep is blocked until the semantic map is approved.")
         self.matching_prep_summary_text = tk.StringVar(value="Prep handoff: 0 approved semantic blocks available.")
         self.matching_asset_summary_text = tk.StringVar(value="Film-side registration: no prep inputs registered yet.")
@@ -129,10 +130,11 @@ class DNAFilmApp:
         ttk.Label(header, textvariable=self.approval_reason_text, wraplength=980).grid(row=8, column=0, sticky="w")
         ttk.Label(header, textvariable=self.reopen_text, wraplength=980).grid(row=9, column=0, sticky="w")
         ttk.Label(header, textvariable=self.matching_prep_text, wraplength=980).grid(row=10, column=0, sticky="w")
+        ttk.Label(header, textvariable=self.scene_matching_text, wraplength=980).grid(row=11, column=0, sticky="w")
 
         nav = ttk.Frame(self.root, padding=(12, 8))
         nav.grid(row=1, column=0, sticky="nsw")
-        for name in ("Project Home", "Source Intake", "Semantic Map", "Matching Prep"):
+        for name in ("Project Home", "Source Intake", "Semantic Map", "Matching Prep", "Scene Matching"):
             ttk.Button(nav, text=name, width=22, command=lambda item=name: self._switch_view(item)).pack(anchor="w", pady=4)
         for name in ("Output Tracks", "Export Center"):
             ttk.Button(nav, text=name, width=22, state="disabled").pack(anchor="w", pady=4)
@@ -215,6 +217,7 @@ class DNAFilmApp:
         self.views["Source Intake"] = self._build_intake_view(main)
         self.views["Semantic Map"] = self._build_semantic_view(main)
         self.views["Matching Prep"] = self._build_matching_prep_view(main)
+        self.views["Scene Matching"] = self._build_scene_matching_view(main)
 
         self.placeholder_view = ttk.Frame(main, padding=12)
         self.placeholder_view.grid(row=0, column=0, sticky="nsew")
@@ -246,9 +249,10 @@ class DNAFilmApp:
         ttk.Label(frame, textvariable=self.issues_summary_text, wraplength=700).grid(row=9, column=0, columnspan=2, sticky="w", pady=(4, 0))
         ttk.Label(frame, textvariable=self.readiness_text, wraplength=700).grid(row=10, column=0, columnspan=2, sticky="w", pady=(4, 0))
         ttk.Label(frame, textvariable=self.matching_prep_text, wraplength=700).grid(row=11, column=0, columnspan=2, sticky="w", pady=(4, 0))
-        ttk.Label(frame, textvariable=self.approval_message_text, wraplength=700).grid(row=12, column=0, columnspan=2, sticky="w", pady=(4, 0))
-        ttk.Label(frame, textvariable=self.approval_reason_text, wraplength=700).grid(row=13, column=0, columnspan=2, sticky="w", pady=(4, 0))
-        ttk.Label(frame, textvariable=self.reopen_text, wraplength=700).grid(row=14, column=0, columnspan=2, sticky="w", pady=(4, 0))
+        ttk.Label(frame, textvariable=self.scene_matching_text, wraplength=700).grid(row=12, column=0, columnspan=2, sticky="w", pady=(4, 0))
+        ttk.Label(frame, textvariable=self.approval_message_text, wraplength=700).grid(row=13, column=0, columnspan=2, sticky="w", pady=(4, 0))
+        ttk.Label(frame, textvariable=self.approval_reason_text, wraplength=700).grid(row=14, column=0, columnspan=2, sticky="w", pady=(4, 0))
+        ttk.Label(frame, textvariable=self.reopen_text, wraplength=700).grid(row=15, column=0, columnspan=2, sticky="w", pady=(4, 0))
         return frame
 
     def _build_intake_view(self, parent: ttk.Frame) -> ttk.Frame:
@@ -297,9 +301,10 @@ class DNAFilmApp:
         ttk.Label(frame, textvariable=self.summary_text, wraplength=760).grid(row=5, column=0, sticky="w")
         ttk.Label(frame, textvariable=self.issues_summary_text, wraplength=760).grid(row=6, column=0, sticky="w")
         ttk.Label(frame, textvariable=self.matching_prep_text, wraplength=760).grid(row=7, column=0, sticky="w")
-        ttk.Label(frame, textvariable=self.approval_message_text, wraplength=760).grid(row=8, column=0, sticky="w")
-        ttk.Label(frame, textvariable=self.approval_reason_text, wraplength=760).grid(row=9, column=0, sticky="w")
-        ttk.Label(frame, textvariable=self.reopen_text, wraplength=760).grid(row=10, column=0, sticky="w")
+        ttk.Label(frame, textvariable=self.scene_matching_text, wraplength=760).grid(row=8, column=0, sticky="w")
+        ttk.Label(frame, textvariable=self.approval_message_text, wraplength=760).grid(row=9, column=0, sticky="w")
+        ttk.Label(frame, textvariable=self.approval_reason_text, wraplength=760).grid(row=10, column=0, sticky="w")
+        ttk.Label(frame, textvariable=self.reopen_text, wraplength=760).grid(row=11, column=0, sticky="w")
         return frame
 
     def _build_matching_prep_view(self, parent: ttk.Frame) -> ttk.Frame:
@@ -371,6 +376,21 @@ class DNAFilmApp:
         self.matching_prep_handoff.grid(row=9, column=0, sticky="nsew")
         self.matching_prep_handoff.configure(state="disabled")
         return frame
+    def _build_scene_matching_view(self, parent: ttk.Frame) -> ttk.Frame:
+        frame = ttk.Frame(parent, padding=12)
+        frame.grid(row=0, column=0, sticky="nsew")
+        frame.columnconfigure(0, weight=1)
+        frame.rowconfigure(3, weight=1)
+
+        ttk.Label(frame, text="Scene Matching", font=("Segoe UI", 14, "bold")).grid(row=0, column=0, sticky="w")
+        ttk.Label(frame, text="This is the first scene-matching-facing entry lane. It opens only when one current accepted prep reference exists and stays explicitly pre-automation, pre-timecode, and pre-final-match.", wraplength=760).grid(row=1, column=0, sticky="w", pady=(8, 6))
+        self.scene_matching_status_label = ttk.Label(frame, textvariable=self.scene_matching_text, wraplength=760)
+        self.scene_matching_status_label.grid(row=2, column=0, sticky="w", pady=(0, 8))
+        self.scene_matching_handoff = tk.Text(frame, height=22, wrap="word")
+        self.scene_matching_handoff.grid(row=3, column=0, sticky="nsew")
+        self.scene_matching_handoff.configure(state="disabled")
+        return frame
+
 
     def _switch_view(self, name: str) -> None:
         self.current_view.set(name)
@@ -754,13 +774,16 @@ class DNAFilmApp:
         self.reopen_text.set(f"Reopen state: {reopened} | reason: {reopen_reason}")
         matching_prep_gate = self._matching_prep_gate_text(project)
         self.matching_prep_text.set(matching_prep_gate)
+        scene_matching_gate = self._scene_matching_gate_text(project)
+        self.scene_matching_text.set(scene_matching_gate)
         self._update_matching_prep_surface(project)
+        self._update_scene_matching_surface(project)
         self._refresh_matching_candidate_controls(project)
         warnings = project.intake_record.get("intake_warnings", [])
         warning_text = f"Warnings: {', '.join(warnings)}" if warnings else "Warnings: none"
         suitability_summary = self._project_suitability_summary(project)
         self.summary_text.set(
-            f"Project status: {project.project_record['project_status']} | Intake: {project.intake_record['intake_readiness']} | Semantic blocks: {len(project.semantic_blocks)} | Review: {project.semantic_review_record['review_status']} | Completeness: {completeness_label} | Readiness: {readiness} | {matching_prep_gate} | Suitability: {suitability_summary} | {warning_text}"
+            f"Project status: {project.project_record['project_status']} | Intake: {project.intake_record['intake_readiness']} | Semantic blocks: {len(project.semantic_blocks)} | Review: {project.semantic_review_record['review_status']} | Completeness: {completeness_label} | Readiness: {readiness} | {matching_prep_gate} | {scene_matching_gate} | Suitability: {suitability_summary} | {warning_text}"
         )
 
         self.analysis_text.delete("1.0", "end")
@@ -1062,6 +1085,17 @@ class DNAFilmApp:
         state, reason = self._matching_prep_gate(project)
         return f"Matching prep readiness: {state} | {reason}"
 
+    def _scene_matching_gate(self, project: ProjectSlice) -> tuple[str, str]:
+        if project.accepted_reference is None:
+            return ("blocked", "no accepted reference available yet")
+        if project.semantic_review_record.get("reopened_after_change"):
+            return ("blocked", "accepted reference remains visible but upstream semantic approval was reopened")
+        return ("ready", "current accepted reference available for scene-matching-facing handoff")
+
+    def _scene_matching_gate_text(self, project: ProjectSlice) -> str:
+        state, reason = self._scene_matching_gate(project)
+        return f"Scene matching readiness: {state} | {reason}"
+
     def _refresh_matching_candidate_controls(self, project: ProjectSlice | None) -> None:
         if project is None:
             self.candidate_block_options = {}
@@ -1361,6 +1395,37 @@ class DNAFilmApp:
         self.matching_prep_handoff.insert("1.0", handoff_text)
         self.matching_prep_handoff.configure(state="disabled")
 
+    def _update_scene_matching_surface(self, project: ProjectSlice) -> None:
+        gate_state, gate_reason = self._scene_matching_gate(project)
+        accepted_reference_summary = self._accepted_reference_summary(project)
+        lines: list[str]
+        if gate_state != "ready":
+            lines = [
+                "Scene Matching remains blocked in this project state.",
+                "",
+                f"Reason: {gate_reason}.",
+                accepted_reference_summary,
+                "",
+                "Current accepted reference handoff",
+                *self._accepted_reference_lines(project),
+                "This lane is scene-matching-facing only. It remains pre-automation, pre-timecode, and pre-final-output and does not perform automatic matching yet.",
+            ]
+        else:
+            lines = [
+                "Scene Matching handoff is open.",
+                accepted_reference_summary,
+                "",
+                "Current accepted reference for scene matching work",
+                *self._accepted_reference_lines(project),
+                "This lane is the first honest entry into scene matching work.",
+                "It remains pre-automation, pre-timecode, and pre-final-match.",
+            ]
+        handoff_text = "\n".join(lines).rstrip()
+        self.scene_matching_handoff.configure(state="normal")
+        self.scene_matching_handoff.delete("1.0", "end")
+        self.scene_matching_handoff.insert("1.0", handoff_text)
+        self.scene_matching_handoff.configure(state="disabled")
+
     def _suitability_summary(self, block: dict) -> str:
         short = {
             "long_video": "LV",
@@ -1395,6 +1460,8 @@ class DNAFilmApp:
             return "Next action: Load analysis text"
         review_status = project.semantic_review_record["review_status"]
         readiness = self._approval_readiness(project)
+        if project.accepted_reference is not None and not project.semantic_review_record.get("reopened_after_change"):
+            return "Next action: Open Scene Matching"
         if review_status == "approved":
             return "Next action: Open Matching Prep"
         if readiness == "ready_for_approval":

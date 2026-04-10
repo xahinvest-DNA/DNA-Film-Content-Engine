@@ -1,5 +1,23 @@
 # Codex Worklog
 
+## 2026-04-10 - F-030 completed and the runtime gained its first Scene Matching entry surface
+
+### Completed
+- completed the first Scene Matching entry slice as one bounded downstream follow-up to the existing accepted-reference boundary in Matching Prep;
+- added one real `Scene Matching` runtime surface and gated it on the presence of one current accepted reference rather than on automatic matching, timecodes, or workflow state expansion;
+- surfaced the accepted reference as the current scene-matching-facing handoff when open and kept the lane honestly readable but blocked when semantic approval reopened upstream;
+- kept wording explicit that the new lane is pre-automation, pre-timecode, and not a final match output;
+- verified blocked-without-reference, open-with-reference, reload persistence, blocked-again after accepted-reference loss, and gated-after-reopen readability through local app-level tests alongside prior regressions;
+- synchronized the repository state layer after real implementation progress.
+
+### Repository effect
+- the runtime now crosses from Matching Prep into a real `Scene Matching` lane rather than trapping accepted-reference semantics inside the prep surface;
+- the repository gained the first honest downstream-facing scene-matching entry boundary without opening automatic matching, timecodes, backend/API, or workflow-engine scope;
+- the next bounded packet should now be selected by manager review against current repository capability rather than assumed by inertia.
+
+### Recommended next step
+ChatGPT should select one strongest next bounded packet after reviewing `F-030`.
+
 ## 2026-04-10 - F-029 completed and Matching Prep gained a singular accepted-reference boundary
 
 ### Completed

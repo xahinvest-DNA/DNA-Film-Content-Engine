@@ -2,10 +2,10 @@
 
 Last updated: 2026-04-10
 Status: active
-Current stage: F-029 selected candidate to accepted reference boundary slice is completed
+Current stage: F-030 first Scene Matching entry slice is completed
 Active module: manager review and next bounded packet selection
-Active frontier: post-F-029 state synchronization
-Active question: which one strongest bounded packet should follow now that Matching Prep can promote one selected manual candidate stub into one explicit accepted reference for later matching work without opening ranking, timecodes, backend, or workflow-engine scope
+Active frontier: post-F-030 state synchronization
+Active question: which one strongest bounded packet should follow now that the runtime can open a real Scene Matching entry surface from one current accepted reference without opening automatic matching, timecodes, backend, or workflow-engine scope
 
 ## Where the project is now
 
@@ -34,13 +34,14 @@ At this point:
 - Matching Prep now also pins selected candidate stubs to the top of the current visible listing while preserving persisted order on disk and preserving relative order inside each visible subset;
 - Matching Prep now also blocks creation of an exact duplicate manual candidate stub for the same semantic block and prep input pair, preserving local candidate integrity without adding a new policy subsystem;
 - Matching Prep now also promotes one selected manual candidate stub into one explicit accepted reference for later matching work, keeps that accepted reference singular and reload-stable, and surfaces it as a dominant downstream-facing handoff boundary without turning it into timecoded or final-match output;
+- the runtime now also opens one real `Scene Matching` entry surface that receives the current accepted reference as the first honest downstream-facing handoff, stays blocked when no accepted reference exists, remains honestly readable when semantic approval reopens, and keeps explicit pre-automation/pre-timecode wording;
 - the main MVP operating surface remains fixed as `Semantic Map Workspace`;
 - the meaning-first architecture is now explicit across product, domain, schema, project-package, asset, downstream output, and implementation layers;
 - the project now uses a manager-led execution model;
 - ChatGPT owns strongest-next-step selection;
 - Codex owns repository execution and state synchronization;
 - manager review depth and next-step efficiency-gate doctrine are now fixed in repository governance documents rather than left to chat memory;
-- F-029 is completed and no longer the active runtime frontier;
+- F-030 is completed and no longer the active runtime frontier;
 - the repository is now waiting for ChatGPT to select the next strongest bounded packet.
 
 ## Accepted boundaries right now
@@ -50,7 +51,7 @@ At this point:
 - Live project state is owned by this file.
 - The active implementation packet is owned by `05_CODEX/NEXT_TASK.md`.
 - The project starts desktop-first.
-- MVP is centered on project creation, source intake, semantic blocks, semantic-map review, the first matching-prep entry boundary, the first film-side registration boundary, the first manual candidate-stub boundary, the first manual candidate review-status boundary, the first manual candidate status-focus boundary, the first selected-dominant handoff boundary, the first selected-readiness cue boundary, the first selected-candidate rationale boundary, the first manual candidate removal boundary, the first selected-pin-to-top visibility boundary, the first manual candidate duplicate-guard boundary, the first accepted-reference boundary, and the approved semantic-first desktop operating surface.
+- MVP is centered on project creation, source intake, semantic blocks, semantic-map review, the first matching-prep entry boundary, the first film-side registration boundary, the first manual candidate-stub boundary, the first manual candidate review-status boundary, the first manual candidate status-focus boundary, the first selected-dominant handoff boundary, the first selected-readiness cue boundary, the first selected-candidate rationale boundary, the first manual candidate removal boundary, the first selected-pin-to-top visibility boundary, the first manual candidate duplicate-guard boundary, the first accepted-reference boundary, the first scene-matching-facing entry boundary, and the approved semantic-first desktop operating surface.
 - manager-led execution model is fixed.
 - ChatGPT must review Codex handoffs at completion level and management level before selecting the next packet.
 - strongest-next-step selection must pass an efficiency gate rather than follow previous recommendations by inertia alone.
@@ -60,13 +61,13 @@ At this point:
 
 ## Open items
 
-- preserve the new accepted-reference boundary as a bounded downstream handoff slice rather than letting it drift into timecodes, ranking, or workflow-engine semantics;
-- choose one strongest next bounded packet now that Matching Prep can express candidate presence, explicit manual intent, focused readability, selected-first readability, preferred-subset readiness, rationale visibility, cleanup capability, selected-first listing order, exact-pair duplicate protection, and one singular accepted reference for later matching work;
-- keep later matching work explicitly outside ranking, timecodes, backend, dashboard, and workflow-engine scope until a stronger packet justifies opening them.
+- preserve the new Scene Matching entry surface as a bounded downstream-facing handoff slice rather than letting it drift into automatic matching, timecodes, ranking, or workflow-engine semantics;
+- choose one strongest next bounded packet now that the runtime can cross from Matching Prep into a real Scene Matching lane with one accepted reference as current handoff input;
+- keep later scene-matching work explicitly outside automatic matching, ranking, timecodes, backend, dashboard, and workflow-engine scope until a stronger packet justifies opening them.
 
 ## Next step
 
-ChatGPT should review the completed `F-029 Selected Candidate to Accepted Reference Boundary Slice` handoff and select one strongest next bounded packet.
+ChatGPT should review the completed `F-030 First Scene Matching Entry Slice` handoff and select one strongest next bounded packet.
 
 ## What must not be lost in a new chat
 
@@ -75,6 +76,6 @@ ChatGPT should review the completed `F-029 Selected Candidate to Accepted Refere
 - manager-led execution model is fixed.
 - MVP main surface is `Semantic Map Workspace`.
 - product, domain, schema, project-file, asset, and downstream output-boundary layers are fixed.
-- F-029 is completed with one singular accepted-reference boundary inside Matching Prep, so the lane now holds candidate existence, explicit tentative/selected/rejected intent, readable filtered subsets, selected-first readability, preferred-subset readiness visibility, rationale visibility, cleanup capability, selected-pinned listing order, exact duplicate protection, and one explicit accepted reference for later matching work without adding ranking, timecodes, or workflow-engine semantics.
+- F-030 is completed with one real `Scene Matching` entry surface fed by a singular accepted reference, so the runtime now crosses from Matching Prep into the next canonical lane while still staying pre-automation, pre-timecode, and outside workflow-engine semantics.
 - ChatGPT must read Codex handoffs as management signals about capability gained, capability unlocked, unresolved gap, and packet-size efficiency before choosing what comes next.
 - the next strong active runtime step must be re-selected from current repository capability rather than assumed by inertia from the just-completed matching-prep status slice.

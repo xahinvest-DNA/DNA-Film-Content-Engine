@@ -1372,6 +1372,285 @@ class DNAFilmAppTests(unittest.TestCase):
                 root.destroy()
 
 
+    def test_app_scene_matching_view_stays_blocked_without_accepted_reference(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Scene Matching Blocked Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+
+                    project = app.project
+                    for block in list(project.semantic_blocks):
+                        project = app.store.update_semantic_block(
+                            project.project_dir,
+                            block["record_id"],
+                            block["title"],
+                            block["semantic_role"],
+                            "Editor clarification added.",
+                        )
+                    app._load_project_into_ui(project)
+                    app.review_status_var.set("ready_for_review")
+                    app.save_review_status()
+                    app.review_status_var.set("approved")
+                    app.save_review_status()
+
+                app._switch_view("Scene Matching")
+                handoff = app.scene_matching_handoff.get("1.0", "end").strip()
+
+                self.assertEqual(app.current_view.get(), "Scene Matching")
+                self.assertEqual(app.scene_matching_text.get(), "Scene matching readiness: blocked | no accepted reference available yet")
+                self.assertIn("Scene Matching remains blocked", handoff)
+                self.assertIn("Accepted reference: none accepted yet", handoff)
+            finally:
+                root.destroy()
+
+    def test_app_scene_matching_view_opens_with_accepted_reference(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Scene Matching Open Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+
+                    project = app.project
+                    for block in list(project.semantic_blocks):
+                        project = app.store.update_semantic_block(
+                            project.project_dir,
+                            block["record_id"],
+                            block["title"],
+                            block["semantic_role"],
+                            "Editor clarification added.",
+                        )
+                    app._load_project_into_ui(project)
+                    app.review_status_var.set("ready_for_review")
+                    app.save_review_status()
+                    app.review_status_var.set("approved")
+                    app.save_review_status()
+
+                    app._switch_view("Matching Prep")
+                    app.asset_label_var.set("Main subtitle file")
+                    app.asset_type_var.set("subtitle_reference")
+                    app.asset_reference_var.set("E:/demo/subtitles.srt")
+                    app.asset_notes_text.insert("1.0", "Subtitle reference for scene matching handoff.")
+                    app.add_matching_prep_asset()
+                    app.candidate_block_var.set(app.candidate_block_combo["values"][0])
+                    app.candidate_asset_var.set(app.candidate_asset_combo["values"][0])
+                    app.candidate_note_var.set("Accepted prep reference opens scene matching.")
+                    app.add_matching_candidate_stub()
+                    app.candidate_stub_var.set(app.candidate_stub_combo["values"][0])
+                    app.on_candidate_stub_selected()
+                    app.candidate_status_var.set("selected")
+                    app.save_matching_candidate_status()
+                    app.candidate_rationale_var.set("Current accepted reference entering scene matching.")
+                    app.save_matching_candidate_rationale()
+                    app.promote_matching_candidate_to_accepted_reference()
+
+                app._switch_view("Scene Matching")
+                handoff = app.scene_matching_handoff.get("1.0", "end").strip()
+                self.assertEqual(app.scene_matching_text.get(), "Scene matching readiness: ready | current accepted reference available for scene-matching-facing handoff")
+                self.assertEqual(app.next_action.get(), "Next action: Open Scene Matching")
+                self.assertIn("Scene Matching handoff is open.", handoff)
+                self.assertIn("Accepted prep reference opens scene matching.", handoff)
+                self.assertIn("Current accepted reference entering scene matching.", handoff)
+                self.assertIn("pre-automation, pre-timecode, and pre-final-match", handoff)
+            finally:
+                root.destroy()
+
+    def test_app_scene_matching_open_state_survives_reload(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Scene Matching Reload Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+
+                    project = app.project
+                    for block in list(project.semantic_blocks):
+                        project = app.store.update_semantic_block(
+                            project.project_dir,
+                            block["record_id"],
+                            block["title"],
+                            block["semantic_role"],
+                            "Editor clarification added.",
+                        )
+                    app._load_project_into_ui(project)
+                    app.review_status_var.set("ready_for_review")
+                    app.save_review_status()
+                    app.review_status_var.set("approved")
+                    app.save_review_status()
+
+                    app._switch_view("Matching Prep")
+                    app.asset_label_var.set("Transcript reference")
+                    app.asset_type_var.set("transcript_reference")
+                    app.asset_reference_var.set("E:/demo/transcript.txt")
+                    app.asset_notes_text.insert("1.0", "Transcript reference for reload handoff.")
+                    app.add_matching_prep_asset()
+                    app.candidate_block_var.set(app.candidate_block_combo["values"][0])
+                    app.candidate_asset_var.set(app.candidate_asset_combo["values"][0])
+                    app.candidate_note_var.set("Accepted reference survives reload.")
+                    app.add_matching_candidate_stub()
+                    app.candidate_stub_var.set(app.candidate_stub_combo["values"][0])
+                    app.on_candidate_stub_selected()
+                    app.candidate_status_var.set("selected")
+                    app.save_matching_candidate_status()
+                    app.promote_matching_candidate_to_accepted_reference()
+
+                reloaded = app.store.load_project(app.project.project_dir)
+                app._load_project_into_ui(reloaded)
+                app._switch_view("Scene Matching")
+                handoff = app.scene_matching_handoff.get("1.0", "end").strip()
+                self.assertEqual(app.scene_matching_text.get(), "Scene matching readiness: ready | current accepted reference available for scene-matching-facing handoff")
+                self.assertIn("Accepted reference survives reload.", handoff)
+            finally:
+                root.destroy()
+
+    def test_app_scene_matching_blocks_again_when_accepted_reference_disappears(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Scene Matching Drop Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+
+                    project = app.project
+                    for block in list(project.semantic_blocks):
+                        project = app.store.update_semantic_block(
+                            project.project_dir,
+                            block["record_id"],
+                            block["title"],
+                            block["semantic_role"],
+                            "Editor clarification added.",
+                        )
+                    app._load_project_into_ui(project)
+                    app.review_status_var.set("ready_for_review")
+                    app.save_review_status()
+                    app.review_status_var.set("approved")
+                    app.save_review_status()
+
+                    app._switch_view("Matching Prep")
+                    app.asset_label_var.set("Transcript reference")
+                    app.asset_type_var.set("transcript_reference")
+                    app.asset_reference_var.set("E:/demo/transcript.txt")
+                    app.asset_notes_text.insert("1.0", "Transcript reference for invalidation.")
+                    app.add_matching_prep_asset()
+                    app.candidate_block_var.set(app.candidate_block_combo["values"][0])
+                    app.candidate_asset_var.set(app.candidate_asset_combo["values"][0])
+                    app.candidate_note_var.set("Accepted reference later disappears.")
+                    app.add_matching_candidate_stub()
+                    app.candidate_stub_var.set(app.candidate_stub_combo["values"][0])
+                    app.on_candidate_stub_selected()
+                    app.candidate_status_var.set("selected")
+                    app.save_matching_candidate_status()
+                    app.promote_matching_candidate_to_accepted_reference()
+
+                dropped = app.store.update_matching_candidate_stub_status(app.project.project_dir, "candidate-stub-001", "tentative")
+                app._load_project_into_ui(dropped)
+                app._switch_view("Scene Matching")
+                handoff = app.scene_matching_handoff.get("1.0", "end").strip()
+                self.assertEqual(app.scene_matching_text.get(), "Scene matching readiness: blocked | no accepted reference available yet")
+                self.assertIn("Scene Matching remains blocked", handoff)
+                self.assertIn("none accepted yet", handoff)
+            finally:
+                root.destroy()
+
+    def test_app_scene_matching_remains_readable_when_semantic_lane_reopens(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Scene Matching Reopen Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+
+                    project = app.project
+                    for block in list(project.semantic_blocks):
+                        project = app.store.update_semantic_block(
+                            project.project_dir,
+                            block["record_id"],
+                            block["title"],
+                            block["semantic_role"],
+                            "Editor clarification added.",
+                        )
+                    app._load_project_into_ui(project)
+                    app.review_status_var.set("ready_for_review")
+                    app.save_review_status()
+                    app.review_status_var.set("approved")
+                    app.save_review_status()
+
+                    app._switch_view("Matching Prep")
+                    app.asset_label_var.set("Main subtitle file")
+                    app.asset_type_var.set("subtitle_reference")
+                    app.asset_reference_var.set("E:/demo/subtitles.srt")
+                    app.asset_notes_text.insert("1.0", "Subtitle reference for reopen readability.")
+                    app.add_matching_prep_asset()
+                    app.candidate_block_var.set(app.candidate_block_combo["values"][0])
+                    app.candidate_asset_var.set(app.candidate_asset_combo["values"][0])
+                    app.candidate_note_var.set("Accepted reference remains readable in blocked scene matching.")
+                    app.add_matching_candidate_stub()
+                    app.candidate_stub_var.set(app.candidate_stub_combo["values"][0])
+                    app.on_candidate_stub_selected()
+                    app.candidate_status_var.set("selected")
+                    app.save_matching_candidate_status()
+                    app.promote_matching_candidate_to_accepted_reference()
+
+                    target_block_id = app.project.semantic_blocks[1]["record_id"]
+                    app._select_block_by_id(target_block_id)
+                    app.reorder_selected_block("up")
+
+                app._switch_view("Scene Matching")
+                handoff = app.scene_matching_handoff.get("1.0", "end").strip()
+                self.assertEqual(app.scene_matching_text.get(), "Scene matching readiness: blocked | accepted reference remains visible but upstream semantic approval was reopened")
+                self.assertIn("Accepted reference remains readable in blocked scene matching.", handoff)
+                self.assertIn("Scene Matching remains blocked", handoff)
+                self.assertIn("pre-timecode", handoff)
+            finally:
+                root.destroy()
+
     def test_app_matching_prep_view_stays_blocked_without_semantic_map(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = tk.Tk()

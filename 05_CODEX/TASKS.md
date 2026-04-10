@@ -1,16 +1,22 @@
 # Codex Tasks
 
 Last updated: 2026-04-10
-Current focus: manager review and next bounded packet selection after F-029
+Current focus: manager review and next bounded packet selection after F-030
 
 ## Working rule
 Tasks should be bounded, product-visible, and small enough to preserve continuity without turning the repository into micro-slice overload.
 
 ## Active task
 
-- No new implementation packet is active until ChatGPT selects the next bounded step after reviewing the completed `F-029` handoff.
+- No new implementation packet is active until ChatGPT selects the next bounded step after reviewing the completed `F-030` handoff.
 
 ## Completed tasks
+
+### F-030
+- Status: completed
+- Module: first Scene Matching entry slice
+- Goal: add one bounded local-first `Scene Matching` entry surface that opens only when one current accepted reference exists and exposes that accepted reference as the first honest downstream-facing handoff into later scene matching work without drifting into automatic matching, timecodes, backend, or workflow-engine buildout.
+- Outcome: added one real `Scene Matching` runtime surface, gated it on current accepted-reference presence, kept it honestly blocked again when accepted reference is unavailable or semantic approval reopens, surfaced the accepted reference as the current scene-matching-facing handoff, verified blocked/open/reload/invalidation/reopen behavior through local app-level tests, and kept the packet intentionally narrow.
 
 ### F-029
 - Status: completed
