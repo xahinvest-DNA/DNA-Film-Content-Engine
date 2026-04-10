@@ -1,5 +1,23 @@
 # Codex Worklog
 
+## 2026-04-10 - F-027 completed and Matching Prep gained selected-first visible listing order
+
+### Completed
+- completed the selected candidate pin-to-top visibility slice as one bounded follow-up to the existing candidate cleanup and readability surfaces;
+- added one selected-first ordering rule to the current visible candidate listing inside Matching Prep without changing persistence order on disk;
+- preserved existing relative order inside each visible subset so the change remains a visibility rule rather than a reordering subsystem;
+- kept selected-first handoff, readiness, rationale, focus-filter, open, and gated behavior coherent with the new visible ordering rule;
+- verified mixed-set ordering, persistence-order stability after reload, focus-filter coherence, and gated/open coherence through local tests alongside prior regressions;
+- synchronized the repository state layer after real implementation progress.
+
+### Repository effect
+- the repository now shows selected candidates first in the visible listing without pretending that the system ranked them automatically or changed their stored order;
+- Matching Prep gained one narrow visibility improvement without opening ranking, accepted-reference semantics, backend/API, or a candidate-management subsystem;
+- the next bounded packet should now be selected by manager review against current repository capability rather than assumed by inertia.
+
+### Recommended next step
+ChatGPT should select one strongest next bounded packet after reviewing `F-027`.
+
 ## 2026-04-10 - F-026 completed and Matching Prep gained manual candidate stub removal
 
 ### Completed

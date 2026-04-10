@@ -2,10 +2,10 @@
 
 Last updated: 2026-04-10
 Status: active
-Current stage: F-026 manual candidate stub removal slice is completed
+Current stage: F-027 selected candidate pin-to-top visibility slice is completed
 Active module: manager review and next bounded packet selection
-Active frontier: post-F-026 state synchronization
-Active question: which one strongest bounded packet should follow now that Matching Prep can create, annotate, and remove manual candidate stubs while keeping selected/readiness handoff cues coherent without opening candidate-management or accepted-reference scope
+Active frontier: post-F-027 state synchronization
+Active question: which one strongest bounded packet should follow now that Matching Prep can create, annotate, remove, and visibly pin selected manual candidate stubs to the top of the current listing without opening ranking or candidate-management scope
 
 ## Where the project is now
 
@@ -31,13 +31,14 @@ At this point:
 - Matching Prep now also exposes one compact readiness cue that tells the editor whether a current preferred subset already exists or is not fixed yet, without turning that cue into approval or accepted-reference workflow state;
 - Matching Prep now also stores one short editor-supplied preferred rationale on candidate stubs and surfaces that rationale only in the selected-first handoff area, with a bounded fallback when no rationale has been recorded yet;
 - Matching Prep now also supports one minimal remove path for the currently selected manual candidate stub, updating local persistence and recalculating selected/readiness/handoff cues without opening a management subsystem;
+- Matching Prep now also pins selected candidate stubs to the top of the current visible listing while preserving persisted order on disk and preserving relative order inside each visible subset;
 - the main MVP operating surface remains fixed as `Semantic Map Workspace`;
 - the meaning-first architecture is now explicit across product, domain, schema, project-package, asset, downstream output, and implementation layers;
 - the project now uses a manager-led execution model;
 - ChatGPT owns strongest-next-step selection;
 - Codex owns repository execution and state synchronization;
 - manager review depth and next-step efficiency-gate doctrine are now fixed in repository governance documents rather than left to chat memory;
-- F-026 is completed and no longer the active runtime frontier;
+- F-027 is completed and no longer the active runtime frontier;
 - the repository is now waiting for ChatGPT to select the next strongest bounded packet.
 
 ## Accepted boundaries right now
@@ -47,7 +48,7 @@ At this point:
 - Live project state is owned by this file.
 - The active implementation packet is owned by `05_CODEX/NEXT_TASK.md`.
 - The project starts desktop-first.
-- MVP is centered on project creation, source intake, semantic blocks, semantic-map review, the first matching-prep entry boundary, the first film-side registration boundary, the first manual candidate-stub boundary, the first manual candidate review-status boundary, the first manual candidate status-focus boundary, the first selected-dominant handoff boundary, the first selected-readiness cue boundary, the first selected-candidate rationale boundary, the first manual candidate removal boundary, and the approved semantic-first desktop operating surface.
+- MVP is centered on project creation, source intake, semantic blocks, semantic-map review, the first matching-prep entry boundary, the first film-side registration boundary, the first manual candidate-stub boundary, the first manual candidate review-status boundary, the first manual candidate status-focus boundary, the first selected-dominant handoff boundary, the first selected-readiness cue boundary, the first selected-candidate rationale boundary, the first manual candidate removal boundary, the first selected-pin-to-top visibility boundary, and the approved semantic-first desktop operating surface.
 - manager-led execution model is fixed.
 - ChatGPT must review Codex handoffs at completion level and management level before selecting the next packet.
 - strongest-next-step selection must pass an efficiency gate rather than follow previous recommendations by inertia alone.
@@ -57,13 +58,13 @@ At this point:
 
 ## Open items
 
-- preserve the new candidate removal path as a bounded cleanup slice rather than letting it drift into deletion history, soft-delete semantics, or candidate management workflow;
-- choose one strongest next bounded packet now that Matching Prep can express candidate presence, explicit manual intent, focused readability, selected-first readability, preferred-subset readiness, rationale visibility, and minimal cleanup capability;
+- preserve the new selected pin-to-top rule as a bounded visibility slice rather than letting it drift into manual ranking or candidate reordering controls;
+- choose one strongest next bounded packet now that Matching Prep can express candidate presence, explicit manual intent, focused readability, selected-first readability, preferred-subset readiness, rationale visibility, cleanup capability, and selected-first listing order;
 - keep later matching work explicitly outside accepted-reference semantics, ranking, timecodes, backend, dashboard, and workflow-engine scope until a stronger packet justifies opening them.
 
 ## Next step
 
-ChatGPT should review the completed `F-026 Manual Candidate Stub Removal Slice` handoff and select one strongest next bounded packet.
+ChatGPT should review the completed `F-027 Selected Candidate Pin-to-Top Visibility Slice` handoff and select one strongest next bounded packet.
 
 ## What must not be lost in a new chat
 
@@ -72,6 +73,6 @@ ChatGPT should review the completed `F-026 Manual Candidate Stub Removal Slice` 
 - manager-led execution model is fixed.
 - MVP main surface is `Semantic Map Workspace`.
 - product, domain, schema, project-file, asset, and downstream output-boundary layers are fixed.
-- F-026 is completed with one minimal manual candidate stub removal path inside Matching Prep, so the lane now holds candidate existence, explicit tentative/selected/rejected intent, readable filtered subsets, selected-first readability, preferred-subset readiness visibility, rationale visibility, and one cleanup action without adding a new record family or accepted-reference layer.
+- F-027 is completed with one selected-first visible listing rule inside Matching Prep, so the lane now holds candidate existence, explicit tentative/selected/rejected intent, readable filtered subsets, selected-first readability, preferred-subset readiness visibility, rationale visibility, cleanup capability, and selected-pinned listing order without adding ranking or a new record family.
 - ChatGPT must read Codex handoffs as management signals about capability gained, capability unlocked, unresolved gap, and packet-size efficiency before choosing what comes next.
 - the next strong active runtime step must be re-selected from current repository capability rather than assumed by inertia from the just-completed matching-prep status slice.

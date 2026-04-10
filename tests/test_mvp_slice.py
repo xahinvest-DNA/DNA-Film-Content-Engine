@@ -2334,6 +2334,202 @@ class DNAFilmAppTests(unittest.TestCase):
             finally:
                 root.destroy()
 
+    def test_app_matching_prep_visible_listing_pins_selected_candidates_first(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Matching Selected First Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+
+                    project = app.project
+                    for block in list(project.semantic_blocks):
+                        project = app.store.update_semantic_block(
+                            project.project_dir,
+                            block["record_id"],
+                            block["title"],
+                            block["semantic_role"],
+                            "Editor clarification added.",
+                        )
+                    app._load_project_into_ui(project)
+                    app.review_status_var.set("ready_for_review")
+                    app.save_review_status()
+                    app.review_status_var.set("approved")
+                    app.save_review_status()
+
+                    app._switch_view("Matching Prep")
+                    app.asset_label_var.set("Transcript reference")
+                    app.asset_type_var.set("transcript_reference")
+                    app.asset_reference_var.set("E:/demo/transcript.txt")
+                    app.asset_notes_text.insert("1.0", "Transcript prepared for manual linking.")
+                    app.add_matching_prep_asset()
+
+                    app.candidate_block_var.set(app.candidate_block_combo["values"][0])
+                    app.candidate_asset_var.set(app.candidate_asset_combo["values"][0])
+                    app.candidate_note_var.set("Tentative candidate listed later.")
+                    app.add_matching_candidate_stub()
+
+                    app.candidate_block_var.set(app.candidate_block_combo["values"][1])
+                    app.candidate_asset_var.set(app.candidate_asset_combo["values"][0])
+                    app.candidate_note_var.set("Selected candidate should appear first in listing.")
+                    app.add_matching_candidate_stub()
+
+                    app.candidate_block_var.set(app.candidate_block_combo["values"][2])
+                    app.candidate_asset_var.set(app.candidate_asset_combo["values"][0])
+                    app.candidate_note_var.set("Rejected candidate listed after selected.")
+                    app.add_matching_candidate_stub()
+
+                    app.candidate_stub_var.set(app.candidate_stub_combo["values"][1])
+                    app.on_candidate_stub_selected()
+                    app.candidate_status_var.set("selected")
+                    app.save_matching_candidate_status()
+
+                    app.candidate_stub_var.set(app.candidate_stub_combo["values"][2])
+                    app.on_candidate_stub_selected()
+                    app.candidate_status_var.set("rejected")
+                    app.save_matching_candidate_status()
+
+                handoff = app.matching_prep_handoff.get("1.0", "end").strip()
+                section = handoff.split("Manual candidate stubs | focus: all candidate stubs", 1)[1]
+                self.assertTrue(section.index("Selected candidate should appear first in listing.") < section.index("Tentative candidate listed later."))
+                self.assertTrue(section.index("Selected candidate should appear first in listing.") < section.index("Rejected candidate listed after selected."))
+            finally:
+                root.destroy()
+
+    def test_app_matching_prep_selected_first_visibility_does_not_change_persistence_order(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Matching Persistence Order Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+
+                    project = app.project
+                    for block in list(project.semantic_blocks):
+                        project = app.store.update_semantic_block(
+                            project.project_dir,
+                            block["record_id"],
+                            block["title"],
+                            block["semantic_role"],
+                            "Editor clarification added.",
+                        )
+                    app._load_project_into_ui(project)
+                    app.review_status_var.set("ready_for_review")
+                    app.save_review_status()
+                    app.review_status_var.set("approved")
+                    app.save_review_status()
+
+                    app._switch_view("Matching Prep")
+                    app.asset_label_var.set("Transcript reference")
+                    app.asset_type_var.set("transcript_reference")
+                    app.asset_reference_var.set("E:/demo/transcript.txt")
+                    app.asset_notes_text.insert("1.0", "Transcript prepared for manual linking.")
+                    app.add_matching_prep_asset()
+
+                    app.candidate_block_var.set(app.candidate_block_combo["values"][0])
+                    app.candidate_asset_var.set(app.candidate_asset_combo["values"][0])
+                    app.candidate_note_var.set("First persisted candidate.")
+                    app.add_matching_candidate_stub()
+
+                    app.candidate_block_var.set(app.candidate_block_combo["values"][1])
+                    app.candidate_asset_var.set(app.candidate_asset_combo["values"][0])
+                    app.candidate_note_var.set("Second persisted candidate becomes selected.")
+                    app.add_matching_candidate_stub()
+
+                    app.candidate_stub_var.set(app.candidate_stub_combo["values"][1])
+                    app.on_candidate_stub_selected()
+                    app.candidate_status_var.set("selected")
+                    app.save_matching_candidate_status()
+
+                reloaded = app.store.load_project(app.project.project_dir)
+                self.assertEqual(reloaded.matching_candidate_stubs[0]["note"], "First persisted candidate.")
+                self.assertEqual(reloaded.matching_candidate_stubs[1]["note"], "Second persisted candidate becomes selected.")
+            finally:
+                root.destroy()
+
+    def test_app_matching_prep_selected_first_visibility_remains_coherent_when_gated(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Matching Selected First Gated Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+
+                    project = app.project
+                    for block in list(project.semantic_blocks):
+                        project = app.store.update_semantic_block(
+                            project.project_dir,
+                            block["record_id"],
+                            block["title"],
+                            block["semantic_role"],
+                            "Editor clarification added.",
+                        )
+                    app._load_project_into_ui(project)
+                    app.review_status_var.set("ready_for_review")
+                    app.save_review_status()
+                    app.review_status_var.set("approved")
+                    app.save_review_status()
+
+                    app._switch_view("Matching Prep")
+                    app.asset_label_var.set("Transcript reference")
+                    app.asset_type_var.set("transcript_reference")
+                    app.asset_reference_var.set("E:/demo/transcript.txt")
+                    app.asset_notes_text.insert("1.0", "Transcript prepared for manual linking.")
+                    app.add_matching_prep_asset()
+
+                    app.candidate_block_var.set(app.candidate_block_combo["values"][0])
+                    app.candidate_asset_var.set(app.candidate_asset_combo["values"][0])
+                    app.candidate_note_var.set("Tentative candidate stays later while gated.")
+                    app.add_matching_candidate_stub()
+
+                    app.candidate_block_var.set(app.candidate_block_combo["values"][1])
+                    app.candidate_asset_var.set(app.candidate_asset_combo["values"][0])
+                    app.candidate_note_var.set("Selected candidate stays first while gated.")
+                    app.add_matching_candidate_stub()
+
+                    app.candidate_stub_var.set(app.candidate_stub_combo["values"][1])
+                    app.on_candidate_stub_selected()
+                    app.candidate_status_var.set("selected")
+                    app.save_matching_candidate_status()
+
+                    target_block_id = app.project.semantic_blocks[2]["record_id"]
+                    app._select_block_by_id(target_block_id)
+                    app.reorder_selected_block("up")
+                    app._switch_view("Matching Prep")
+
+                handoff = app.matching_prep_handoff.get("1.0", "end").strip()
+                section = handoff.split("Manual candidate stubs | focus: all candidate stubs", 1)[1]
+                self.assertTrue(section.index("Selected candidate stays first while gated.") < section.index("Tentative candidate stays later while gated."))
+            finally:
+                root.destroy()
+
     def test_app_matching_prep_candidate_status_focus_filters_visible_subset(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = tk.Tk()

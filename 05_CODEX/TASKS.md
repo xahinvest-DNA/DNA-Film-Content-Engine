@@ -1,16 +1,22 @@
 # Codex Tasks
 
 Last updated: 2026-04-10
-Current focus: manager review and next bounded packet selection after F-026
+Current focus: manager review and next bounded packet selection after F-027
 
 ## Working rule
 Tasks should be bounded, product-visible, and small enough to preserve continuity without turning the repository into micro-slice overload.
 
 ## Active task
 
-- No new implementation packet is active until ChatGPT selects the next bounded step after reviewing the completed `F-026` handoff.
+- No new implementation packet is active until ChatGPT selects the next bounded step after reviewing the completed `F-027` handoff.
 
 ## Completed tasks
+
+### F-027
+- Status: completed
+- Module: selected candidate pin-to-top visibility slice
+- Goal: add one minimal visibility rule so selected manual candidate stubs appear first in the visible listing without drifting into ranking, scoring, accepted-reference semantics, or candidate-management workflow buildout.
+- Outcome: added one selected-first ordering rule to the current visible candidate listing while preserving persistence order on disk, kept intra-subset order stable, verified mixed-set ordering, persistence-order stability after reload, focus-filter coherence, and gated/open coherence through local tests, and kept the packet intentionally narrow.
 
 ### F-026
 - Status: completed

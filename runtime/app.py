@@ -1152,8 +1152,13 @@ class DNAFilmApp:
     def _visible_candidate_stubs(self, project: ProjectSlice) -> list[dict]:
         focus = self.candidate_focus_var.get() if self.candidate_focus_var.get() in CANDIDATE_STATUS_FOCUS_OPTIONS else CANDIDATE_STATUS_FOCUS_OPTIONS[0]
         if focus == "all":
-            return list(project.matching_candidate_stubs)
-        return [entry for entry in project.matching_candidate_stubs if entry.get("review_status", ALLOWED_CANDIDATE_REVIEW_STATUSES[0]) == focus]
+            visible_entries = list(project.matching_candidate_stubs)
+        else:
+            visible_entries = [entry for entry in project.matching_candidate_stubs if entry.get("review_status", ALLOWED_CANDIDATE_REVIEW_STATUSES[0]) == focus]
+
+        selected_entries = [entry for entry in visible_entries if entry.get("review_status", ALLOWED_CANDIDATE_REVIEW_STATUSES[0]) == "selected"]
+        other_entries = [entry for entry in visible_entries if entry.get("review_status", ALLOWED_CANDIDATE_REVIEW_STATUSES[0]) != "selected"]
+        return [*selected_entries, *other_entries]
 
     def _candidate_focus_label(self) -> str:
         focus = self.candidate_focus_var.get() if self.candidate_focus_var.get() in CANDIDATE_STATUS_FOCUS_OPTIONS else CANDIDATE_STATUS_FOCUS_OPTIONS[0]
