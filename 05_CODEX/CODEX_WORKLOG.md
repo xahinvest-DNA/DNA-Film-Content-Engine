@@ -1,5 +1,24 @@
 # Codex Worklog
 
+## 2026-04-10 - F-021 completed and Matching Prep gained manual candidate review status
+
+### Completed
+- completed the manual match candidate review status slice as one bounded follow-up to the first manual candidate-stub artifact;
+- added one persisted `review_status` field directly on each manual candidate stub inside the local project package rather than introducing a separate workflow or history subsystem;
+- defaulted newly created manual candidate stubs to `tentative`;
+- added one minimal Matching Prep control for changing an existing stub between `tentative`, `selected`, and `rejected`;
+- surfaced compact review-status visibility directly in Matching Prep summaries and handoff text across both open and gated-after-reopen states;
+- verified default status, manual status updates, reload persistence, open-state visibility, and gated visibility through local store-level and app-level tests alongside prior regressions;
+- synchronized the repository state layer after real implementation progress.
+
+### Repository effect
+- the repository now distinguishes not only whether a manual semantic-to-asset candidate exists, but also whether the editor currently treats it as tentative, manually preferred, or manually not preferred;
+- Matching Prep gained one honest editorial-intent layer without opening ranking, automation, timecodes, backend/API, or a generalized candidate lifecycle subsystem;
+- the next bounded packet should now be selected by manager review against current repository capability rather than assumed by inertia.
+
+### Recommended next step
+ChatGPT should select one strongest next bounded packet after reviewing `F-021`.
+
 ## 2026-04-10 - F-020 completed and Matching Prep gained its first manual candidate artifact
 
 ### Completed

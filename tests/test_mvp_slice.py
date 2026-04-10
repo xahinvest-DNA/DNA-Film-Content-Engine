@@ -305,11 +305,26 @@ class ProjectSliceStoreTests(unittest.TestCase):
             self.assertEqual(len(project.matching_candidate_stubs), 2)
             self.assertEqual(project.matching_candidate_stubs[0]["semantic_block_id"], project.semantic_blocks[0]["record_id"])
             self.assertEqual(project.matching_candidate_stubs[1]["prep_asset_id"], project.matching_prep_assets[1]["record_id"])
+            self.assertEqual(project.matching_candidate_stubs[0]["review_status"], "tentative")
+            self.assertEqual(project.matching_candidate_stubs[1]["review_status"], "tentative")
+
+            project = store.update_matching_candidate_stub_status(
+                project.project_dir,
+                project.matching_candidate_stubs[0]["record_id"],
+                "selected",
+            )
+            project = store.update_matching_candidate_stub_status(
+                project.project_dir,
+                project.matching_candidate_stubs[1]["record_id"],
+                "rejected",
+            )
 
             reloaded = store.load_project(project.project_dir)
             self.assertEqual(len(reloaded.matching_candidate_stubs), 2)
             self.assertEqual(reloaded.matching_candidate_stubs[0]["note"], "Manual opening candidate.")
+            self.assertEqual(reloaded.matching_candidate_stubs[0]["review_status"], "selected")
             self.assertEqual(reloaded.matching_candidate_stubs[1]["record_id"], "candidate-stub-002")
+            self.assertEqual(reloaded.matching_candidate_stubs[1]["review_status"], "rejected")
             self.assertTrue((reloaded.project_dir / "records" / "matching_prep" / "candidate_stubs.json").exists())
 
     def test_analysis_text_must_be_meaningful(self) -> None:
@@ -1335,16 +1350,32 @@ class DNAFilmAppTests(unittest.TestCase):
                     app.candidate_note_var.set("Second semantic-to-asset stub.")
                     app.add_matching_candidate_stub()
 
+                    app.candidate_stub_var.set(app.candidate_stub_combo["values"][0])
+                    app.on_candidate_stub_selected()
+                    app.candidate_status_var.set("selected")
+                    app.save_matching_candidate_status()
+
+                    app.candidate_stub_var.set(app.candidate_stub_combo["values"][1])
+                    app.on_candidate_stub_selected()
+                    app.candidate_status_var.set("rejected")
+                    app.save_matching_candidate_status()
+
                 handoff = app.matching_prep_handoff.get("1.0", "end").strip()
                 reloaded = app.store.load_project(app.project.project_dir)
 
                 self.assertEqual(len(reloaded.matching_candidate_stubs), 2)
                 self.assertIn("2 saved in this project", app.matching_candidate_summary_text.get())
+                self.assertIn("selected 1", app.matching_candidate_summary_text.get())
+                self.assertIn("rejected 1", app.matching_candidate_summary_text.get())
                 self.assertIn("Manual candidate stubs", handoff)
                 self.assertIn("Opening candidate stub.", handoff)
                 self.assertIn("Second semantic-to-asset stub.", handoff)
+                self.assertIn("Review status: selected", handoff)
+                self.assertIn("Review status: rejected", handoff)
                 self.assertIn("candidate-stub-001", handoff)
+                self.assertEqual(reloaded.matching_candidate_stubs[0]["review_status"], "selected")
                 self.assertEqual(reloaded.matching_candidate_stubs[1]["record_id"], "candidate-stub-002")
+                self.assertEqual(reloaded.matching_candidate_stubs[1]["review_status"], "rejected")
             finally:
                 root.destroy()
 
@@ -1391,6 +1422,10 @@ class DNAFilmAppTests(unittest.TestCase):
                     app.candidate_asset_var.set(app.candidate_asset_combo["values"][0])
                     app.candidate_note_var.set("Candidate visible even if gate reopens.")
                     app.add_matching_candidate_stub()
+                    app.candidate_stub_var.set(app.candidate_stub_combo["values"][0])
+                    app.on_candidate_stub_selected()
+                    app.candidate_status_var.set("selected")
+                    app.save_matching_candidate_status()
 
                     target_block_id = app.project.semantic_blocks[1]["record_id"]
                     app._select_block_by_id(target_block_id)
@@ -1400,7 +1435,9 @@ class DNAFilmAppTests(unittest.TestCase):
                 handoff = app.matching_prep_handoff.get("1.0", "end").strip()
                 self.assertEqual(app.matching_prep_text.get(), "Matching prep readiness: blocked | semantic approval was reopened after change")
                 self.assertIn("1 stored but currently gated", app.matching_candidate_summary_text.get())
+                self.assertIn("selected 1", app.matching_candidate_summary_text.get())
                 self.assertIn("Candidate visible even if gate reopens.", handoff)
+                self.assertIn("Review status: selected", handoff)
                 self.assertIn("Manual candidate stubs", handoff)
             finally:
                 root.destroy()

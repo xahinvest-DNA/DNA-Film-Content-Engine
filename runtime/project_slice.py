@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
-PROJECT_FORMAT_VERSION = "0.4"
+PROJECT_FORMAT_VERSION = "0.5"
 ANALYSIS_RECORD_FILENAME = "analysis_source.json"
 REVIEW_RECORD_FILENAME = "semantic_review.json"
 MATCHING_PREP_ASSET_FILENAME = "asset_references.json"
@@ -33,6 +33,11 @@ ALLOWED_MATCHING_ASSET_TYPES = (
     "subtitle_reference",
     "transcript_reference",
     "other_prep_reference",
+)
+ALLOWED_CANDIDATE_REVIEW_STATUSES = (
+    "tentative",
+    "selected",
+    "rejected",
 )
 
 
@@ -149,6 +154,16 @@ def normalize_semantic_blocks(semantic_blocks: list[dict]) -> list[dict]:
         current["sequence"] = index
         current["output_suitability"] = normalize_output_suitability(current.get("output_suitability"))
         current["warning_flags"] = derive_warning_flags(current)
+        normalized.append(current)
+    return normalized
+
+
+def normalize_matching_candidate_stubs(matching_candidate_stubs: list[dict]) -> list[dict]:
+    normalized: list[dict] = []
+    for entry in matching_candidate_stubs:
+        current = dict(entry)
+        if current.get("review_status") not in ALLOWED_CANDIDATE_REVIEW_STATUSES:
+            current["review_status"] = "tentative"
         normalized.append(current)
     return normalized
 
@@ -302,6 +317,7 @@ class ProjectSliceStore:
         semantic_blocks = normalize_semantic_blocks(semantic_blocks)
         matching_prep_assets = read_json(matching_prep_asset_path)["entries"] if matching_prep_asset_path.exists() else []
         matching_candidate_stubs = read_json(matching_candidate_path)["entries"] if matching_candidate_path.exists() else []
+        matching_candidate_stubs = normalize_matching_candidate_stubs(matching_candidate_stubs)
         return ProjectSlice(
             project_dir=project_dir,
             manifest=manifest,
@@ -708,11 +724,67 @@ class ProjectSliceStore:
                 "record_type": "manual_match_candidate_stub",
                 "semantic_block_id": semantic_block["record_id"],
                 "prep_asset_id": prep_asset["record_id"],
+                "review_status": "tentative",
                 "note": clean_note,
                 "created_at": now,
                 "updated_at": now,
             }
         )
+
+        manifest = dict(project.manifest)
+        manifest["updated_at"] = now
+        project_record = dict(project.project_record)
+        project_record["updated_at"] = now
+        intake_record = dict(project.intake_record)
+        intake_record["updated_at"] = now
+        analysis_source_record = self._copy_analysis_record(project.analysis_source_record, now)
+        semantic_review_record = dict(project.semantic_review_record)
+        semantic_review_record["updated_at"] = now
+
+        self._apply_project_summary(project_record, intake_record, project.semantic_blocks, semantic_review_record)
+        self._write_project_state(
+            project_dir,
+            manifest,
+            project_record,
+            intake_record,
+            analysis_source_record,
+            semantic_review_record,
+            project.semantic_blocks,
+            project.matching_prep_assets,
+            entries,
+        )
+        return self.load_project(project_dir)
+
+    def update_matching_candidate_stub_status(
+        self,
+        project_dir: Path,
+        candidate_stub_id: str,
+        review_status: str,
+    ) -> ProjectSlice:
+        clean_stub_id = candidate_stub_id.strip()
+        clean_status = review_status.strip()
+        if not clean_stub_id:
+            raise ValueError("Select one manual candidate stub before saving review status.")
+        if clean_status not in ALLOWED_CANDIDATE_REVIEW_STATUSES:
+            raise ValueError("Manual candidate stub review status is invalid for this Matching Prep slice.")
+
+        project = self.load_project(project_dir)
+        if project.semantic_review_record.get("review_status") != "approved" or project.semantic_review_record.get("reopened_after_change"):
+            raise ValueError("Manual candidate review status can only be changed while Matching Prep is open from an approved semantic map.")
+
+        now = utc_now()
+        updated = False
+        entries: list[dict] = []
+        for entry in project.matching_candidate_stubs:
+            current = dict(entry)
+            if current["record_id"] == clean_stub_id:
+                current["review_status"] = clean_status
+                current["updated_at"] = now
+                updated = True
+            entries.append(current)
+
+        if not updated:
+            raise ValueError("Selected manual candidate stub was not found for this Matching Prep slice.")
 
         manifest = dict(project.manifest)
         manifest["updated_at"] = now

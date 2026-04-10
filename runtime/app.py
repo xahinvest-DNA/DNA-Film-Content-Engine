@@ -5,6 +5,7 @@ from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 
 from runtime.project_slice import (
+    ALLOWED_CANDIDATE_REVIEW_STATUSES,
     ALLOWED_MATCHING_ASSET_TYPES,
     ALLOWED_OUTPUT_SUITABILITY,
     ALLOWED_REVIEW_STATES,
@@ -92,15 +93,18 @@ class DNAFilmApp:
         self.candidate_block_var = tk.StringVar()
         self.candidate_asset_var = tk.StringVar()
         self.candidate_note_var = tk.StringVar()
+        self.candidate_stub_var = tk.StringVar()
+        self.candidate_status_var = tk.StringVar(value=ALLOWED_CANDIDATE_REVIEW_STATUSES[0])
         self.candidate_block_options: dict[str, str] = {}
         self.candidate_asset_options: dict[str, str] = {}
+        self.candidate_stub_options: dict[str, str] = {}
 
         self._build_layout()
         self._switch_view("Project Home")
         self._set_editor_enabled(False)
         self._set_structure_enabled(False, False, False, False, False)
         self._set_focus_navigation_enabled(False, False)
-        self._set_matching_candidate_enabled(False)
+        self._set_matching_candidate_enabled(False, False)
 
     def _build_layout(self) -> None:
         self.root.columnconfigure(1, weight=1)
@@ -336,6 +340,15 @@ class DNAFilmApp:
         ttk.Entry(candidate_frame, textvariable=self.candidate_note_var, width=48).grid(row=1, column=1, columnspan=3, sticky="ew", pady=(8, 0))
         self.add_candidate_button = ttk.Button(candidate_frame, text="Save Manual Candidate Stub", command=self.add_matching_candidate_stub)
         self.add_candidate_button.grid(row=2, column=0, columnspan=4, sticky="w", pady=(8, 0))
+        ttk.Label(candidate_frame, text="Existing stub").grid(row=3, column=0, sticky="w", pady=(10, 0))
+        self.candidate_stub_combo = ttk.Combobox(candidate_frame, textvariable=self.candidate_stub_var, state="readonly", width=32)
+        self.candidate_stub_combo.grid(row=3, column=1, sticky="ew", padx=(8, 12), pady=(10, 0))
+        self.candidate_stub_combo.bind("<<ComboboxSelected>>", self.on_candidate_stub_selected)
+        ttk.Label(candidate_frame, text="Review status").grid(row=3, column=2, sticky="w", pady=(10, 0))
+        self.candidate_status_combo = ttk.Combobox(candidate_frame, textvariable=self.candidate_status_var, values=ALLOWED_CANDIDATE_REVIEW_STATUSES, state="readonly", width=28)
+        self.candidate_status_combo.grid(row=3, column=3, sticky="ew", pady=(10, 0))
+        self.save_candidate_status_button = ttk.Button(candidate_frame, text="Save Candidate Review Status", command=self.save_matching_candidate_status)
+        self.save_candidate_status_button.grid(row=4, column=0, columnspan=4, sticky="w", pady=(8, 0))
 
         self.matching_prep_handoff = tk.Text(frame, height=18, wrap="word")
         self.matching_prep_handoff.grid(row=8, column=0, sticky="nsew")
@@ -553,8 +566,49 @@ class DNAFilmApp:
         current_block_id = self.selected_block_id
         self._load_project_into_ui(project, select_block_id=current_block_id)
         self._switch_view("Matching Prep")
+        latest_stub = project.matching_candidate_stubs[-1] if project.matching_candidate_stubs else None
+        if latest_stub is not None:
+            latest_label = self._candidate_stub_option_label(project, latest_stub)
+            if latest_label in self.candidate_stub_options:
+                self.candidate_stub_var.set(latest_label)
+                self.candidate_status_var.set(latest_stub.get("review_status", ALLOWED_CANDIDATE_REVIEW_STATUSES[0]))
         self.candidate_note_var.set("")
         messagebox.showinfo("Matching Prep", "Manual candidate stub was saved in the local project package.")
+
+    def save_matching_candidate_status(self) -> None:
+        if self.project is None:
+            messagebox.showerror("Matching Prep", "Create or open a project first.")
+            return
+        candidate_stub_id = self.candidate_stub_options.get(self.candidate_stub_var.get(), "")
+        try:
+            project = self.store.update_matching_candidate_stub_status(
+                self.project.project_dir,
+                candidate_stub_id,
+                self.candidate_status_var.get(),
+            )
+        except ValueError as exc:
+            messagebox.showerror("Matching Prep", str(exc))
+            return
+
+        current_block_id = self.selected_block_id
+        current_candidate_id = candidate_stub_id
+        self._load_project_into_ui(project, select_block_id=current_block_id)
+        self._switch_view("Matching Prep")
+        updated_stub = next((entry for entry in project.matching_candidate_stubs if entry["record_id"] == current_candidate_id), None)
+        if updated_stub is not None:
+            updated_label = self._candidate_stub_option_label(project, updated_stub)
+            if updated_label in self.candidate_stub_options:
+                self.candidate_stub_var.set(updated_label)
+                self.candidate_status_var.set(updated_stub.get("review_status", ALLOWED_CANDIDATE_REVIEW_STATUSES[0]))
+        messagebox.showinfo("Matching Prep", "Manual candidate review status was saved in the local project package.")
+
+    def on_candidate_stub_selected(self, _event: object | None = None) -> None:
+        if self.project is None:
+            self.candidate_status_var.set(ALLOWED_CANDIDATE_REVIEW_STATUSES[0])
+            return
+        candidate_stub_id = self.candidate_stub_options.get(self.candidate_stub_var.get(), "")
+        selected_stub = next((entry for entry in self.project.matching_candidate_stubs if entry["record_id"] == candidate_stub_id), None)
+        self.candidate_status_var.set((selected_stub or {}).get("review_status", ALLOWED_CANDIDATE_REVIEW_STATUSES[0]))
 
     def save_review_status(self) -> None:
         if self.project is None:
@@ -800,13 +854,15 @@ class DNAFilmApp:
         self.previous_focus_button.configure(state="normal" if can_move_previous else "disabled")
         self.next_focus_button.configure(state="normal" if can_move_next else "disabled")
 
-    def _set_matching_candidate_enabled(self, enabled: bool) -> None:
-        combo_state = "readonly" if enabled else "disabled"
-        entry_state = "normal" if enabled else "disabled"
-        button_state = "normal" if enabled else "disabled"
-        self.candidate_block_combo.configure(state=combo_state)
-        self.candidate_asset_combo.configure(state=combo_state)
-        self.add_candidate_button.configure(state=button_state)
+    def _set_matching_candidate_enabled(self, create_enabled: bool, review_enabled: bool) -> None:
+        create_combo_state = "readonly" if create_enabled else "disabled"
+        review_combo_state = "readonly" if review_enabled else "disabled"
+        self.candidate_block_combo.configure(state=create_combo_state)
+        self.candidate_asset_combo.configure(state=create_combo_state)
+        self.add_candidate_button.configure(state="normal" if create_enabled else "disabled")
+        self.candidate_stub_combo.configure(state=review_combo_state)
+        self.candidate_status_combo.configure(state=review_combo_state)
+        self.save_candidate_status_button.configure(state="normal" if review_enabled else "disabled")
 
     def _set_editor_enabled(self, enabled: bool) -> None:
         entry_state = "normal" if enabled else "disabled"
@@ -903,15 +959,20 @@ class DNAFilmApp:
         if project is None:
             self.candidate_block_options = {}
             self.candidate_asset_options = {}
+            self.candidate_stub_options = {}
             self.candidate_block_combo.configure(values=())
             self.candidate_asset_combo.configure(values=())
+            self.candidate_stub_combo.configure(values=())
             self.candidate_block_var.set("")
             self.candidate_asset_var.set("")
-            self._set_matching_candidate_enabled(False)
+            self.candidate_stub_var.set("")
+            self.candidate_status_var.set(ALLOWED_CANDIDATE_REVIEW_STATUSES[0])
+            self._set_matching_candidate_enabled(False, False)
             return
 
         current_block_display = self.candidate_block_var.get()
         current_asset_display = self.candidate_asset_var.get()
+        current_stub_display = self.candidate_stub_var.get()
         self.candidate_block_options = {
             self._candidate_block_option_label(block): block["record_id"]
             for block in project.semantic_blocks
@@ -920,21 +981,47 @@ class DNAFilmApp:
             self._candidate_asset_option_label(entry): entry["record_id"]
             for entry in project.matching_prep_assets
         }
+        self.candidate_stub_options = {
+            self._candidate_stub_option_label(project, entry): entry["record_id"]
+            for entry in project.matching_candidate_stubs
+        }
         block_values = tuple(self.candidate_block_options.keys())
         asset_values = tuple(self.candidate_asset_options.keys())
+        stub_values = tuple(self.candidate_stub_options.keys())
         self.candidate_block_combo.configure(values=block_values)
         self.candidate_asset_combo.configure(values=asset_values)
+        self.candidate_stub_combo.configure(values=stub_values)
         self.candidate_block_var.set(current_block_display if current_block_display in self.candidate_block_options else (block_values[0] if block_values else ""))
         self.candidate_asset_var.set(current_asset_display if current_asset_display in self.candidate_asset_options else (asset_values[0] if asset_values else ""))
+        selected_stub_display = current_stub_display if current_stub_display in self.candidate_stub_options else (stub_values[0] if stub_values else "")
+        self.candidate_stub_var.set(selected_stub_display)
+        selected_stub = next((entry for entry in project.matching_candidate_stubs if self._candidate_stub_option_label(project, entry) == selected_stub_display), None)
+        self.candidate_status_var.set((selected_stub or {}).get("review_status", ALLOWED_CANDIDATE_REVIEW_STATUSES[0]))
         gate_state, _ = self._matching_prep_gate(project)
         can_create = gate_state == "ready" and bool(block_values) and bool(asset_values)
-        self._set_matching_candidate_enabled(can_create)
+        can_review = gate_state == "ready" and bool(stub_values)
+        self._set_matching_candidate_enabled(can_create, can_review)
 
     def _candidate_block_option_label(self, block: dict) -> str:
         return f"{block['sequence']:02d}. {block['title']} [{block['record_id']}]"
 
     def _candidate_asset_option_label(self, entry: dict) -> str:
         return f"{entry['asset_label']} [{entry['asset_type']}] ({entry['record_id']})"
+
+    def _candidate_stub_option_label(self, project: ProjectSlice, entry: dict) -> str:
+        block_lookup = {block['record_id']: block for block in project.semantic_blocks}
+        block = block_lookup.get(entry.get("semantic_block_id"))
+        block_label = f"{block['sequence']:02d}. {block['title']}" if block else entry.get("semantic_block_id", "unknown semantic block")
+        review_status = entry.get("review_status", ALLOWED_CANDIDATE_REVIEW_STATUSES[0])
+        return f"{block_label} [{entry['record_id']}] ({review_status})"
+
+    def _candidate_status_summary(self, project: ProjectSlice) -> str:
+        if not project.matching_candidate_stubs:
+            return "none yet"
+        counts = {status: 0 for status in ALLOWED_CANDIDATE_REVIEW_STATUSES}
+        for entry in project.matching_candidate_stubs:
+            counts[entry.get("review_status", ALLOWED_CANDIDATE_REVIEW_STATUSES[0])] += 1
+        return ", ".join(f"{status} {counts[status]}" for status in ALLOWED_CANDIDATE_REVIEW_STATUSES if counts[status])
 
     def _candidate_stub_lines(self, project: ProjectSlice) -> list[str]:
         if not project.matching_candidate_stubs:
@@ -948,9 +1035,11 @@ class DNAFilmApp:
             block_label = f"{block['sequence']:02d}. {block['title']}" if block else entry.get("semantic_block_id", "unknown semantic block")
             asset_label = f"{asset['asset_label']} [{asset['asset_type']}]" if asset else entry.get("prep_asset_id", "unknown prep input")
             note = entry.get("note", "").strip() or "none"
+            review_status = entry.get("review_status", ALLOWED_CANDIDATE_REVIEW_STATUSES[0])
             lines.extend(
                 [
                     f"- {block_label} -> {asset_label}",
+                    f"  Review status: {review_status}",
                     f"  Note: {note}",
                     f"  Stub id: {entry['record_id']}",
                     "",
@@ -970,7 +1059,7 @@ class DNAFilmApp:
             else:
                 self.matching_asset_summary_text.set("Film-side registration: no prep inputs registered yet.")
             if candidate_count:
-                self.matching_candidate_summary_text.set(f"Manual candidate stubs: {candidate_count} stored but currently gated.")
+                self.matching_candidate_summary_text.set(f"Manual candidate stubs: {candidate_count} stored but currently gated | {self._candidate_status_summary(project)}.")
             else:
                 self.matching_candidate_summary_text.set("Manual candidate stubs: none yet.")
             lines = [
@@ -1012,7 +1101,7 @@ class DNAFilmApp:
             else:
                 self.matching_asset_summary_text.set("Film-side registration: no prep inputs registered yet.")
             if candidate_count:
-                self.matching_candidate_summary_text.set(f"Manual candidate stubs: {candidate_count} saved in this project.")
+                self.matching_candidate_summary_text.set(f"Manual candidate stubs: {candidate_count} saved in this project | {self._candidate_status_summary(project)}.")
             else:
                 self.matching_candidate_summary_text.set("Manual candidate stubs: no manual candidate stubs yet.")
             lines = [
@@ -1020,7 +1109,7 @@ class DNAFilmApp:
                 f"Project: {project.project_record['title']}",
                 f"Semantic blocks: {block_count}",
                 f"Registered prep inputs: {asset_count}",
-                f"Manual candidate stubs: {candidate_count}",
+                f"Manual candidate stubs: {candidate_count} | {self._candidate_status_summary(project)}",
                 "",
                 "Registered film-side inputs",
             ]

@@ -1,49 +1,32 @@
 # NEXT TASK
 
 Last updated: 2026-04-10
-Status: ready
-Task ID: F-021
-Task type: implementation
-Title: Manual Match Candidate Review Status Slice
+Status: pending_manager_selection
+Task ID: TBD
+Task type: selection
+Title: Await Next Bounded Packet Selection
 
 ## Goal
 
-Add one minimal local-first review-status control for manual match candidate stubs inside Matching Prep so the project can distinguish candidate stubs that are still tentative from those explicitly selected or rejected for later matching work without implementing ranking, automation, timecode logic, backend/API work, or a broader workflow engine.
+Hold repository state honestly after completed `F-021 Manual Match Candidate Review Status Slice` until ChatGPT selects one strongest next bounded packet.
 
 ## Why this is next
 
-The repository now has both sides of the future matching bridge plus one honest manual candidate-stub artifact in local-first form. That means raw candidate presence is no longer the strongest gap.
-
-The strongest next bounded gain is to let Matching Prep express explicit editorial intent about those manual candidates, because that proves the lane can hold not only candidate existence but also one minimal review decision without pretending that automated scene matching already exists.
+`F-021` is now implemented, tested, and synchronized. The next packet should be chosen by manager review rather than inferred automatically.
 
 ## In scope
 
-- one bounded follow-up packet on top of completed `F-020`
-- one minimal review-status control for manual candidate stubs inside Matching Prep
-- one narrow persisted status on each manual candidate stub in the local project package
-- compact Matching Prep visibility for tentative versus selected or rejected candidate state
-- only the smallest runtime and local-storage changes required to make that review state executable or testable
-- local tests covering review-state update, reload persistence, and blocked/open coherence
+- preserve synchronized completion state for `F-021`
+- wait for one explicit manager-selected next packet
 
 ## Out of scope
 
-- scene matching automation
-- ranking or candidate generation
-- timecode logic
-- backend or API design
-- workflow queues or planning dashboards
-- downstream output generation
-- generalized matching subsystem buildout
-- packet expansion beyond the first bounded candidate-review-status slice
+- inventing `F-022` without manager review
+- reopening `F-021` scope implicitly
 
 ## Recommended validation
 
-Validate that the resulting packet delivers:
-
-- one clear local-first review-status path for manual candidate stubs inside Matching Prep
-- one persisted candidate-review state that survives reload
-- coherent visibility between candidate-stub presence and selected or rejected intent
-- no scope explosion into scene matching, backend, or downstream-output implementation
+Validate that live state no longer claims `F-021` is still active.
 
 ## Required handoff format
 
