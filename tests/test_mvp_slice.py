@@ -258,6 +258,60 @@ class ProjectSliceStoreTests(unittest.TestCase):
             status_payload = (reloaded.project_dir / "project.meta" / "status.json").read_text(encoding="utf-8")
             self.assertIn('"approval_readiness": "ready_for_approval"', status_payload)
 
+    def test_manual_candidate_stub_persists_after_reload(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = store.create_project("Manual Candidate Map", film_title="Demo Film", language="en")
+            project = store.save_analysis_text(project.project_dir, SAMPLE_ANALYSIS)
+
+            for block in list(project.semantic_blocks):
+                project = store.update_semantic_block(
+                    project.project_dir,
+                    block["record_id"],
+                    block["title"],
+                    block["semantic_role"],
+                    "Editor clarification added.",
+                )
+
+            project = store.update_semantic_review_status(project.project_dir, "ready_for_review")
+            project = store.update_semantic_review_status(project.project_dir, "approved")
+            project = store.add_matching_prep_asset(
+                project.project_dir,
+                "Main subtitle file",
+                "subtitle_reference",
+                "E:/demo/subtitles.srt",
+                "Primary subtitle reference.",
+            )
+            project = store.add_matching_prep_asset(
+                project.project_dir,
+                "Scene stills",
+                "film_asset_reference",
+                "E:/demo/scene-stills",
+                "Prepared stills for manual prep review.",
+            )
+            project = store.add_matching_candidate_stub(
+                project.project_dir,
+                project.semantic_blocks[0]["record_id"],
+                project.matching_prep_assets[0]["record_id"],
+                "Manual opening candidate.",
+            )
+            project = store.add_matching_candidate_stub(
+                project.project_dir,
+                project.semantic_blocks[1]["record_id"],
+                project.matching_prep_assets[1]["record_id"],
+                "Fallback visual candidate.",
+            )
+
+            self.assertEqual(len(project.matching_candidate_stubs), 2)
+            self.assertEqual(project.matching_candidate_stubs[0]["semantic_block_id"], project.semantic_blocks[0]["record_id"])
+            self.assertEqual(project.matching_candidate_stubs[1]["prep_asset_id"], project.matching_prep_assets[1]["record_id"])
+
+            reloaded = store.load_project(project.project_dir)
+            self.assertEqual(len(reloaded.matching_candidate_stubs), 2)
+            self.assertEqual(reloaded.matching_candidate_stubs[0]["note"], "Manual opening candidate.")
+            self.assertEqual(reloaded.matching_candidate_stubs[1]["record_id"], "candidate-stub-002")
+            self.assertTrue((reloaded.project_dir / "records" / "matching_prep" / "candidate_stubs.json").exists())
+
     def test_analysis_text_must_be_meaningful(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             store = ProjectSliceStore(Path(temp_dir))
@@ -1215,11 +1269,139 @@ class DNAFilmAppTests(unittest.TestCase):
                 self.assertEqual(len(reloaded.matching_prep_assets), 2)
                 self.assertIn("semantic-plus-asset registration present", app.matching_prep_summary_text.get())
                 self.assertIn("2 prep input(s) registered", app.matching_asset_summary_text.get())
+                self.assertIn("no manual candidate stubs yet", app.matching_candidate_summary_text.get())
+                self.assertIn("Manual candidate stubs", handoff)
+                self.assertIn("- none yet", handoff)
                 self.assertIn("Main subtitle file", handoff)
                 self.assertIn("Film scene folder", handoff)
                 self.assertIn("E:/demo/subtitles.srt", handoff)
                 self.assertEqual(reloaded.matching_prep_assets[0]["asset_type"], "subtitle_reference")
                 self.assertEqual(reloaded.matching_prep_assets[1]["asset_type"], "film_asset_reference")
+            finally:
+                root.destroy()
+
+    def test_app_matching_prep_manual_candidate_stub_persists_after_reload(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Matching Candidate Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+
+                    project = app.project
+                    for block in list(project.semantic_blocks):
+                        project = app.store.update_semantic_block(
+                            project.project_dir,
+                            block["record_id"],
+                            block["title"],
+                            block["semantic_role"],
+                            "Editor clarification added.",
+                        )
+                    app._load_project_into_ui(project)
+                    app.review_status_var.set("ready_for_review")
+                    app.save_review_status()
+                    app.review_status_var.set("approved")
+                    app.save_review_status()
+
+                    app._switch_view("Matching Prep")
+                    app.asset_label_var.set("Main subtitle file")
+                    app.asset_type_var.set("subtitle_reference")
+                    app.asset_reference_var.set("E:/demo/subtitles.srt")
+                    app.asset_notes_text.insert("1.0", "Subtitle reference for manual candidate linking.")
+                    app.add_matching_prep_asset()
+
+                    app.asset_label_var.set("Scene stills")
+                    app.asset_type_var.set("film_asset_reference")
+                    app.asset_reference_var.set("E:/demo/scene-stills")
+                    app.asset_notes_text.insert("1.0", "Still-frame folder for manual review.")
+                    app.add_matching_prep_asset()
+
+                    app.candidate_block_var.set(app.candidate_block_combo["values"][0])
+                    app.candidate_asset_var.set(app.candidate_asset_combo["values"][0])
+                    app.candidate_note_var.set("Opening candidate stub.")
+                    app.add_matching_candidate_stub()
+
+                    app.candidate_block_var.set(app.candidate_block_combo["values"][1])
+                    app.candidate_asset_var.set(app.candidate_asset_combo["values"][1])
+                    app.candidate_note_var.set("Second semantic-to-asset stub.")
+                    app.add_matching_candidate_stub()
+
+                handoff = app.matching_prep_handoff.get("1.0", "end").strip()
+                reloaded = app.store.load_project(app.project.project_dir)
+
+                self.assertEqual(len(reloaded.matching_candidate_stubs), 2)
+                self.assertIn("2 saved in this project", app.matching_candidate_summary_text.get())
+                self.assertIn("Manual candidate stubs", handoff)
+                self.assertIn("Opening candidate stub.", handoff)
+                self.assertIn("Second semantic-to-asset stub.", handoff)
+                self.assertIn("candidate-stub-001", handoff)
+                self.assertEqual(reloaded.matching_candidate_stubs[1]["record_id"], "candidate-stub-002")
+            finally:
+                root.destroy()
+
+    def test_app_matching_prep_candidate_stubs_remain_visible_when_lane_reopens(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Matching Candidate Reopen Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+
+                    project = app.project
+                    for block in list(project.semantic_blocks):
+                        project = app.store.update_semantic_block(
+                            project.project_dir,
+                            block["record_id"],
+                            block["title"],
+                            block["semantic_role"],
+                            "Editor clarification added.",
+                        )
+                    app._load_project_into_ui(project)
+                    app.review_status_var.set("ready_for_review")
+                    app.save_review_status()
+                    app.review_status_var.set("approved")
+                    app.save_review_status()
+
+                    app._switch_view("Matching Prep")
+                    app.asset_label_var.set("Transcript reference")
+                    app.asset_type_var.set("transcript_reference")
+                    app.asset_reference_var.set("E:/demo/transcript.txt")
+                    app.asset_notes_text.insert("1.0", "Transcript prepared for manual linking.")
+                    app.add_matching_prep_asset()
+
+                    app.candidate_block_var.set(app.candidate_block_combo["values"][0])
+                    app.candidate_asset_var.set(app.candidate_asset_combo["values"][0])
+                    app.candidate_note_var.set("Candidate visible even if gate reopens.")
+                    app.add_matching_candidate_stub()
+
+                    target_block_id = app.project.semantic_blocks[1]["record_id"]
+                    app._select_block_by_id(target_block_id)
+                    app.reorder_selected_block("up")
+                    app._switch_view("Matching Prep")
+
+                handoff = app.matching_prep_handoff.get("1.0", "end").strip()
+                self.assertEqual(app.matching_prep_text.get(), "Matching prep readiness: blocked | semantic approval was reopened after change")
+                self.assertIn("1 stored but currently gated", app.matching_candidate_summary_text.get())
+                self.assertIn("Candidate visible even if gate reopens.", handoff)
+                self.assertIn("Manual candidate stubs", handoff)
             finally:
                 root.destroy()
 

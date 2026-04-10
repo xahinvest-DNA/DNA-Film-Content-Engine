@@ -12,6 +12,7 @@ PROJECT_FORMAT_VERSION = "0.4"
 ANALYSIS_RECORD_FILENAME = "analysis_source.json"
 REVIEW_RECORD_FILENAME = "semantic_review.json"
 MATCHING_PREP_ASSET_FILENAME = "asset_references.json"
+MATCHING_CANDIDATE_FILENAME = "candidate_stubs.json"
 ALLOWED_SEMANTIC_ROLES = (
     "claim",
     "insight",
@@ -212,6 +213,7 @@ class ProjectSlice:
     semantic_review_record: dict
     semantic_blocks: list[dict]
     matching_prep_assets: list[dict]
+    matching_candidate_stubs: list[dict]
 
 
 class ProjectSliceStore:
@@ -269,7 +271,7 @@ class ProjectSliceStore:
         }
         semantic_review_record = self._default_review_record(project_id, created_at)
 
-        self._write_project_state(project_dir, manifest, project_record, intake_record, None, semantic_review_record, [], [])
+        self._write_project_state(project_dir, manifest, project_record, intake_record, None, semantic_review_record, [], [], [])
         return self.load_project(project_dir)
 
     def load_project(self, project_dir: Path) -> ProjectSlice:
@@ -281,6 +283,7 @@ class ProjectSliceStore:
         semantic_record_path = project_dir / "records" / "semantic" / "semantic_blocks.json"
         review_record_path = project_dir / "records" / "review" / REVIEW_RECORD_FILENAME
         matching_prep_asset_path = project_dir / "records" / "matching_prep" / MATCHING_PREP_ASSET_FILENAME
+        matching_candidate_path = project_dir / "records" / "matching_prep" / MATCHING_CANDIDATE_FILENAME
 
         if analysis_record_path.exists():
             analysis_source_record = read_json(analysis_record_path)
@@ -298,6 +301,7 @@ class ProjectSliceStore:
         semantic_blocks = read_json(semantic_record_path)["blocks"] if semantic_record_path.exists() else []
         semantic_blocks = normalize_semantic_blocks(semantic_blocks)
         matching_prep_assets = read_json(matching_prep_asset_path)["entries"] if matching_prep_asset_path.exists() else []
+        matching_candidate_stubs = read_json(matching_candidate_path)["entries"] if matching_candidate_path.exists() else []
         return ProjectSlice(
             project_dir=project_dir,
             manifest=manifest,
@@ -307,6 +311,7 @@ class ProjectSliceStore:
             semantic_review_record=semantic_review_record,
             semantic_blocks=semantic_blocks,
             matching_prep_assets=matching_prep_assets,
+            matching_candidate_stubs=matching_candidate_stubs,
         )
 
     def save_analysis_text(
@@ -368,6 +373,7 @@ class ProjectSliceStore:
             semantic_review_record,
             semantic_blocks,
             project.matching_prep_assets,
+            project.matching_candidate_stubs,
         )
         (project_dir / "sources" / "analysis").mkdir(parents=True, exist_ok=True)
         (project_dir / "sources" / "analysis" / source_label).write_text(normalized_text + "\n", encoding="utf-8")
@@ -574,6 +580,7 @@ class ProjectSliceStore:
                 semantic_review_record,
                 project.semantic_blocks,
                 project.matching_prep_assets,
+                project.matching_candidate_stubs,
             )
             return self.load_project(project_dir)
 
@@ -602,6 +609,7 @@ class ProjectSliceStore:
             semantic_review_record,
             project.semantic_blocks,
             project.matching_prep_assets,
+            project.matching_candidate_stubs,
         )
         return self.load_project(project_dir)
 
@@ -661,6 +669,72 @@ class ProjectSliceStore:
             semantic_review_record,
             project.semantic_blocks,
             entries,
+            project.matching_candidate_stubs,
+        )
+        return self.load_project(project_dir)
+
+    def add_matching_candidate_stub(
+        self,
+        project_dir: Path,
+        semantic_block_id: str,
+        prep_asset_id: str,
+        note: str = "",
+    ) -> ProjectSlice:
+        clean_block_id = semantic_block_id.strip()
+        clean_asset_id = prep_asset_id.strip()
+        clean_note = note.strip()
+        if not clean_block_id:
+            raise ValueError("Select one semantic block before creating a manual candidate stub.")
+        if not clean_asset_id:
+            raise ValueError("Select one registered prep input before creating a manual candidate stub.")
+
+        project = self.load_project(project_dir)
+        if project.semantic_review_record.get("review_status") != "approved" or project.semantic_review_record.get("reopened_after_change"):
+            raise ValueError("Manual candidate stubs are only available while Matching Prep is open from an approved semantic map.")
+
+        semantic_block = next((block for block in project.semantic_blocks if block["record_id"] == clean_block_id), None)
+        if semantic_block is None:
+            raise ValueError("Selected semantic block was not found for this manual candidate stub.")
+        prep_asset = next((entry for entry in project.matching_prep_assets if entry["record_id"] == clean_asset_id), None)
+        if prep_asset is None:
+            raise ValueError("Selected prep input was not found for this manual candidate stub.")
+
+        now = utc_now()
+        entries = [dict(entry) for entry in project.matching_candidate_stubs]
+        entries.append(
+            {
+                "project_id": project.manifest["project_id"],
+                "record_id": f"candidate-stub-{len(entries) + 1:03d}",
+                "record_type": "manual_match_candidate_stub",
+                "semantic_block_id": semantic_block["record_id"],
+                "prep_asset_id": prep_asset["record_id"],
+                "note": clean_note,
+                "created_at": now,
+                "updated_at": now,
+            }
+        )
+
+        manifest = dict(project.manifest)
+        manifest["updated_at"] = now
+        project_record = dict(project.project_record)
+        project_record["updated_at"] = now
+        intake_record = dict(project.intake_record)
+        intake_record["updated_at"] = now
+        analysis_source_record = self._copy_analysis_record(project.analysis_source_record, now)
+        semantic_review_record = dict(project.semantic_review_record)
+        semantic_review_record["updated_at"] = now
+
+        self._apply_project_summary(project_record, intake_record, project.semantic_blocks, semantic_review_record)
+        self._write_project_state(
+            project_dir,
+            manifest,
+            project_record,
+            intake_record,
+            analysis_source_record,
+            semantic_review_record,
+            project.semantic_blocks,
+            project.matching_prep_assets,
+            entries,
         )
         return self.load_project(project_dir)
 
@@ -693,6 +767,7 @@ class ProjectSliceStore:
             semantic_review_record,
             semantic_blocks,
             project.matching_prep_assets,
+            project.matching_candidate_stubs,
         )
         return self.load_project(project_dir)
 
@@ -725,6 +800,7 @@ class ProjectSliceStore:
         semantic_review_record: dict,
         semantic_blocks: list[dict],
         matching_prep_assets: list[dict],
+        matching_candidate_stubs: list[dict],
     ) -> None:
         semantic_blocks = normalize_semantic_blocks(semantic_blocks)
         write_json(project_dir / "project.manifest", manifest)
@@ -736,6 +812,7 @@ class ProjectSliceStore:
         write_json(project_dir / "records" / "review" / REVIEW_RECORD_FILENAME, semantic_review_record)
         write_json(project_dir / "records" / "semantic" / "semantic_blocks.json", {"blocks": semantic_blocks})
         write_json(project_dir / "records" / "matching_prep" / MATCHING_PREP_ASSET_FILENAME, {"entries": matching_prep_assets})
+        write_json(project_dir / "records" / "matching_prep" / MATCHING_CANDIDATE_FILENAME, {"entries": matching_candidate_stubs})
 
     def _status_payload(
         self,

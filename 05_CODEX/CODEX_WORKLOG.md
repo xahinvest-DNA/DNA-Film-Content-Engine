@@ -1,5 +1,23 @@
 # Codex Worklog
 
+## 2026-04-10 - F-020 completed and Matching Prep gained its first manual candidate artifact
+
+### Completed
+- completed the first manual match candidate stub slice as one bounded follow-up to the semantic-side and film-side Matching Prep inputs;
+- added one local-first manual candidate-stub path inside Matching Prep that links one semantic block to one registered film-side input;
+- persisted manual candidate stubs in the local project package and kept them stable through reload;
+- surfaced candidate-stub presence directly in the Matching Prep lane in both open and gated states without implying that the system found matches automatically;
+- verified creation, multiple-stub persistence, reload coherence, and gated/open visibility through local store-level and app-level tests alongside prior regressions;
+- synchronized the repository state layer after real implementation progress.
+
+### Repository effect
+- the repository now holds both sides of the future matching bridge plus one explicit proposed relationship between them in real local-first form;
+- Matching Prep is no longer limited to separate inputs, because it can now store and display one honest manual semantic-to-asset candidate artifact without introducing ranking, timecode logic, or scene-matching automation;
+- the strongest next bounded gain is one minimal review-status control for manual candidate stubs so the lane can distinguish raw candidate presence from explicit selected or rejected candidate intent before any later matching intelligence is considered.
+
+### Recommended next step
+Execute `F-021 Manual Match Candidate Review Status Slice`
+
 ## 2026-04-08 - F-019 completed and Matching Prep gained a film-side registration boundary
 
 ### Completed

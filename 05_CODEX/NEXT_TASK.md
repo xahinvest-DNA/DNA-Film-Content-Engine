@@ -1,29 +1,29 @@
 # NEXT TASK
 
-Last updated: 2026-04-08
+Last updated: 2026-04-10
 Status: ready
-Task ID: F-020
+Task ID: F-021
 Task type: implementation
-Title: First Manual Match Candidate Stub Slice
+Title: Manual Match Candidate Review Status Slice
 
 ## Goal
 
-Add one minimal local-first manual match-candidate stub slice inside Matching Prep so the project can hold one explicit semantic-to-asset candidate relationship without implementing scene matching automation, ranking, timecode logic, backend/API work, or a broader workflow engine.
+Add one minimal local-first review-status control for manual match candidate stubs inside Matching Prep so the project can distinguish candidate stubs that are still tentative from those explicitly selected or rejected for later matching work without implementing ranking, automation, timecode logic, backend/API work, or a broader workflow engine.
 
 ## Why this is next
 
-The repository now has both sides of the future matching bridge in real local-first form: approved semantic handoff and persisted film-side input registration. That means separate inputs are no longer the strongest gap.
+The repository now has both sides of the future matching bridge plus one honest manual candidate-stub artifact in local-first form. That means raw candidate presence is no longer the strongest gap.
 
-The strongest next bounded gain is to create one honest manual candidate stub between those two sides, because that proves the next lane can hold an explicit matching-prep artifact without pretending that automated scene matching already exists.
+The strongest next bounded gain is to let Matching Prep express explicit editorial intent about those manual candidates, because that proves the lane can hold not only candidate existence but also one minimal review decision without pretending that automated scene matching already exists.
 
 ## In scope
 
-- one bounded follow-up packet on top of completed `F-019`
-- one minimal manual semantic-to-asset candidate stub inside Matching Prep
-- one narrow persisted representation of that stub in the local project package
-- compact Matching Prep visibility for candidate-stub presence
-- only the smallest runtime and local-storage changes required to make that candidate stub executable or testable
-- local tests covering creation, reload persistence, and blocked/open coherence
+- one bounded follow-up packet on top of completed `F-020`
+- one minimal review-status control for manual candidate stubs inside Matching Prep
+- one narrow persisted status on each manual candidate stub in the local project package
+- compact Matching Prep visibility for tentative versus selected or rejected candidate state
+- only the smallest runtime and local-storage changes required to make that review state executable or testable
+- local tests covering review-state update, reload persistence, and blocked/open coherence
 
 ## Out of scope
 
@@ -34,15 +34,15 @@ The strongest next bounded gain is to create one honest manual candidate stub be
 - workflow queues or planning dashboards
 - downstream output generation
 - generalized matching subsystem buildout
-- packet expansion beyond the first bounded manual candidate stub slice
+- packet expansion beyond the first bounded candidate-review-status slice
 
 ## Recommended validation
 
 Validate that the resulting packet delivers:
 
-- one clear local-first manual candidate-stub path inside Matching Prep
-- one persisted semantic-to-asset candidate artifact that survives reload
-- coherent visibility between input presence and first candidate-stub presence
+- one clear local-first review-status path for manual candidate stubs inside Matching Prep
+- one persisted candidate-review state that survives reload
+- coherent visibility between candidate-stub presence and selected or rejected intent
 - no scope explosion into scene matching, backend, or downstream-output implementation
 
 ## Required handoff format

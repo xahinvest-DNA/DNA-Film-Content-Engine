@@ -70,6 +70,7 @@ class DNAFilmApp:
         self.matching_prep_status_text = tk.StringVar(value="Matching Prep is blocked until the semantic map is approved.")
         self.matching_prep_summary_text = tk.StringVar(value="Prep handoff: 0 approved semantic blocks available.")
         self.matching_asset_summary_text = tk.StringVar(value="Film-side registration: no prep inputs registered yet.")
+        self.matching_candidate_summary_text = tk.StringVar(value="Manual candidate stubs: none yet.")
         self.placeholder_text = tk.StringVar(value="Available after semantic-map approval in a later bounded packet.")
 
         self.project_name_var = tk.StringVar()
@@ -88,12 +89,18 @@ class DNAFilmApp:
         self.asset_label_var = tk.StringVar()
         self.asset_type_var = tk.StringVar(value=ALLOWED_MATCHING_ASSET_TYPES[0])
         self.asset_reference_var = tk.StringVar()
+        self.candidate_block_var = tk.StringVar()
+        self.candidate_asset_var = tk.StringVar()
+        self.candidate_note_var = tk.StringVar()
+        self.candidate_block_options: dict[str, str] = {}
+        self.candidate_asset_options: dict[str, str] = {}
 
         self._build_layout()
         self._switch_view("Project Home")
         self._set_editor_enabled(False)
         self._set_structure_enabled(False, False, False, False, False)
         self._set_focus_navigation_enabled(False, False)
+        self._set_matching_candidate_enabled(False)
 
     def _build_layout(self) -> None:
         self.root.columnconfigure(1, weight=1)
@@ -291,16 +298,17 @@ class DNAFilmApp:
         frame = ttk.Frame(parent, padding=12)
         frame.grid(row=0, column=0, sticky="nsew")
         frame.columnconfigure(0, weight=1)
-        frame.rowconfigure(6, weight=1)
+        frame.rowconfigure(8, weight=1)
 
         ttk.Label(frame, text="Matching Prep", font=("Segoe UI", 14, "bold")).grid(row=0, column=0, sticky="w")
         ttk.Label(frame, text="This is the first downstream-facing entry surface. It stays local-first and only opens as a real handoff when the semantic map is approved.", wraplength=760).grid(row=1, column=0, sticky="w", pady=(8, 6))
         ttk.Label(frame, textvariable=self.matching_prep_status_text, wraplength=760).grid(row=2, column=0, sticky="w", pady=(0, 4))
         ttk.Label(frame, textvariable=self.matching_prep_summary_text, wraplength=760).grid(row=3, column=0, sticky="nw", pady=(0, 4))
-        ttk.Label(frame, textvariable=self.matching_asset_summary_text, wraplength=760).grid(row=4, column=0, sticky="w", pady=(0, 8))
+        ttk.Label(frame, textvariable=self.matching_asset_summary_text, wraplength=760).grid(row=4, column=0, sticky="w", pady=(0, 4))
+        ttk.Label(frame, textvariable=self.matching_candidate_summary_text, wraplength=760).grid(row=5, column=0, sticky="w", pady=(0, 8))
 
         registration = ttk.LabelFrame(frame, text="Film-side input registration", padding=8)
-        registration.grid(row=5, column=0, sticky="ew", pady=(0, 8))
+        registration.grid(row=6, column=0, sticky="ew", pady=(0, 8))
         registration.columnconfigure(1, weight=1)
         registration.columnconfigure(3, weight=1)
         ttk.Label(registration, text="Label").grid(row=0, column=0, sticky="w")
@@ -314,8 +322,23 @@ class DNAFilmApp:
         self.asset_notes_text.grid(row=1, column=3, sticky="ew", pady=(8, 0))
         ttk.Button(registration, text="Register Prep Input", command=self.add_matching_prep_asset).grid(row=2, column=0, columnspan=4, sticky="w", pady=(8, 0))
 
+        candidate_frame = ttk.LabelFrame(frame, text="Manual candidate stub", padding=8)
+        candidate_frame.grid(row=7, column=0, sticky="ew", pady=(0, 8))
+        candidate_frame.columnconfigure(1, weight=1)
+        candidate_frame.columnconfigure(3, weight=1)
+        ttk.Label(candidate_frame, text="Semantic block").grid(row=0, column=0, sticky="w")
+        self.candidate_block_combo = ttk.Combobox(candidate_frame, textvariable=self.candidate_block_var, state="readonly", width=32)
+        self.candidate_block_combo.grid(row=0, column=1, sticky="ew", padx=(8, 12))
+        ttk.Label(candidate_frame, text="Prep input").grid(row=0, column=2, sticky="w")
+        self.candidate_asset_combo = ttk.Combobox(candidate_frame, textvariable=self.candidate_asset_var, state="readonly", width=28)
+        self.candidate_asset_combo.grid(row=0, column=3, sticky="ew")
+        ttk.Label(candidate_frame, text="Optional note").grid(row=1, column=0, sticky="w", pady=(8, 0))
+        ttk.Entry(candidate_frame, textvariable=self.candidate_note_var, width=48).grid(row=1, column=1, columnspan=3, sticky="ew", pady=(8, 0))
+        self.add_candidate_button = ttk.Button(candidate_frame, text="Save Manual Candidate Stub", command=self.add_matching_candidate_stub)
+        self.add_candidate_button.grid(row=2, column=0, columnspan=4, sticky="w", pady=(8, 0))
+
         self.matching_prep_handoff = tk.Text(frame, height=18, wrap="word")
-        self.matching_prep_handoff.grid(row=6, column=0, sticky="nsew")
+        self.matching_prep_handoff.grid(row=8, column=0, sticky="nsew")
         self.matching_prep_handoff.configure(state="disabled")
         return frame
 
@@ -510,6 +533,29 @@ class DNAFilmApp:
         self.asset_notes_text.delete("1.0", "end")
         messagebox.showinfo("Matching Prep", "Film-side prep input was registered in the local project package.")
 
+    def add_matching_candidate_stub(self) -> None:
+        if self.project is None:
+            messagebox.showerror("Matching Prep", "Create or open a project first.")
+            return
+        block_id = self.candidate_block_options.get(self.candidate_block_var.get(), "")
+        asset_id = self.candidate_asset_options.get(self.candidate_asset_var.get(), "")
+        try:
+            project = self.store.add_matching_candidate_stub(
+                self.project.project_dir,
+                block_id,
+                asset_id,
+                self.candidate_note_var.get(),
+            )
+        except ValueError as exc:
+            messagebox.showerror("Matching Prep", str(exc))
+            return
+
+        current_block_id = self.selected_block_id
+        self._load_project_into_ui(project, select_block_id=current_block_id)
+        self._switch_view("Matching Prep")
+        self.candidate_note_var.set("")
+        messagebox.showinfo("Matching Prep", "Manual candidate stub was saved in the local project package.")
+
     def save_review_status(self) -> None:
         if self.project is None:
             messagebox.showerror("Semantic review", "Create or open a project first.")
@@ -550,6 +596,7 @@ class DNAFilmApp:
         matching_prep_gate = self._matching_prep_gate_text(project)
         self.matching_prep_text.set(matching_prep_gate)
         self._update_matching_prep_surface(project)
+        self._refresh_matching_candidate_controls(project)
         warnings = project.intake_record.get("intake_warnings", [])
         warning_text = f"Warnings: {', '.join(warnings)}" if warnings else "Warnings: none"
         suitability_summary = self._project_suitability_summary(project)
@@ -753,6 +800,14 @@ class DNAFilmApp:
         self.previous_focus_button.configure(state="normal" if can_move_previous else "disabled")
         self.next_focus_button.configure(state="normal" if can_move_next else "disabled")
 
+    def _set_matching_candidate_enabled(self, enabled: bool) -> None:
+        combo_state = "readonly" if enabled else "disabled"
+        entry_state = "normal" if enabled else "disabled"
+        button_state = "normal" if enabled else "disabled"
+        self.candidate_block_combo.configure(state=combo_state)
+        self.candidate_asset_combo.configure(state=combo_state)
+        self.add_candidate_button.configure(state=button_state)
+
     def _set_editor_enabled(self, enabled: bool) -> None:
         entry_state = "normal" if enabled else "disabled"
         combo_state = "readonly" if enabled else "disabled"
@@ -844,13 +899,80 @@ class DNAFilmApp:
         state, reason = self._matching_prep_gate(project)
         return f"Matching prep readiness: {state} | {reason}"
 
+    def _refresh_matching_candidate_controls(self, project: ProjectSlice | None) -> None:
+        if project is None:
+            self.candidate_block_options = {}
+            self.candidate_asset_options = {}
+            self.candidate_block_combo.configure(values=())
+            self.candidate_asset_combo.configure(values=())
+            self.candidate_block_var.set("")
+            self.candidate_asset_var.set("")
+            self._set_matching_candidate_enabled(False)
+            return
+
+        current_block_display = self.candidate_block_var.get()
+        current_asset_display = self.candidate_asset_var.get()
+        self.candidate_block_options = {
+            self._candidate_block_option_label(block): block["record_id"]
+            for block in project.semantic_blocks
+        }
+        self.candidate_asset_options = {
+            self._candidate_asset_option_label(entry): entry["record_id"]
+            for entry in project.matching_prep_assets
+        }
+        block_values = tuple(self.candidate_block_options.keys())
+        asset_values = tuple(self.candidate_asset_options.keys())
+        self.candidate_block_combo.configure(values=block_values)
+        self.candidate_asset_combo.configure(values=asset_values)
+        self.candidate_block_var.set(current_block_display if current_block_display in self.candidate_block_options else (block_values[0] if block_values else ""))
+        self.candidate_asset_var.set(current_asset_display if current_asset_display in self.candidate_asset_options else (asset_values[0] if asset_values else ""))
+        gate_state, _ = self._matching_prep_gate(project)
+        can_create = gate_state == "ready" and bool(block_values) and bool(asset_values)
+        self._set_matching_candidate_enabled(can_create)
+
+    def _candidate_block_option_label(self, block: dict) -> str:
+        return f"{block['sequence']:02d}. {block['title']} [{block['record_id']}]"
+
+    def _candidate_asset_option_label(self, entry: dict) -> str:
+        return f"{entry['asset_label']} [{entry['asset_type']}] ({entry['record_id']})"
+
+    def _candidate_stub_lines(self, project: ProjectSlice) -> list[str]:
+        if not project.matching_candidate_stubs:
+            return ["- none yet", ""]
+        block_lookup = {block['record_id']: block for block in project.semantic_blocks}
+        asset_lookup = {entry['record_id']: entry for entry in project.matching_prep_assets}
+        lines: list[str] = [""]
+        for entry in project.matching_candidate_stubs:
+            block = block_lookup.get(entry.get("semantic_block_id"))
+            asset = asset_lookup.get(entry.get("prep_asset_id"))
+            block_label = f"{block['sequence']:02d}. {block['title']}" if block else entry.get("semantic_block_id", "unknown semantic block")
+            asset_label = f"{asset['asset_label']} [{asset['asset_type']}]" if asset else entry.get("prep_asset_id", "unknown prep input")
+            note = entry.get("note", "").strip() or "none"
+            lines.extend(
+                [
+                    f"- {block_label} -> {asset_label}",
+                    f"  Note: {note}",
+                    f"  Stub id: {entry['record_id']}",
+                    "",
+                ]
+            )
+        return lines
+
     def _update_matching_prep_surface(self, project: ProjectSlice) -> None:
         gate_state, gate_reason = self._matching_prep_gate(project)
         asset_count = len(project.matching_prep_assets)
+        candidate_count = len(project.matching_candidate_stubs)
         if gate_state != "ready":
             self.matching_prep_status_text.set(f"Matching Prep is blocked: {gate_reason}.")
             self.matching_prep_summary_text.set("Prep handoff: 0 approved semantic blocks available.")
-            self.matching_asset_summary_text.set(f"Film-side registration: {asset_count} prep input(s) registered but currently gated.")
+            if asset_count:
+                self.matching_asset_summary_text.set(f"Film-side registration: {asset_count} prep input(s) registered but currently gated.")
+            else:
+                self.matching_asset_summary_text.set("Film-side registration: no prep inputs registered yet.")
+            if candidate_count:
+                self.matching_candidate_summary_text.set(f"Manual candidate stubs: {candidate_count} stored but currently gated.")
+            else:
+                self.matching_candidate_summary_text.set("Manual candidate stubs: none yet.")
             lines = [
                 "Matching Prep remains blocked in this project state.",
                 "",
@@ -873,8 +995,9 @@ class DNAFilmApp:
                     )
             else:
                 lines.extend(["- none yet", ""])
+            lines.extend(["Manual candidate stubs", *self._candidate_stub_lines(project)])
             lines.append("This first downstream-facing slice opens only after the semantic map is approved.")
-            handoff_text = "\n".join(lines)
+            handoff_text = "\n".join(lines).rstrip()
         else:
             block_count = len(project.semantic_blocks)
             asset_state = "semantic-plus-asset registration present" if asset_count else "semantic-only handoff present"
@@ -888,11 +1011,16 @@ class DNAFilmApp:
                 self.matching_asset_summary_text.set(f"Film-side registration: {asset_count} prep input(s) registered.")
             else:
                 self.matching_asset_summary_text.set("Film-side registration: no prep inputs registered yet.")
+            if candidate_count:
+                self.matching_candidate_summary_text.set(f"Manual candidate stubs: {candidate_count} saved in this project.")
+            else:
+                self.matching_candidate_summary_text.set("Manual candidate stubs: no manual candidate stubs yet.")
             lines = [
                 "Approved semantic handoff for later matching prep",
                 f"Project: {project.project_record['title']}",
                 f"Semantic blocks: {block_count}",
                 f"Registered prep inputs: {asset_count}",
+                f"Manual candidate stubs: {candidate_count}",
                 "",
                 "Registered film-side inputs",
             ]
@@ -911,6 +1039,7 @@ class DNAFilmApp:
                     )
             else:
                 lines.extend(["- none yet", ""])
+            lines.extend(["Manual candidate stubs", *self._candidate_stub_lines(project)])
             lines.extend(["Approved semantic handoff", ""])
             for block in project.semantic_blocks:
                 notes = block.get("notes", "").strip() or "none"

@@ -1,21 +1,27 @@
 # Codex Tasks
 
-Last updated: 2026-04-08
-Current focus: F-020 first manual match candidate stub slice
+Last updated: 2026-04-10
+Current focus: F-021 manual match candidate review status slice
 
 ## Working rule
 Tasks should be bounded, product-visible, and small enough to preserve continuity without turning the repository into micro-slice overload.
 
 ## Active task
 
-### F-020
+### F-021
 - Status: active
-- Module: first manual match candidate stub slice
-- Goal: add one minimal local-first manual semantic-to-asset candidate stub inside Matching Prep without drifting into scene matching automation, ranking, timecode, backend, or downstream execution buildout.
+- Module: manual match candidate review status slice
+- Goal: add one minimal local-first review-status control for manual candidate stubs inside Matching Prep without drifting into scene matching automation, ranking, timecode, backend, or downstream execution buildout.
 - Input documents: `00_INDEX.md`, `01_MASTER/CURRENT_STATE.md`, `01_MASTER/DECISIONS.md`, `01_MASTER/ROADMAP.md`, `01_MASTER/SSOT_MAP.md`, `05_CODEX/NEXT_TASK.md`, `02_PRODUCT/MVP_DESKTOP_INTERFACE.md`, `02_PRODUCT/NAVIGATION_BEHAVIOR.md`, `03_MODULES/SCENE_MATCHING.md`
-- Expected result: one bounded local-first runtime update where Matching Prep gains one explicit manual candidate artifact without scope explosion.
+- Expected result: one bounded local-first runtime update where Matching Prep gains one explicit candidate-review-state control without scope explosion.
 
 ## Completed tasks
+
+### F-020
+- Status: completed
+- Module: first manual match candidate stub slice
+- Goal: add one minimal local-first manual semantic-to-asset candidate stub inside Matching Prep without drifting into scene matching automation, ranking, timecode, backend, or downstream execution buildout.
+- Outcome: added one persisted manual semantic-to-asset candidate-stub path inside Matching Prep, stored manual candidate stubs locally in the project package, surfaced candidate presence directly in the prep lane across open and gated states, verified creation and reload coherence through local tests, and kept the packet intentionally narrow.
 
 ### F-019
 - Status: completed
