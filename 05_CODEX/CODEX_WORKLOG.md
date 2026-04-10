@@ -1,5 +1,23 @@
 # Codex Worklog
 
+## 2026-04-10 - F-025 completed and Matching Prep gained selected-candidate rationale visibility
+
+### Completed
+- completed the selected candidate rationale cue slice as one bounded follow-up to the selected-readiness layer;
+- added one persisted `preferred_rationale` field directly on the existing manual candidate stub record rather than introducing a new record family;
+- exposed one minimal Matching Prep save path for that short editor-supplied rationale on the selected candidate editing flow;
+- surfaced rationale only in the selected-first handoff section and used the honest fallback `Preferred rationale: not recorded yet.` when no rationale has been saved;
+- verified selected candidate with rationale, selected candidate without rationale fallback, reload persistence, and gated-after-reopen rationale visibility through local store-level and app-level tests alongside prior regressions;
+- synchronized the repository state layer after real implementation progress.
+
+### Repository effect
+- the repository now answers not only whether a preferred selected subset exists, but also what short manual reason currently explains that preference inside handoff;
+- Matching Prep gained one narrow explanation layer without opening accepted-reference semantics, ranking, backend/API, timecodes, or a candidate-management subsystem;
+- the next bounded packet should now be selected by manager review against current repository capability rather than assumed by inertia.
+
+### Recommended next step
+ChatGPT should select one strongest next bounded packet after reviewing `F-025`.
+
 ## 2026-04-10 - F-024 completed and Matching Prep gained selected-readiness visibility
 
 ### Completed

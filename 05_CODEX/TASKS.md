@@ -1,16 +1,22 @@
 # Codex Tasks
 
 Last updated: 2026-04-10
-Current focus: manager review and next bounded packet selection after F-024
+Current focus: manager review and next bounded packet selection after F-025
 
 ## Working rule
 Tasks should be bounded, product-visible, and small enough to preserve continuity without turning the repository into micro-slice overload.
 
 ## Active task
 
-- No new implementation packet is active until ChatGPT selects the next bounded step after reviewing the completed `F-021` handoff.
+- No new implementation packet is active until ChatGPT selects the next bounded step after reviewing the completed `F-025` handoff.
 
 ## Completed tasks
+
+### F-025
+- Status: completed
+- Module: selected candidate rationale cue slice
+- Goal: add one minimal editor-supplied rationale cue for selected candidate stubs inside Matching Prep without drifting into ranking explanation, accepted-reference semantics, approval workflow, timecodes, backend, or workflow execution buildout.
+- Outcome: added one persisted `preferred_rationale` field directly on manual candidate stubs, exposed one minimal Matching Prep save path for that rationale, surfaced rationale only in the selected-first handoff section with an honest fallback when not recorded, verified selected-with-rationale, missing-rationale fallback, reload persistence, and gated-after-reopen visibility through local tests, and kept the packet intentionally narrow.
 
 ### F-024
 - Status: completed

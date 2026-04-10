@@ -96,6 +96,7 @@ class DNAFilmApp:
         self.candidate_note_var = tk.StringVar()
         self.candidate_stub_var = tk.StringVar()
         self.candidate_status_var = tk.StringVar(value=ALLOWED_CANDIDATE_REVIEW_STATUSES[0])
+        self.candidate_rationale_var = tk.StringVar()
         self.candidate_focus_var = tk.StringVar(value=CANDIDATE_STATUS_FOCUS_OPTIONS[0])
         self.candidate_block_options: dict[str, str] = {}
         self.candidate_asset_options: dict[str, str] = {}
@@ -351,9 +352,13 @@ class DNAFilmApp:
         self.candidate_status_combo.grid(row=3, column=3, sticky="ew", pady=(10, 0))
         self.save_candidate_status_button = ttk.Button(candidate_frame, text="Save Candidate Review Status", command=self.save_matching_candidate_status)
         self.save_candidate_status_button.grid(row=4, column=0, columnspan=4, sticky="w", pady=(8, 0))
-        ttk.Label(candidate_frame, text="Status focus").grid(row=5, column=0, sticky="w", pady=(10, 0))
+        ttk.Label(candidate_frame, text="Preferred rationale").grid(row=5, column=0, sticky="w", pady=(10, 0))
+        ttk.Entry(candidate_frame, textvariable=self.candidate_rationale_var, width=48).grid(row=5, column=1, columnspan=2, sticky="ew", padx=(8, 12), pady=(10, 0))
+        self.save_candidate_rationale_button = ttk.Button(candidate_frame, text="Save Preferred Rationale", command=self.save_matching_candidate_rationale)
+        self.save_candidate_rationale_button.grid(row=5, column=3, sticky="w", pady=(10, 0))
+        ttk.Label(candidate_frame, text="Status focus").grid(row=6, column=0, sticky="w", pady=(10, 0))
         self.candidate_focus_combo = ttk.Combobox(candidate_frame, textvariable=self.candidate_focus_var, values=CANDIDATE_STATUS_FOCUS_OPTIONS, state="readonly", width=28)
-        self.candidate_focus_combo.grid(row=5, column=1, sticky="w", padx=(8, 12), pady=(10, 0))
+        self.candidate_focus_combo.grid(row=6, column=1, sticky="w", padx=(8, 12), pady=(10, 0))
         self.candidate_focus_combo.bind("<<ComboboxSelected>>", self.on_candidate_focus_changed)
 
         self.matching_prep_handoff = tk.Text(frame, height=18, wrap="word")
@@ -578,6 +583,7 @@ class DNAFilmApp:
             if latest_label in self.candidate_stub_options:
                 self.candidate_stub_var.set(latest_label)
                 self.candidate_status_var.set(latest_stub.get("review_status", ALLOWED_CANDIDATE_REVIEW_STATUSES[0]))
+                self.candidate_rationale_var.set(latest_stub.get("preferred_rationale", ""))
         self.candidate_note_var.set("")
         messagebox.showinfo("Matching Prep", "Manual candidate stub was saved in the local project package.")
 
@@ -606,15 +612,46 @@ class DNAFilmApp:
             if updated_label in self.candidate_stub_options:
                 self.candidate_stub_var.set(updated_label)
                 self.candidate_status_var.set(updated_stub.get("review_status", ALLOWED_CANDIDATE_REVIEW_STATUSES[0]))
+                self.candidate_rationale_var.set(updated_stub.get("preferred_rationale", ""))
         messagebox.showinfo("Matching Prep", "Manual candidate review status was saved in the local project package.")
+
+    def save_matching_candidate_rationale(self) -> None:
+        if self.project is None:
+            messagebox.showerror("Matching Prep", "Create or open a project first.")
+            return
+        candidate_stub_id = self.candidate_stub_options.get(self.candidate_stub_var.get(), "")
+        try:
+            project = self.store.update_matching_candidate_stub_rationale(
+                self.project.project_dir,
+                candidate_stub_id,
+                self.candidate_rationale_var.get(),
+            )
+        except ValueError as exc:
+            messagebox.showerror("Matching Prep", str(exc))
+            return
+
+        current_block_id = self.selected_block_id
+        current_candidate_id = candidate_stub_id
+        self._load_project_into_ui(project, select_block_id=current_block_id)
+        self._switch_view("Matching Prep")
+        updated_stub = next((entry for entry in project.matching_candidate_stubs if entry["record_id"] == current_candidate_id), None)
+        if updated_stub is not None:
+            updated_label = self._candidate_stub_option_label(project, updated_stub)
+            if updated_label in self.candidate_stub_options:
+                self.candidate_stub_var.set(updated_label)
+                self.candidate_status_var.set(updated_stub.get("review_status", ALLOWED_CANDIDATE_REVIEW_STATUSES[0]))
+                self.candidate_rationale_var.set(updated_stub.get("preferred_rationale", ""))
+        messagebox.showinfo("Matching Prep", "Manual candidate preferred rationale was saved in the local project package.")
 
     def on_candidate_stub_selected(self, _event: object | None = None) -> None:
         if self.project is None:
             self.candidate_status_var.set(ALLOWED_CANDIDATE_REVIEW_STATUSES[0])
+            self.candidate_rationale_var.set("")
             return
         candidate_stub_id = self.candidate_stub_options.get(self.candidate_stub_var.get(), "")
         selected_stub = next((entry for entry in self.project.matching_candidate_stubs if entry["record_id"] == candidate_stub_id), None)
         self.candidate_status_var.set((selected_stub or {}).get("review_status", ALLOWED_CANDIDATE_REVIEW_STATUSES[0]))
+        self.candidate_rationale_var.set((selected_stub or {}).get("preferred_rationale", ""))
 
     def on_candidate_focus_changed(self, _event: object | None = None) -> None:
         if self.project is None:
@@ -978,6 +1015,7 @@ class DNAFilmApp:
             self.candidate_asset_var.set("")
             self.candidate_stub_var.set("")
             self.candidate_status_var.set(ALLOWED_CANDIDATE_REVIEW_STATUSES[0])
+            self.candidate_rationale_var.set("")
             self.candidate_focus_var.set(CANDIDATE_STATUS_FOCUS_OPTIONS[0])
             self._set_matching_candidate_enabled(False, False)
             return
@@ -1010,6 +1048,7 @@ class DNAFilmApp:
         self.candidate_stub_var.set(selected_stub_display)
         selected_stub = next((entry for entry in project.matching_candidate_stubs if self._candidate_stub_option_label(project, entry) == selected_stub_display), None)
         self.candidate_status_var.set((selected_stub or {}).get("review_status", ALLOWED_CANDIDATE_REVIEW_STATUSES[0]))
+        self.candidate_rationale_var.set((selected_stub or {}).get("preferred_rationale", ""))
         gate_state, _ = self._matching_prep_gate(project)
         can_create = gate_state == "ready" and bool(block_values) and bool(asset_values)
         can_review = gate_state == "ready" and bool(stub_values)
@@ -1055,7 +1094,7 @@ class DNAFilmApp:
             return f"Preferred subset readiness: preferred subset exists now ({selected_count} selected candidate(s))."
         return "Preferred subset readiness: preferred subset not fixed yet (no selected candidates)."
 
-    def _candidate_entry_lines(self, project: ProjectSlice, entry: dict) -> list[str]:
+    def _candidate_entry_lines(self, project: ProjectSlice, entry: dict, include_rationale: bool = False) -> list[str]:
         block_lookup = {block['record_id']: block for block in project.semantic_blocks}
         asset_lookup = {asset['record_id']: asset for asset in project.matching_prep_assets}
         block = block_lookup.get(entry.get("semantic_block_id"))
@@ -1064,13 +1103,19 @@ class DNAFilmApp:
         asset_label = f"{asset['asset_label']} [{asset['asset_type']}]" if asset else entry.get("prep_asset_id", "unknown prep input")
         note = entry.get("note", "").strip() or "none"
         review_status = entry.get("review_status", ALLOWED_CANDIDATE_REVIEW_STATUSES[0])
-        return [
+        lines = [
             f"- {block_label} -> {asset_label}",
             f"  Review status: {review_status}",
+        ]
+        if include_rationale:
+            rationale = entry.get("preferred_rationale", "").strip() or "not recorded yet"
+            lines.append(f"  Preferred rationale: {rationale}")
+        lines.extend([
             f"  Note: {note}",
             f"  Stub id: {entry['record_id']}",
             "",
-        ]
+        ])
+        return lines
 
     def _selected_candidate_lines(self, project: ProjectSlice) -> list[str]:
         selected_entries = self._selected_candidate_stubs(project)
@@ -1078,7 +1123,7 @@ class DNAFilmApp:
             return ["- none selected yet", ""]
         lines: list[str] = [""]
         for entry in selected_entries:
-            lines.extend(self._candidate_entry_lines(project, entry))
+            lines.extend(self._candidate_entry_lines(project, entry, include_rationale=True))
         return lines
 
     def _visible_candidate_stubs(self, project: ProjectSlice) -> list[dict]:

@@ -164,6 +164,7 @@ def normalize_matching_candidate_stubs(matching_candidate_stubs: list[dict]) -> 
         current = dict(entry)
         if current.get("review_status") not in ALLOWED_CANDIDATE_REVIEW_STATUSES:
             current["review_status"] = "tentative"
+        current["preferred_rationale"] = current.get("preferred_rationale", "").strip()
         normalized.append(current)
     return normalized
 
@@ -725,6 +726,7 @@ class ProjectSliceStore:
                 "semantic_block_id": semantic_block["record_id"],
                 "prep_asset_id": prep_asset["record_id"],
                 "review_status": "tentative",
+                "preferred_rationale": "",
                 "note": clean_note,
                 "created_at": now,
                 "updated_at": now,
@@ -779,6 +781,59 @@ class ProjectSliceStore:
             current = dict(entry)
             if current["record_id"] == clean_stub_id:
                 current["review_status"] = clean_status
+                current["updated_at"] = now
+                updated = True
+            entries.append(current)
+
+        if not updated:
+            raise ValueError("Selected manual candidate stub was not found for this Matching Prep slice.")
+
+        manifest = dict(project.manifest)
+        manifest["updated_at"] = now
+        project_record = dict(project.project_record)
+        project_record["updated_at"] = now
+        intake_record = dict(project.intake_record)
+        intake_record["updated_at"] = now
+        analysis_source_record = self._copy_analysis_record(project.analysis_source_record, now)
+        semantic_review_record = dict(project.semantic_review_record)
+        semantic_review_record["updated_at"] = now
+
+        self._apply_project_summary(project_record, intake_record, project.semantic_blocks, semantic_review_record)
+        self._write_project_state(
+            project_dir,
+            manifest,
+            project_record,
+            intake_record,
+            analysis_source_record,
+            semantic_review_record,
+            project.semantic_blocks,
+            project.matching_prep_assets,
+            entries,
+        )
+        return self.load_project(project_dir)
+
+    def update_matching_candidate_stub_rationale(
+        self,
+        project_dir: Path,
+        candidate_stub_id: str,
+        preferred_rationale: str,
+    ) -> ProjectSlice:
+        clean_stub_id = candidate_stub_id.strip()
+        clean_rationale = preferred_rationale.strip()
+        if not clean_stub_id:
+            raise ValueError("Select one manual candidate stub before saving preferred rationale.")
+
+        project = self.load_project(project_dir)
+        if project.semantic_review_record.get("review_status") != "approved" or project.semantic_review_record.get("reopened_after_change"):
+            raise ValueError("Manual candidate preferred rationale can only be changed while Matching Prep is open from an approved semantic map.")
+
+        now = utc_now()
+        updated = False
+        entries: list[dict] = []
+        for entry in project.matching_candidate_stubs:
+            current = dict(entry)
+            if current["record_id"] == clean_stub_id:
+                current["preferred_rationale"] = clean_rationale
                 current["updated_at"] = now
                 updated = True
             entries.append(current)

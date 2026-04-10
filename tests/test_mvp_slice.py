@@ -313,6 +313,11 @@ class ProjectSliceStoreTests(unittest.TestCase):
                 project.matching_candidate_stubs[0]["record_id"],
                 "selected",
             )
+            project = store.update_matching_candidate_stub_rationale(
+                project.project_dir,
+                project.matching_candidate_stubs[0]["record_id"],
+                "Opening scene carries the clearest semantic proof.",
+            )
             project = store.update_matching_candidate_stub_status(
                 project.project_dir,
                 project.matching_candidate_stubs[1]["record_id"],
@@ -323,6 +328,7 @@ class ProjectSliceStoreTests(unittest.TestCase):
             self.assertEqual(len(reloaded.matching_candidate_stubs), 2)
             self.assertEqual(reloaded.matching_candidate_stubs[0]["note"], "Manual opening candidate.")
             self.assertEqual(reloaded.matching_candidate_stubs[0]["review_status"], "selected")
+            self.assertEqual(reloaded.matching_candidate_stubs[0]["preferred_rationale"], "Opening scene carries the clearest semantic proof.")
             self.assertEqual(reloaded.matching_candidate_stubs[1]["record_id"], "candidate-stub-002")
             self.assertEqual(reloaded.matching_candidate_stubs[1]["review_status"], "rejected")
             self.assertTrue((reloaded.project_dir / "records" / "matching_prep" / "candidate_stubs.json").exists())
@@ -1376,6 +1382,236 @@ class DNAFilmAppTests(unittest.TestCase):
                 self.assertEqual(reloaded.matching_candidate_stubs[0]["review_status"], "selected")
                 self.assertEqual(reloaded.matching_candidate_stubs[1]["record_id"], "candidate-stub-002")
                 self.assertEqual(reloaded.matching_candidate_stubs[1]["review_status"], "rejected")
+            finally:
+                root.destroy()
+
+    def test_app_matching_prep_selected_candidate_rationale_displays_in_handoff(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Matching Rationale Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+
+                    project = app.project
+                    for block in list(project.semantic_blocks):
+                        project = app.store.update_semantic_block(
+                            project.project_dir,
+                            block["record_id"],
+                            block["title"],
+                            block["semantic_role"],
+                            "Editor clarification added.",
+                        )
+                    app._load_project_into_ui(project)
+                    app.review_status_var.set("ready_for_review")
+                    app.save_review_status()
+                    app.review_status_var.set("approved")
+                    app.save_review_status()
+
+                    app._switch_view("Matching Prep")
+                    app.asset_label_var.set("Transcript reference")
+                    app.asset_type_var.set("transcript_reference")
+                    app.asset_reference_var.set("E:/demo/transcript.txt")
+                    app.asset_notes_text.insert("1.0", "Transcript prepared for manual linking.")
+                    app.add_matching_prep_asset()
+
+                    app.candidate_block_var.set(app.candidate_block_combo["values"][0])
+                    app.candidate_asset_var.set(app.candidate_asset_combo["values"][0])
+                    app.candidate_note_var.set("Selected candidate with rationale.")
+                    app.add_matching_candidate_stub()
+
+                    app.candidate_stub_var.set(app.candidate_stub_combo["values"][0])
+                    app.on_candidate_stub_selected()
+                    app.candidate_status_var.set("selected")
+                    app.save_matching_candidate_status()
+                    app.candidate_rationale_var.set("It best captures the film's opening claim.")
+                    app.save_matching_candidate_rationale()
+
+                handoff = app.matching_prep_handoff.get("1.0", "end").strip()
+                self.assertIn("Preferred rationale: It best captures the film's opening claim.", handoff)
+            finally:
+                root.destroy()
+
+    def test_app_matching_prep_selected_candidate_rationale_falls_back_honestly(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Matching Rationale Fallback Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+
+                    project = app.project
+                    for block in list(project.semantic_blocks):
+                        project = app.store.update_semantic_block(
+                            project.project_dir,
+                            block["record_id"],
+                            block["title"],
+                            block["semantic_role"],
+                            "Editor clarification added.",
+                        )
+                    app._load_project_into_ui(project)
+                    app.review_status_var.set("ready_for_review")
+                    app.save_review_status()
+                    app.review_status_var.set("approved")
+                    app.save_review_status()
+
+                    app._switch_view("Matching Prep")
+                    app.asset_label_var.set("Transcript reference")
+                    app.asset_type_var.set("transcript_reference")
+                    app.asset_reference_var.set("E:/demo/transcript.txt")
+                    app.asset_notes_text.insert("1.0", "Transcript prepared for manual linking.")
+                    app.add_matching_prep_asset()
+
+                    app.candidate_block_var.set(app.candidate_block_combo["values"][0])
+                    app.candidate_asset_var.set(app.candidate_asset_combo["values"][0])
+                    app.candidate_note_var.set("Selected candidate without rationale.")
+                    app.add_matching_candidate_stub()
+
+                    app.candidate_stub_var.set(app.candidate_stub_combo["values"][0])
+                    app.on_candidate_stub_selected()
+                    app.candidate_status_var.set("selected")
+                    app.save_matching_candidate_status()
+
+                handoff = app.matching_prep_handoff.get("1.0", "end").strip()
+                self.assertIn("Preferred rationale: not recorded yet", handoff)
+            finally:
+                root.destroy()
+
+    def test_app_matching_prep_selected_candidate_rationale_survives_reload(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Matching Rationale Reload Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+
+                    project = app.project
+                    for block in list(project.semantic_blocks):
+                        project = app.store.update_semantic_block(
+                            project.project_dir,
+                            block["record_id"],
+                            block["title"],
+                            block["semantic_role"],
+                            "Editor clarification added.",
+                        )
+                    app._load_project_into_ui(project)
+                    app.review_status_var.set("ready_for_review")
+                    app.save_review_status()
+                    app.review_status_var.set("approved")
+                    app.save_review_status()
+
+                    app._switch_view("Matching Prep")
+                    app.asset_label_var.set("Transcript reference")
+                    app.asset_type_var.set("transcript_reference")
+                    app.asset_reference_var.set("E:/demo/transcript.txt")
+                    app.asset_notes_text.insert("1.0", "Transcript prepared for manual linking.")
+                    app.add_matching_prep_asset()
+
+                    app.candidate_block_var.set(app.candidate_block_combo["values"][0])
+                    app.candidate_asset_var.set(app.candidate_asset_combo["values"][0])
+                    app.candidate_note_var.set("Selected candidate after reload with rationale.")
+                    app.add_matching_candidate_stub()
+
+                    app.candidate_stub_var.set(app.candidate_stub_combo["values"][0])
+                    app.on_candidate_stub_selected()
+                    app.candidate_status_var.set("selected")
+                    app.save_matching_candidate_status()
+                    app.candidate_rationale_var.set("It keeps the strongest symbolic link.")
+                    app.save_matching_candidate_rationale()
+
+                reloaded_project = app.store.load_project(app.project.project_dir)
+                app._load_project_into_ui(reloaded_project)
+                app._switch_view("Matching Prep")
+                handoff = app.matching_prep_handoff.get("1.0", "end").strip()
+                self.assertIn("Preferred rationale: It keeps the strongest symbolic link.", handoff)
+            finally:
+                root.destroy()
+
+    def test_app_matching_prep_selected_candidate_rationale_remains_visible_when_gated(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Matching Rationale Gated Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+
+                    project = app.project
+                    for block in list(project.semantic_blocks):
+                        project = app.store.update_semantic_block(
+                            project.project_dir,
+                            block["record_id"],
+                            block["title"],
+                            block["semantic_role"],
+                            "Editor clarification added.",
+                        )
+                    app._load_project_into_ui(project)
+                    app.review_status_var.set("ready_for_review")
+                    app.save_review_status()
+                    app.review_status_var.set("approved")
+                    app.save_review_status()
+
+                    app._switch_view("Matching Prep")
+                    app.asset_label_var.set("Transcript reference")
+                    app.asset_type_var.set("transcript_reference")
+                    app.asset_reference_var.set("E:/demo/transcript.txt")
+                    app.asset_notes_text.insert("1.0", "Transcript prepared for manual linking.")
+                    app.add_matching_prep_asset()
+
+                    app.candidate_block_var.set(app.candidate_block_combo["values"][0])
+                    app.candidate_asset_var.set(app.candidate_asset_combo["values"][0])
+                    app.candidate_note_var.set("Selected candidate while gated with rationale.")
+                    app.add_matching_candidate_stub()
+
+                    app.candidate_stub_var.set(app.candidate_stub_combo["values"][0])
+                    app.on_candidate_stub_selected()
+                    app.candidate_status_var.set("selected")
+                    app.save_matching_candidate_status()
+                    app.candidate_rationale_var.set("It is the cleanest current manual proof choice.")
+                    app.save_matching_candidate_rationale()
+
+                    target_block_id = app.project.semantic_blocks[1]["record_id"]
+                    app._select_block_by_id(target_block_id)
+                    app.reorder_selected_block("up")
+                    app._switch_view("Matching Prep")
+
+                handoff = app.matching_prep_handoff.get("1.0", "end").strip()
+                self.assertIn("Preferred rationale: It is the cleanest current manual proof choice.", handoff)
             finally:
                 root.destroy()
 
