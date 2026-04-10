@@ -70,8 +70,10 @@ class DNAFilmApp:
         self.reopen_text = tk.StringVar(value="Reopen state: none")
         self.matching_prep_text = tk.StringVar(value="Matching prep readiness: blocked | semantic map not established yet")
         self.scene_matching_text = tk.StringVar(value="Scene matching readiness: blocked | no accepted reference available yet")
+        self.rough_cut_text = tk.StringVar(value="Rough cut readiness: blocked | no accepted reference available yet")
         self.scene_matching_reference_summary_text = tk.StringVar(value="Accepted scene reference stub: none created yet.")
         self.scene_matching_timecode_summary_text = tk.StringVar(value="Timecode range stub: none saved yet.")
+        self.rough_cut_segment_summary_text = tk.StringVar(value="Rough-cut segment stub: none saved yet.")
         self.matching_prep_status_text = tk.StringVar(value="Matching Prep is blocked until the semantic map is approved.")
         self.matching_prep_summary_text = tk.StringVar(value="Prep handoff: 0 approved semantic blocks available.")
         self.matching_asset_summary_text = tk.StringVar(value="Film-side registration: no prep inputs registered yet.")
@@ -105,6 +107,7 @@ class DNAFilmApp:
         self.scene_reference_label_var = tk.StringVar()
         self.timecode_start_var = tk.StringVar()
         self.timecode_end_var = tk.StringVar()
+        self.rough_cut_segment_label_var = tk.StringVar()
         self.candidate_block_options: dict[str, str] = {}
         self.candidate_asset_options: dict[str, str] = {}
         self.candidate_stub_options: dict[str, str] = {}
@@ -116,6 +119,7 @@ class DNAFilmApp:
         self._set_focus_navigation_enabled(False, False)
         self._set_matching_candidate_enabled(False, False, False)
         self._set_scene_matching_enabled(False)
+        self._set_rough_cut_enabled(False)
 
     def _build_layout(self) -> None:
         self.root.columnconfigure(1, weight=1)
@@ -137,10 +141,11 @@ class DNAFilmApp:
         ttk.Label(header, textvariable=self.reopen_text, wraplength=980).grid(row=9, column=0, sticky="w")
         ttk.Label(header, textvariable=self.matching_prep_text, wraplength=980).grid(row=10, column=0, sticky="w")
         ttk.Label(header, textvariable=self.scene_matching_text, wraplength=980).grid(row=11, column=0, sticky="w")
+        ttk.Label(header, textvariable=self.rough_cut_text, wraplength=980).grid(row=12, column=0, sticky="w")
 
         nav = ttk.Frame(self.root, padding=(12, 8))
         nav.grid(row=1, column=0, sticky="nsw")
-        for name in ("Project Home", "Source Intake", "Semantic Map", "Matching Prep", "Scene Matching"):
+        for name in ("Project Home", "Source Intake", "Semantic Map", "Matching Prep", "Scene Matching", "Rough Cut"):
             ttk.Button(nav, text=name, width=22, command=lambda item=name: self._switch_view(item)).pack(anchor="w", pady=4)
         for name in ("Output Tracks", "Export Center"):
             ttk.Button(nav, text=name, width=22, state="disabled").pack(anchor="w", pady=4)
@@ -224,6 +229,7 @@ class DNAFilmApp:
         self.views["Semantic Map"] = self._build_semantic_view(main)
         self.views["Matching Prep"] = self._build_matching_prep_view(main)
         self.views["Scene Matching"] = self._build_scene_matching_view(main)
+        self.views["Rough Cut"] = self._build_rough_cut_view(main)
 
         self.placeholder_view = ttk.Frame(main, padding=12)
         self.placeholder_view.grid(row=0, column=0, sticky="nsew")
@@ -256,9 +262,10 @@ class DNAFilmApp:
         ttk.Label(frame, textvariable=self.readiness_text, wraplength=700).grid(row=10, column=0, columnspan=2, sticky="w", pady=(4, 0))
         ttk.Label(frame, textvariable=self.matching_prep_text, wraplength=700).grid(row=11, column=0, columnspan=2, sticky="w", pady=(4, 0))
         ttk.Label(frame, textvariable=self.scene_matching_text, wraplength=700).grid(row=12, column=0, columnspan=2, sticky="w", pady=(4, 0))
-        ttk.Label(frame, textvariable=self.approval_message_text, wraplength=700).grid(row=13, column=0, columnspan=2, sticky="w", pady=(4, 0))
-        ttk.Label(frame, textvariable=self.approval_reason_text, wraplength=700).grid(row=14, column=0, columnspan=2, sticky="w", pady=(4, 0))
-        ttk.Label(frame, textvariable=self.reopen_text, wraplength=700).grid(row=15, column=0, columnspan=2, sticky="w", pady=(4, 0))
+        ttk.Label(frame, textvariable=self.rough_cut_text, wraplength=700).grid(row=13, column=0, columnspan=2, sticky="w", pady=(4, 0))
+        ttk.Label(frame, textvariable=self.approval_message_text, wraplength=700).grid(row=14, column=0, columnspan=2, sticky="w", pady=(4, 0))
+        ttk.Label(frame, textvariable=self.approval_reason_text, wraplength=700).grid(row=15, column=0, columnspan=2, sticky="w", pady=(4, 0))
+        ttk.Label(frame, textvariable=self.reopen_text, wraplength=700).grid(row=16, column=0, columnspan=2, sticky="w", pady=(4, 0))
         return frame
 
     def _build_intake_view(self, parent: ttk.Frame) -> ttk.Frame:
@@ -421,6 +428,33 @@ class DNAFilmApp:
         self.scene_matching_handoff = tk.Text(frame, height=18, wrap="word")
         self.scene_matching_handoff.grid(row=7, column=0, sticky="nsew")
         self.scene_matching_handoff.configure(state="disabled")
+        return frame
+
+
+    def _build_rough_cut_view(self, parent: ttk.Frame) -> ttk.Frame:
+        frame = ttk.Frame(parent, padding=12)
+        frame.grid(row=0, column=0, sticky="nsew")
+        frame.columnconfigure(0, weight=1)
+        frame.rowconfigure(5, weight=1)
+
+        ttk.Label(frame, text="Rough Cut", font=("Segoe UI", 14, "bold")).grid(row=0, column=0, sticky="w")
+        ttk.Label(frame, text="This is the first assembly-facing downstream lane. It opens only when one current accepted reference, accepted scene reference stub, and timecode range stub exist and stays explicitly provisional, local-first, pre-render, and pre-final-cut.", wraplength=760).grid(row=1, column=0, sticky="w", pady=(8, 6))
+        ttk.Label(frame, textvariable=self.rough_cut_text, wraplength=760).grid(row=2, column=0, sticky="w", pady=(0, 4))
+        ttk.Label(frame, textvariable=self.rough_cut_segment_summary_text, wraplength=760).grid(row=3, column=0, sticky="w", pady=(0, 8))
+
+        segment_frame = ttk.LabelFrame(frame, text="Rough-cut segment stub", padding=8)
+        segment_frame.grid(row=4, column=0, sticky="ew", pady=(0, 8))
+        segment_frame.columnconfigure(1, weight=1)
+        ttk.Label(segment_frame, text="Segment label").grid(row=0, column=0, sticky="w")
+        self.rough_cut_segment_label_entry = ttk.Entry(segment_frame, textvariable=self.rough_cut_segment_label_var, width=48)
+        self.rough_cut_segment_label_entry.grid(row=0, column=1, sticky="ew", padx=(8, 12))
+        self.save_rough_cut_segment_button = ttk.Button(segment_frame, text="Save Rough-Cut Segment Stub", command=self.save_rough_cut_segment_stub)
+        self.save_rough_cut_segment_button.grid(row=0, column=2, sticky="w")
+        ttk.Label(segment_frame, text="Assembly-facing stub only | not a real cut or render-ready output", wraplength=760).grid(row=1, column=0, columnspan=3, sticky="w", pady=(6, 0))
+
+        self.rough_cut_handoff = tk.Text(frame, height=18, wrap="word")
+        self.rough_cut_handoff.grid(row=5, column=0, sticky="nsew")
+        self.rough_cut_handoff.configure(state="disabled")
         return frame
 
 
@@ -786,7 +820,27 @@ class DNAFilmApp:
         self._switch_view("Scene Matching")
         self.timecode_start_var.set((project.timecode_range_stub or {}).get("start_timecode", ""))
         self.timecode_end_var.set((project.timecode_range_stub or {}).get("end_timecode", ""))
+        self.rough_cut_segment_label_var.set((project.rough_cut_segment_stub or {}).get("segment_label", ""))
         messagebox.showinfo("Scene Matching", "Timecode range stub was saved in the local project package.")
+
+    def save_rough_cut_segment_stub(self) -> None:
+        if self.project is None:
+            messagebox.showerror("Rough Cut", "Create or open a project first.")
+            return
+        try:
+            project = self.store.save_rough_cut_segment_stub(
+                self.project.project_dir,
+                self.rough_cut_segment_label_var.get(),
+            )
+        except ValueError as exc:
+            messagebox.showerror("Rough Cut", str(exc))
+            return
+
+        current_block_id = self.selected_block_id
+        self._load_project_into_ui(project, select_block_id=current_block_id)
+        self._switch_view("Rough Cut")
+        self.rough_cut_segment_label_var.set((project.rough_cut_segment_stub or {}).get("segment_label", ""))
+        messagebox.showinfo("Rough Cut", "Rough-cut segment stub was saved in the local project package.")
 
     def on_candidate_stub_selected(self, _event: object | None = None) -> None:
         if self.project is None:
@@ -848,8 +902,11 @@ class DNAFilmApp:
         self.matching_prep_text.set(matching_prep_gate)
         scene_matching_gate = self._scene_matching_gate_text(project)
         self.scene_matching_text.set(scene_matching_gate)
+        rough_cut_gate = self._rough_cut_gate_text(project)
+        self.rough_cut_text.set(rough_cut_gate)
         self._update_matching_prep_surface(project)
         self._update_scene_matching_surface(project)
+        self._update_rough_cut_surface(project)
         self._refresh_matching_candidate_controls(project)
         self.scene_reference_label_var.set((project.accepted_scene_reference_stub or {}).get("scene_reference_label", ""))
         self.timecode_start_var.set((project.timecode_range_stub or {}).get("start_timecode", ""))
@@ -858,7 +915,7 @@ class DNAFilmApp:
         warning_text = f"Warnings: {', '.join(warnings)}" if warnings else "Warnings: none"
         suitability_summary = self._project_suitability_summary(project)
         self.summary_text.set(
-            f"Project status: {project.project_record['project_status']} | Intake: {project.intake_record['intake_readiness']} | Semantic blocks: {len(project.semantic_blocks)} | Review: {project.semantic_review_record['review_status']} | Completeness: {completeness_label} | Readiness: {readiness} | {matching_prep_gate} | {scene_matching_gate} | Suitability: {suitability_summary} | {warning_text}"
+            f"Project status: {project.project_record['project_status']} | Intake: {project.intake_record['intake_readiness']} | Semantic blocks: {len(project.semantic_blocks)} | Review: {project.semantic_review_record['review_status']} | Completeness: {completeness_label} | Readiness: {readiness} | {matching_prep_gate} | {scene_matching_gate} | {rough_cut_gate} | Suitability: {suitability_summary} | {warning_text}"
         )
 
         self.analysis_text.delete("1.0", "end")
@@ -1078,6 +1135,12 @@ class DNAFilmApp:
         self.timecode_end_entry.configure(state=entry_state)
         self.save_timecode_button.configure(state=button_state)
 
+    def _set_rough_cut_enabled(self, enabled: bool) -> None:
+        entry_state = "normal" if enabled else "disabled"
+        button_state = "normal" if enabled else "disabled"
+        self.rough_cut_segment_label_entry.configure(state=entry_state)
+        self.save_rough_cut_segment_button.configure(state=button_state)
+
     def _set_editor_enabled(self, enabled: bool) -> None:
         entry_state = "normal" if enabled else "disabled"
         combo_state = "readonly" if enabled else "disabled"
@@ -1180,6 +1243,21 @@ class DNAFilmApp:
         state, reason = self._scene_matching_gate(project)
         return f"Scene matching readiness: {state} | {reason}"
 
+    def _rough_cut_gate(self, project: ProjectSlice) -> tuple[str, str]:
+        if project.accepted_reference is None:
+            return ("blocked", "no accepted reference available yet")
+        if project.accepted_scene_reference_stub is None:
+            return ("blocked", "no accepted scene reference stub available yet")
+        if project.timecode_range_stub is None:
+            return ("blocked", "no timecode range stub available yet")
+        if project.semantic_review_record.get("reopened_after_change"):
+            return ("blocked", "rough-cut handoff remains visible but upstream semantic approval was reopened")
+        return ("ready", "current downstream handoff chain available for first assembly-facing stub work")
+
+    def _rough_cut_gate_text(self, project: ProjectSlice) -> str:
+        state, reason = self._rough_cut_gate(project)
+        return f"Rough cut readiness: {state} | {reason}"
+
     def _refresh_matching_candidate_controls(self, project: ProjectSlice | None) -> None:
         if project is None:
             self.candidate_block_options = {}
@@ -1277,6 +1355,11 @@ class DNAFilmApp:
             return "Timecode range stub: none saved yet."
         return "Timecode range stub: current provisional temporal artifact exists for later assembly work."
 
+    def _rough_cut_segment_stub_summary(self, project: ProjectSlice) -> str:
+        if project.rough_cut_segment_stub is None:
+            return "Rough-cut segment stub: none saved yet."
+        return "Rough-cut segment stub: current assembly-facing artifact exists for later cut-building work."
+
     def _accepted_reference_lines(self, project: ProjectSlice) -> list[str]:
         accepted_reference = project.accepted_reference
         if accepted_reference is None:
@@ -1342,6 +1425,23 @@ class DNAFilmApp:
             f"  Scene-side source: {scene_label}",
             "  Temporal scope: provisional timecode range stub for later assembly only, not transcript-aligned timing or final edit output.",
             f"  Timecode range stub id: {timecode_range_stub.get('record_id', 'timecode-range-current')}",
+            "",
+        ]
+
+    def _rough_cut_segment_stub_lines(self, project: ProjectSlice) -> list[str]:
+        rough_cut_segment_stub = project.rough_cut_segment_stub
+        if rough_cut_segment_stub is None:
+            return ["- none saved yet", ""]
+        accepted_scene_reference_stub = project.accepted_scene_reference_stub or {}
+        scene_label = accepted_scene_reference_stub.get("scene_reference_label", "none")
+        return [
+            "",
+            f"- Segment label: {rough_cut_segment_stub.get('segment_label', 'none')}",
+            f"  Start: {rough_cut_segment_stub.get('start_timecode', 'none')}",
+            f"  End: {rough_cut_segment_stub.get('end_timecode', 'none')}",
+            f"  Scene-side source: {scene_label}",
+            "  Assembly scope: provisional rough-cut segment stub for later assembly only, not a real cut or render-ready output.",
+            f"  Rough-cut segment stub id: {rough_cut_segment_stub.get('record_id', 'rough-cut-segment-current')}",
             "",
         ]
 
@@ -1580,6 +1680,59 @@ class DNAFilmApp:
         self.scene_matching_handoff.insert("1.0", handoff_text)
         self.scene_matching_handoff.configure(state="disabled")
 
+    def _update_rough_cut_surface(self, project: ProjectSlice) -> None:
+        gate_state, gate_reason = self._rough_cut_gate(project)
+        accepted_reference_summary = self._accepted_reference_summary(project)
+        accepted_scene_reference_stub_summary = self._accepted_scene_reference_stub_summary(project)
+        timecode_range_stub_summary = self._timecode_range_stub_summary(project)
+        rough_cut_segment_stub_summary = self._rough_cut_segment_stub_summary(project)
+        self.rough_cut_segment_summary_text.set(rough_cut_segment_stub_summary)
+        self._set_rough_cut_enabled(gate_state == "ready")
+        if gate_state != "ready":
+            lines = [
+                "Rough Cut remains blocked in this project state.",
+                "",
+                f"Reason: {gate_reason}.",
+                accepted_reference_summary,
+                accepted_scene_reference_stub_summary,
+                timecode_range_stub_summary,
+                rough_cut_segment_stub_summary,
+                "",
+                "Current rough-cut segment stub",
+                *self._rough_cut_segment_stub_lines(project),
+                "Current timecode range stub",
+                *self._timecode_range_stub_lines(project),
+                "Current accepted scene reference stub",
+                *self._accepted_scene_reference_stub_lines(project),
+                "Current accepted reference handoff",
+                *self._accepted_reference_lines(project),
+                "This lane is assembly-facing only. It remains provisional, local-first, pre-render, and pre-final-cut and does not perform real editing yet.",
+            ]
+        else:
+            lines = [
+                "Rough Cut handoff is open.",
+                accepted_reference_summary,
+                accepted_scene_reference_stub_summary,
+                timecode_range_stub_summary,
+                rough_cut_segment_stub_summary,
+                "",
+                "Current rough-cut segment stub",
+                *self._rough_cut_segment_stub_lines(project),
+                "Current timecode range stub",
+                *self._timecode_range_stub_lines(project),
+                "Current accepted scene reference stub",
+                *self._accepted_scene_reference_stub_lines(project),
+                "Current accepted reference for assembly-facing work",
+                *self._accepted_reference_lines(project),
+                "This lane is the first honest entry into rough-cut-facing work.",
+                "It remains provisional, local-first, pre-render, and not a final cut.",
+            ]
+        handoff_text = "\n".join(lines).rstrip()
+        self.rough_cut_handoff.configure(state="normal")
+        self.rough_cut_handoff.delete("1.0", "end")
+        self.rough_cut_handoff.insert("1.0", handoff_text)
+        self.rough_cut_handoff.configure(state="disabled")
+
     def _suitability_summary(self, block: dict) -> str:
         short = {
             "long_video": "LV",
@@ -1614,6 +1767,9 @@ class DNAFilmApp:
             return "Next action: Load analysis text"
         review_status = project.semantic_review_record["review_status"]
         readiness = self._approval_readiness(project)
+        rough_cut_state, _ = self._rough_cut_gate(project)
+        if rough_cut_state == "ready":
+            return "Next action: Open Rough Cut"
         if project.accepted_reference is not None and not project.semantic_review_record.get("reopened_after_change"):
             return "Next action: Open Scene Matching"
         if review_status == "approved":

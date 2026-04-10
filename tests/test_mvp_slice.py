@@ -26,6 +26,47 @@ This second paragraph is long enough to keep the intake accepted while still lea
 
 
 class ProjectSliceStoreTests(unittest.TestCase):
+    def _build_scene_matching_ready_project(self, store: ProjectSliceStore, title: str):
+        project = store.create_project(title, film_title="Demo Film", language="en")
+        project = store.save_analysis_text(project.project_dir, SAMPLE_ANALYSIS)
+        for block in list(project.semantic_blocks):
+            project = store.update_semantic_block(
+                project.project_dir,
+                block["record_id"],
+                block["title"],
+                block["semantic_role"],
+                "Editor clarification added.",
+            )
+        project = store.update_semantic_review_status(project.project_dir, "ready_for_review")
+        project = store.update_semantic_review_status(project.project_dir, "approved")
+        project = store.add_matching_prep_asset(
+            project.project_dir,
+            "Main subtitle file",
+            "subtitle_reference",
+            "E:/demo/subtitles.srt",
+            "Primary subtitle reference.",
+        )
+        project = store.add_matching_candidate_stub(
+            project.project_dir,
+            project.semantic_blocks[0]["record_id"],
+            project.matching_prep_assets[0]["record_id"],
+            "Accepted prep reference feeds downstream stub.",
+        )
+        project = store.update_matching_candidate_stub_status(
+            project.project_dir,
+            project.matching_candidate_stubs[0]["record_id"],
+            "selected",
+        )
+        return store.promote_matching_candidate_stub_to_accepted_reference(
+            project.project_dir,
+            project.matching_candidate_stubs[0]["record_id"],
+        )
+
+    def _build_timecode_ready_project(self, store: ProjectSliceStore, title: str):
+        project = self._build_scene_matching_ready_project(store, title)
+        project = store.save_accepted_scene_reference_stub(project.project_dir, "Opening courtroom exchange")
+        return store.save_timecode_range_stub(project.project_dir, "00:00:10", "00:00:18")
+
     def test_create_project_and_build_semantic_map(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             store = ProjectSliceStore(Path(temp_dir))
@@ -1125,6 +1166,129 @@ class ProjectSliceStoreTests(unittest.TestCase):
             reloaded = store.load_project(dropped.project_dir)
             self.assertIsNone(reloaded.timecode_range_stub)
 
+    def test_rough_cut_segment_stub_creation_is_blocked_without_accepted_reference(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = store.create_project("Rough Cut Missing Accepted Reference", film_title="Demo Film", language="en")
+
+            with self.assertRaisesRegex(ValueError, "blocked until one current accepted reference exists"):
+                store.save_rough_cut_segment_stub(project.project_dir, "Opening segment")
+
+    def test_rough_cut_segment_stub_creation_is_blocked_without_accepted_scene_reference_stub(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = self._build_scene_matching_ready_project(store, "Rough Cut Missing Scene Reference")
+
+            with self.assertRaisesRegex(ValueError, "blocked until one current accepted scene reference stub exists"):
+                store.save_rough_cut_segment_stub(project.project_dir, "Opening segment")
+
+    def test_rough_cut_segment_stub_creation_is_blocked_without_timecode_range_stub(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = self._build_scene_matching_ready_project(store, "Rough Cut Missing Timecode")
+            project = store.save_accepted_scene_reference_stub(project.project_dir, "Opening courtroom exchange")
+
+            with self.assertRaisesRegex(ValueError, "blocked until one current timecode range stub exists"):
+                store.save_rough_cut_segment_stub(project.project_dir, "Opening segment")
+
+    def test_rough_cut_segment_stub_can_be_saved_and_persist_after_reload(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = self._build_timecode_ready_project(store, "Rough Cut Save Map")
+
+            saved = store.save_rough_cut_segment_stub(project.project_dir, "Opening segment")
+
+            self.assertIsNotNone(saved.rough_cut_segment_stub)
+            self.assertEqual(saved.rough_cut_segment_stub["segment_label"], "Opening segment")
+            self.assertEqual(saved.rough_cut_segment_stub["start_timecode"], "00:00:10")
+            self.assertTrue((saved.project_dir / "records" / "rough_cut" / "rough_cut_segment_stub.json").exists())
+
+            reloaded = store.load_project(saved.project_dir)
+            self.assertIsNotNone(reloaded.rough_cut_segment_stub)
+            self.assertEqual(reloaded.rough_cut_segment_stub["record_type"], "rough_cut_segment_stub")
+            self.assertEqual(reloaded.rough_cut_segment_stub["source_timecode_range_stub_id"], "timecode-range-current")
+
+    def test_newer_rough_cut_segment_stub_replaces_prior_one(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = self._build_timecode_ready_project(store, "Rough Cut Replacement Map")
+            project = store.save_rough_cut_segment_stub(project.project_dir, "Opening segment")
+
+            replaced = store.save_rough_cut_segment_stub(project.project_dir, "Tighter opening segment")
+
+            self.assertIsNotNone(replaced.rough_cut_segment_stub)
+            self.assertEqual(replaced.rough_cut_segment_stub["segment_label"], "Tighter opening segment")
+            self.assertEqual(replaced.rough_cut_segment_stub["record_id"], "rough-cut-segment-current")
+
+    def test_rough_cut_segment_stub_disappears_when_accepted_reference_becomes_unavailable(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = self._build_timecode_ready_project(store, "Rough Cut Accepted Reference Drop")
+            project = store.save_rough_cut_segment_stub(project.project_dir, "Opening segment")
+
+            dropped = store.update_matching_candidate_stub_status(project.project_dir, project.matching_candidate_stubs[0]["record_id"], "tentative")
+
+            self.assertIsNone(dropped.accepted_reference)
+            self.assertIsNone(dropped.rough_cut_segment_stub)
+            reloaded = store.load_project(dropped.project_dir)
+            self.assertIsNone(reloaded.rough_cut_segment_stub)
+
+    def test_rough_cut_segment_stub_disappears_when_accepted_scene_reference_stub_becomes_unavailable(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = self._build_timecode_ready_project(store, "Rough Cut Scene Reference Drop")
+            project = store.add_matching_prep_asset(
+                project.project_dir,
+                "Second subtitle file",
+                "subtitle_reference",
+                "E:/demo/subtitles_alt.srt",
+                "Alternate subtitle reference.",
+            )
+            project = store.add_matching_candidate_stub(
+                project.project_dir,
+                project.semantic_blocks[1]["record_id"],
+                project.matching_prep_assets[1]["record_id"],
+                "Alternate candidate for replacement.",
+            )
+            project = store.update_matching_candidate_stub_status(project.project_dir, project.matching_candidate_stubs[1]["record_id"], "selected")
+            project = store.save_rough_cut_segment_stub(project.project_dir, "Opening segment")
+
+            replaced = store.promote_matching_candidate_stub_to_accepted_reference(project.project_dir, project.matching_candidate_stubs[1]["record_id"])
+
+            self.assertIsNotNone(replaced.accepted_reference)
+            self.assertIsNone(replaced.accepted_scene_reference_stub)
+            self.assertIsNone(replaced.timecode_range_stub)
+            self.assertIsNone(replaced.rough_cut_segment_stub)
+
+    def test_rough_cut_segment_stub_disappears_when_timecode_range_stub_becomes_unavailable(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = self._build_timecode_ready_project(store, "Rough Cut Timecode Drop")
+            project = store.save_rough_cut_segment_stub(project.project_dir, "Opening segment")
+
+            now = project.manifest["updated_at"]
+            store._write_project_state(
+                project.project_dir,
+                dict(project.manifest),
+                dict(project.project_record),
+                dict(project.intake_record),
+                store._copy_analysis_record(project.analysis_source_record, now),
+                dict(project.semantic_review_record),
+                project.semantic_blocks,
+                project.matching_prep_assets,
+                project.matching_candidate_stubs,
+                project.accepted_reference,
+                project.accepted_scene_reference_stub,
+                None,
+                project.rough_cut_segment_stub,
+            )
+            dropped = store.load_project(project.project_dir)
+
+            self.assertIsNotNone(dropped.accepted_reference)
+            self.assertIsNotNone(dropped.accepted_scene_reference_stub)
+            self.assertIsNone(dropped.timecode_range_stub)
+            self.assertIsNone(dropped.rough_cut_segment_stub)
+
     def test_analysis_text_must_be_meaningful(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             store = ProjectSliceStore(Path(temp_dir))
@@ -1135,6 +1299,52 @@ class ProjectSliceStoreTests(unittest.TestCase):
 
 
 class DNAFilmAppTests(unittest.TestCase):
+    def _build_timecode_ready_app_project(self, app: DNAFilmApp, title: str) -> None:
+        app.project_name_var.set(title)
+        app.film_title_var.set("Demo Film")
+        app.language_var.set("en")
+        app.create_project()
+        app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+        app.save_analysis_text()
+
+        project = app.project
+        for block in list(project.semantic_blocks):
+            project = app.store.update_semantic_block(
+                project.project_dir,
+                block["record_id"],
+                block["title"],
+                block["semantic_role"],
+                "Editor clarification added.",
+            )
+        app._load_project_into_ui(project)
+        app.review_status_var.set("ready_for_review")
+        app.save_review_status()
+        app.review_status_var.set("approved")
+        app.save_review_status()
+
+        app._switch_view("Matching Prep")
+        app.asset_label_var.set("Main subtitle file")
+        app.asset_type_var.set("subtitle_reference")
+        app.asset_reference_var.set("E:/demo/subtitles.srt")
+        app.asset_notes_text.insert("1.0", "Subtitle reference for downstream chain.")
+        app.add_matching_prep_asset()
+        app.candidate_block_var.set(app.candidate_block_combo["values"][0])
+        app.candidate_asset_var.set(app.candidate_asset_combo["values"][0])
+        app.candidate_note_var.set("Accepted prep reference feeds downstream chain.")
+        app.add_matching_candidate_stub()
+        app.candidate_stub_var.set(app.candidate_stub_combo["values"][0])
+        app.on_candidate_stub_selected()
+        app.candidate_status_var.set("selected")
+        app.save_matching_candidate_status()
+        app.promote_matching_candidate_to_accepted_reference()
+
+        app._switch_view("Scene Matching")
+        app.scene_reference_label_var.set("Opening courtroom exchange")
+        app.save_accepted_scene_reference_stub()
+        app.timecode_start_var.set("00:00:10")
+        app.timecode_end_var.set("00:00:18")
+        app.save_timecode_range_stub()
+
     def test_app_shows_blocked_approval_reason(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = tk.Tk()
@@ -2860,6 +3070,137 @@ class DNAFilmAppTests(unittest.TestCase):
                 self.assertEqual(reloaded.matching_candidate_stubs[0]["review_status"], "selected")
                 self.assertEqual(reloaded.matching_candidate_stubs[1]["record_id"], "candidate-stub-002")
                 self.assertEqual(reloaded.matching_candidate_stubs[1]["review_status"], "rejected")
+            finally:
+                root.destroy()
+
+    def test_app_rough_cut_view_stays_blocked_without_prerequisites(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Rough Cut Blocked Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+                    project = app.project
+                    for block in list(project.semantic_blocks):
+                        project = app.store.update_semantic_block(
+                            project.project_dir,
+                            block["record_id"],
+                            block["title"],
+                            block["semantic_role"],
+                            "Editor clarification added.",
+                        )
+                    app._load_project_into_ui(project)
+                    app.review_status_var.set("ready_for_review")
+                    app.save_review_status()
+                    app.review_status_var.set("approved")
+                    app.save_review_status()
+
+                app._switch_view("Rough Cut")
+                handoff = app.rough_cut_handoff.get("1.0", "end").strip()
+                self.assertEqual(app.current_view.get(), "Rough Cut")
+                self.assertIn("Rough Cut remains blocked", handoff)
+                self.assertIn("Rough-cut segment stub: none saved yet.", app.rough_cut_segment_summary_text.get())
+            finally:
+                root.destroy()
+
+    def test_app_rough_cut_view_opens_with_prerequisites(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    self._build_timecode_ready_app_project(app, "UI Rough Cut Open Map")
+
+                app._switch_view("Rough Cut")
+                handoff = app.rough_cut_handoff.get("1.0", "end").strip()
+                self.assertEqual(app.rough_cut_text.get(), "Rough cut readiness: ready | current downstream handoff chain available for first assembly-facing stub work")
+                self.assertIn("Rough Cut handoff is open.", handoff)
+                self.assertIn("Timecode range stub: current provisional temporal artifact exists", handoff)
+            finally:
+                root.destroy()
+
+    def test_app_rough_cut_shows_saved_segment_stub(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    self._build_timecode_ready_app_project(app, "UI Rough Cut Save Map")
+                    app._switch_view("Rough Cut")
+                    app.rough_cut_segment_label_var.set("Opening segment")
+                    app.save_rough_cut_segment_stub()
+
+                handoff = app.rough_cut_handoff.get("1.0", "end").strip()
+                self.assertIn("current assembly-facing artifact exists", app.rough_cut_segment_summary_text.get())
+                self.assertIn("Current rough-cut segment stub", handoff)
+                self.assertIn("Segment label: Opening segment", handoff)
+                self.assertIn("not a real cut or render-ready output", handoff)
+            finally:
+                root.destroy()
+
+    def test_app_rough_cut_segment_stub_survives_reload(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    self._build_timecode_ready_app_project(app, "UI Rough Cut Reload Map")
+                    app._switch_view("Rough Cut")
+                    app.rough_cut_segment_label_var.set("Opening segment")
+                    app.save_rough_cut_segment_stub()
+
+                reloaded = app.store.load_project(app.project.project_dir)
+                app._load_project_into_ui(reloaded)
+                app._switch_view("Rough Cut")
+                handoff = app.rough_cut_handoff.get("1.0", "end").strip()
+                self.assertIn("Segment label: Opening segment", handoff)
+            finally:
+                root.destroy()
+
+    def test_app_rough_cut_segment_stub_remains_readable_when_semantic_lane_reopens(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    self._build_timecode_ready_app_project(app, "UI Rough Cut Reopen Map")
+                    app._switch_view("Rough Cut")
+                    app.rough_cut_segment_label_var.set("Opening segment")
+                    app.save_rough_cut_segment_stub()
+                    target_block_id = app.project.semantic_blocks[1]["record_id"]
+                    app._select_block_by_id(target_block_id)
+                    app.reorder_selected_block("up")
+
+                app._switch_view("Rough Cut")
+                handoff = app.rough_cut_handoff.get("1.0", "end").strip()
+                self.assertEqual(app.rough_cut_text.get(), "Rough cut readiness: blocked | rough-cut handoff remains visible but upstream semantic approval was reopened")
+                self.assertIn("Rough Cut remains blocked", handoff)
+                self.assertIn("Segment label: Opening segment", handoff)
             finally:
                 root.destroy()
 

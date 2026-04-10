@@ -1,3 +1,21 @@
+## 2026-04-10 - F-034 completed and the runtime gained its first assembly-facing rough-cut segment stub
+
+### Completed
+- completed the first rough cut segment stub slice as one bounded follow-up to the accepted scene reference and timecode range chain;
+- added one singular persisted `rough_cut_segment_stub` that can be saved only from the current accepted reference, accepted scene reference stub, and timecode range stub while the downstream chain remains open;
+- surfaced one real `Rough Cut` runtime lane with blocked/open honesty, one compact segment-label save control, and dominant assembly-facing handoff visibility;
+- reconciled the rough-cut segment stub against upstream accepted-reference, accepted-scene-reference, and timecode invalidation so stale assembly-facing state does not persist;
+- verified store-level guards, creation, replacement, persistence, invalidation, and app-level blocked/open/reload/reopen visibility through local tests;
+- synchronized the repository state layer after real implementation progress.
+
+### Repository effect
+- the runtime now crosses from scene-side and temporal downstream artifacts into the first explicit assembly-facing artifact rather than stopping before rough-cut-facing work;
+- the repository gained one honest rough-cut handoff boundary without opening real editing, media processing, render/export, backend, or workflow-engine semantics;
+- the next bounded packet should now be selected by manager review against current repository capability rather than assumed by inertia.
+
+### Recommended next step
+ChatGPT should select the next strongest bounded packet after `F-034`, based on the fact that the runtime now reaches the first singular assembly-facing downstream artifact.
+
 ## 2026-04-10 - F-033 completed and Scene Matching gained timecode readability and sanity guard
 
 ### Completed

@@ -1,16 +1,22 @@
 # Codex Tasks
 
 Last updated: 2026-04-10
-Current focus: manager review and next bounded packet selection after F-033
+Current focus: manager review and next bounded packet selection after F-034
 
 ## Working rule
 Tasks should be bounded, product-visible, and small enough to preserve continuity without turning the repository into micro-slice overload.
 
 ## Active task
 
-- No new implementation packet is active until ChatGPT selects the next bounded step after reviewing the completed `F-033` handoff.
+- No new implementation packet is active until ChatGPT selects the next bounded step after reviewing the completed `F-034` handoff.
 
 ## Completed tasks
+
+### F-034
+- Status: completed
+- Module: first rough cut segment stub slice
+- Goal: add one bounded local-first `rough_cut_segment_stub` so the current accepted scene-side and temporal downstream chain can become one first assembly-facing artifact without drifting into real editing, media processing, render/export, backend, or workflow buildout.
+- Outcome: added one singular persisted rough-cut segment stub in a real `Rough Cut` runtime lane, restricted stub creation to the current accepted-reference plus accepted-scene-reference plus timecode-range chain while the lane is open, replaced prior stub cleanly on newer save, reconciled the stub against upstream accepted-reference, scene-reference, and timecode invalidation, surfaced blocked/open assembly-facing handoff visibility, verified store-level and app-level behavior through local tests, and kept the packet intentionally narrow.
 
 ### F-033
 - Status: completed
