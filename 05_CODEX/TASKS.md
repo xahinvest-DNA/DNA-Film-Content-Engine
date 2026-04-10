@@ -1,16 +1,22 @@
 # Codex Tasks
 
 Last updated: 2026-04-10
-Current focus: manager review and next bounded packet selection after F-031
+Current focus: manager review and next bounded packet selection after F-032
 
 ## Working rule
 Tasks should be bounded, product-visible, and small enough to preserve continuity without turning the repository into micro-slice overload.
 
 ## Active task
 
-- No new implementation packet is active until ChatGPT selects the next bounded step after reviewing the completed `F-031` handoff.
+- No new implementation packet is active until ChatGPT selects the next bounded step after reviewing the completed `F-032` handoff.
 
 ## Completed tasks
+
+### F-032
+- Status: completed
+- Module: first timecode range stub slice
+- Goal: add one bounded local-first timecode range stub inside `Scene Matching` so the current accepted scene reference stub can become one explicit temporal downstream artifact without drifting into transcript alignment, automatic matching, confidence engines, backend, or workflow-engine buildout.
+- Outcome: added one singular persisted timecode range stub in the `Scene Matching` lane, restricted stub creation to the current accepted scene reference stub while the lane is open, replaced prior stub cleanly on newer save, reconciled the stub against upstream scene-reference invalidation, surfaced timecode-range present/absent state plus dominant temporal handoff visibility in open and blocked-after-reopen states, verified store-level creation/replacement/persistence/invalidation rules and app-level visibility through local tests, and kept the packet intentionally narrow.
 
 ### F-031
 - Status: completed

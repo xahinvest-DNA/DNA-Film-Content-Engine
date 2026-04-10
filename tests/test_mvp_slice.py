@@ -692,6 +692,167 @@ class ProjectSliceStoreTests(unittest.TestCase):
             self.assertEqual(replaced.accepted_scene_reference_stub["scene_reference_label"], "Reframed close-up on the same exchange")
             self.assertEqual(replaced.accepted_scene_reference_stub["record_id"], "accepted-scene-reference-current")
 
+    def test_timecode_range_stub_creation_is_blocked_without_accepted_scene_reference_stub(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = store.create_project("Timecode Guard", film_title="Demo Film", language="en")
+
+            with self.assertRaisesRegex(ValueError, "blocked until one current accepted scene reference stub exists"):
+                store.save_timecode_range_stub(project.project_dir, "00:00:10", "00:00:18")
+
+    def test_timecode_range_stub_can_be_saved_and_persist_after_reload(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = store.create_project("Timecode Stub Map", film_title="Demo Film", language="en")
+            project = store.save_analysis_text(project.project_dir, SAMPLE_ANALYSIS)
+
+            for block in list(project.semantic_blocks):
+                project = store.update_semantic_block(
+                    project.project_dir,
+                    block["record_id"],
+                    block["title"],
+                    block["semantic_role"],
+                    "Editor clarification added.",
+                )
+
+            project = store.update_semantic_review_status(project.project_dir, "ready_for_review")
+            project = store.update_semantic_review_status(project.project_dir, "approved")
+            project = store.add_matching_prep_asset(
+                project.project_dir,
+                "Main subtitle file",
+                "subtitle_reference",
+                "E:/demo/subtitles.srt",
+                "Primary subtitle reference.",
+            )
+            project = store.add_matching_candidate_stub(
+                project.project_dir,
+                project.semantic_blocks[0]["record_id"],
+                project.matching_prep_assets[0]["record_id"],
+                "Accepted prep reference feeds timecode stub.",
+            )
+            project = store.update_matching_candidate_stub_status(
+                project.project_dir,
+                project.matching_candidate_stubs[0]["record_id"],
+                "selected",
+            )
+            project = store.promote_matching_candidate_stub_to_accepted_reference(
+                project.project_dir,
+                project.matching_candidate_stubs[0]["record_id"],
+            )
+            project = store.save_accepted_scene_reference_stub(project.project_dir, "Opening courtroom exchange")
+
+            saved = store.save_timecode_range_stub(project.project_dir, "00:00:10", "00:00:18")
+
+            self.assertIsNotNone(saved.timecode_range_stub)
+            self.assertEqual(saved.timecode_range_stub["start_timecode"], "00:00:10")
+            self.assertEqual(saved.timecode_range_stub["end_timecode"], "00:00:18")
+            self.assertEqual(saved.timecode_range_stub["source_candidate_stub_id"], saved.accepted_scene_reference_stub["source_candidate_stub_id"])
+            self.assertTrue((saved.project_dir / "records" / "scene_matching" / "timecode_range_stub.json").exists())
+
+            reloaded = store.load_project(saved.project_dir)
+            self.assertIsNotNone(reloaded.timecode_range_stub)
+            self.assertEqual(reloaded.timecode_range_stub["start_timecode"], "00:00:10")
+            self.assertEqual(reloaded.timecode_range_stub["record_type"], "timecode_range_stub")
+
+    def test_newer_timecode_range_stub_replaces_prior_one(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = store.create_project("Timecode Stub Replacement", film_title="Demo Film", language="en")
+            project = store.save_analysis_text(project.project_dir, SAMPLE_ANALYSIS)
+
+            for block in list(project.semantic_blocks):
+                project = store.update_semantic_block(
+                    project.project_dir,
+                    block["record_id"],
+                    block["title"],
+                    block["semantic_role"],
+                    "Editor clarification added.",
+                )
+
+            project = store.update_semantic_review_status(project.project_dir, "ready_for_review")
+            project = store.update_semantic_review_status(project.project_dir, "approved")
+            project = store.add_matching_prep_asset(
+                project.project_dir,
+                "Main subtitle file",
+                "subtitle_reference",
+                "E:/demo/subtitles.srt",
+                "Primary subtitle reference.",
+            )
+            project = store.add_matching_candidate_stub(
+                project.project_dir,
+                project.semantic_blocks[0]["record_id"],
+                project.matching_prep_assets[0]["record_id"],
+                "Accepted prep reference feeds timecode stub.",
+            )
+            project = store.update_matching_candidate_stub_status(
+                project.project_dir,
+                project.matching_candidate_stubs[0]["record_id"],
+                "selected",
+            )
+            project = store.promote_matching_candidate_stub_to_accepted_reference(
+                project.project_dir,
+                project.matching_candidate_stubs[0]["record_id"],
+            )
+            project = store.save_accepted_scene_reference_stub(project.project_dir, "Opening courtroom exchange")
+            project = store.save_timecode_range_stub(project.project_dir, "00:00:10", "00:00:18")
+
+            replaced = store.save_timecode_range_stub(project.project_dir, "00:00:12", "00:00:22")
+
+            self.assertIsNotNone(replaced.timecode_range_stub)
+            self.assertEqual(replaced.timecode_range_stub["start_timecode"], "00:00:12")
+            self.assertEqual(replaced.timecode_range_stub["end_timecode"], "00:00:22")
+            self.assertEqual(replaced.timecode_range_stub["record_id"], "timecode-range-current")
+
+    def test_timecode_range_stub_disappears_when_scene_reference_stub_becomes_unavailable(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = store.create_project("Timecode Stub Invalidation", film_title="Demo Film", language="en")
+            project = store.save_analysis_text(project.project_dir, SAMPLE_ANALYSIS)
+
+            for block in list(project.semantic_blocks):
+                project = store.update_semantic_block(
+                    project.project_dir,
+                    block["record_id"],
+                    block["title"],
+                    block["semantic_role"],
+                    "Editor clarification added.",
+                )
+
+            project = store.update_semantic_review_status(project.project_dir, "ready_for_review")
+            project = store.update_semantic_review_status(project.project_dir, "approved")
+            project = store.add_matching_prep_asset(
+                project.project_dir,
+                "Main subtitle file",
+                "subtitle_reference",
+                "E:/demo/subtitles.srt",
+                "Primary subtitle reference.",
+            )
+            project = store.add_matching_candidate_stub(
+                project.project_dir,
+                project.semantic_blocks[0]["record_id"],
+                project.matching_prep_assets[0]["record_id"],
+                "Accepted prep reference feeds timecode stub.",
+            )
+            project = store.update_matching_candidate_stub_status(
+                project.project_dir,
+                project.matching_candidate_stubs[0]["record_id"],
+                "selected",
+            )
+            project = store.promote_matching_candidate_stub_to_accepted_reference(
+                project.project_dir,
+                project.matching_candidate_stubs[0]["record_id"],
+            )
+            project = store.save_accepted_scene_reference_stub(project.project_dir, "Opening courtroom exchange")
+            project = store.save_timecode_range_stub(project.project_dir, "00:00:10", "00:00:18")
+
+            dropped = store.update_matching_candidate_stub_status(project.project_dir, project.matching_candidate_stubs[0]["record_id"], "tentative")
+
+            self.assertIsNone(dropped.accepted_reference)
+            self.assertIsNone(dropped.accepted_scene_reference_stub)
+            self.assertIsNone(dropped.timecode_range_stub)
+            reloaded = store.load_project(dropped.project_dir)
+            self.assertIsNone(reloaded.timecode_range_stub)
+
     def test_analysis_text_must_be_meaningful(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             store = ProjectSliceStore(Path(temp_dir))
@@ -1882,6 +2043,269 @@ class DNAFilmAppTests(unittest.TestCase):
                 self.assertEqual(app.scene_matching_text.get(), "Scene matching readiness: blocked | accepted reference remains visible but upstream semantic approval was reopened")
                 self.assertIn("current scene-side artifact exists", app.scene_matching_reference_summary_text.get())
                 self.assertIn("Opening courtroom exchange", handoff)
+                self.assertIn("Scene Matching remains blocked", handoff)
+            finally:
+                root.destroy()
+
+    def test_app_scene_matching_shows_timecode_range_stub(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Timecode Stub Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+
+                    project = app.project
+                    for block in list(project.semantic_blocks):
+                        project = app.store.update_semantic_block(
+                            project.project_dir,
+                            block["record_id"],
+                            block["title"],
+                            block["semantic_role"],
+                            "Editor clarification added.",
+                        )
+                    app._load_project_into_ui(project)
+                    app.review_status_var.set("ready_for_review")
+                    app.save_review_status()
+                    app.review_status_var.set("approved")
+                    app.save_review_status()
+
+                    app._switch_view("Matching Prep")
+                    app.asset_label_var.set("Main subtitle file")
+                    app.asset_type_var.set("subtitle_reference")
+                    app.asset_reference_var.set("E:/demo/subtitles.srt")
+                    app.asset_notes_text.insert("1.0", "Subtitle reference for timecode stub.")
+                    app.add_matching_prep_asset()
+                    app.candidate_block_var.set(app.candidate_block_combo["values"][0])
+                    app.candidate_asset_var.set(app.candidate_asset_combo["values"][0])
+                    app.candidate_note_var.set("Accepted prep reference feeds timecode stub.")
+                    app.add_matching_candidate_stub()
+                    app.candidate_stub_var.set(app.candidate_stub_combo["values"][0])
+                    app.on_candidate_stub_selected()
+                    app.candidate_status_var.set("selected")
+                    app.save_matching_candidate_status()
+                    app.candidate_rationale_var.set("Temporal stub should become reusable downstream.")
+                    app.save_matching_candidate_rationale()
+                    app.promote_matching_candidate_to_accepted_reference()
+
+                    app._switch_view("Scene Matching")
+                    app.scene_reference_label_var.set("Opening courtroom exchange")
+                    app.save_accepted_scene_reference_stub()
+                    app.timecode_start_var.set("00:00:10")
+                    app.timecode_end_var.set("00:00:18")
+                    app.save_timecode_range_stub()
+
+                handoff = app.scene_matching_handoff.get("1.0", "end").strip()
+                self.assertIn("current provisional temporal artifact exists", app.scene_matching_timecode_summary_text.get())
+                self.assertIn("Current timecode range stub", handoff)
+                self.assertIn("Start: 00:00:10", handoff)
+                self.assertIn("End: 00:00:18", handoff)
+                self.assertIn("provisional timecode range stub for later assembly only", handoff)
+            finally:
+                root.destroy()
+
+    def test_app_timecode_range_stub_survives_reload(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Timecode Reload Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+
+                    project = app.project
+                    for block in list(project.semantic_blocks):
+                        project = app.store.update_semantic_block(
+                            project.project_dir,
+                            block["record_id"],
+                            block["title"],
+                            block["semantic_role"],
+                            "Editor clarification added.",
+                        )
+                    app._load_project_into_ui(project)
+                    app.review_status_var.set("ready_for_review")
+                    app.save_review_status()
+                    app.review_status_var.set("approved")
+                    app.save_review_status()
+
+                    app._switch_view("Matching Prep")
+                    app.asset_label_var.set("Transcript reference")
+                    app.asset_type_var.set("transcript_reference")
+                    app.asset_reference_var.set("E:/demo/transcript.txt")
+                    app.asset_notes_text.insert("1.0", "Transcript reference for timecode reload.")
+                    app.add_matching_prep_asset()
+                    app.candidate_block_var.set(app.candidate_block_combo["values"][0])
+                    app.candidate_asset_var.set(app.candidate_asset_combo["values"][0])
+                    app.candidate_note_var.set("Accepted prep reference survives with timecode.")
+                    app.add_matching_candidate_stub()
+                    app.candidate_stub_var.set(app.candidate_stub_combo["values"][0])
+                    app.on_candidate_stub_selected()
+                    app.candidate_status_var.set("selected")
+                    app.save_matching_candidate_status()
+                    app.promote_matching_candidate_to_accepted_reference()
+
+                    app._switch_view("Scene Matching")
+                    app.scene_reference_label_var.set("Opening courtroom exchange")
+                    app.save_accepted_scene_reference_stub()
+                    app.timecode_start_var.set("00:00:10")
+                    app.timecode_end_var.set("00:00:18")
+                    app.save_timecode_range_stub()
+
+                reloaded = app.store.load_project(app.project.project_dir)
+                app._load_project_into_ui(reloaded)
+                app._switch_view("Scene Matching")
+                handoff = app.scene_matching_handoff.get("1.0", "end").strip()
+                self.assertIn("Start: 00:00:10", handoff)
+                self.assertIn("End: 00:00:18", handoff)
+            finally:
+                root.destroy()
+
+    def test_app_timecode_range_stub_disappears_when_upstream_scene_reference_disappears(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Timecode Drop Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+
+                    project = app.project
+                    for block in list(project.semantic_blocks):
+                        project = app.store.update_semantic_block(
+                            project.project_dir,
+                            block["record_id"],
+                            block["title"],
+                            block["semantic_role"],
+                            "Editor clarification added.",
+                        )
+                    app._load_project_into_ui(project)
+                    app.review_status_var.set("ready_for_review")
+                    app.save_review_status()
+                    app.review_status_var.set("approved")
+                    app.save_review_status()
+
+                    app._switch_view("Matching Prep")
+                    app.asset_label_var.set("Transcript reference")
+                    app.asset_type_var.set("transcript_reference")
+                    app.asset_reference_var.set("E:/demo/transcript.txt")
+                    app.asset_notes_text.insert("1.0", "Transcript reference for timecode invalidation.")
+                    app.add_matching_prep_asset()
+                    app.candidate_block_var.set(app.candidate_block_combo["values"][0])
+                    app.candidate_asset_var.set(app.candidate_asset_combo["values"][0])
+                    app.candidate_note_var.set("Accepted prep reference later loses timecode stub.")
+                    app.add_matching_candidate_stub()
+                    app.candidate_stub_var.set(app.candidate_stub_combo["values"][0])
+                    app.on_candidate_stub_selected()
+                    app.candidate_status_var.set("selected")
+                    app.save_matching_candidate_status()
+                    app.promote_matching_candidate_to_accepted_reference()
+
+                    app._switch_view("Scene Matching")
+                    app.scene_reference_label_var.set("Opening courtroom exchange")
+                    app.save_accepted_scene_reference_stub()
+                    app.timecode_start_var.set("00:00:10")
+                    app.timecode_end_var.set("00:00:18")
+                    app.save_timecode_range_stub()
+
+                dropped = app.store.update_matching_candidate_stub_status(app.project.project_dir, "candidate-stub-001", "tentative")
+                app._load_project_into_ui(dropped)
+                app._switch_view("Scene Matching")
+                handoff = app.scene_matching_handoff.get("1.0", "end").strip()
+                self.assertEqual(app.scene_matching_text.get(), "Scene matching readiness: blocked | no accepted reference available yet")
+                self.assertIn("Timecode range stub: none saved yet.", app.scene_matching_timecode_summary_text.get())
+                self.assertIn("- none saved yet", handoff)
+            finally:
+                root.destroy()
+
+    def test_app_timecode_range_stub_remains_readable_when_semantic_lane_reopens(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Timecode Reopen Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+
+                    project = app.project
+                    for block in list(project.semantic_blocks):
+                        project = app.store.update_semantic_block(
+                            project.project_dir,
+                            block["record_id"],
+                            block["title"],
+                            block["semantic_role"],
+                            "Editor clarification added.",
+                        )
+                    app._load_project_into_ui(project)
+                    app.review_status_var.set("ready_for_review")
+                    app.save_review_status()
+                    app.review_status_var.set("approved")
+                    app.save_review_status()
+
+                    app._switch_view("Matching Prep")
+                    app.asset_label_var.set("Transcript reference")
+                    app.asset_type_var.set("transcript_reference")
+                    app.asset_reference_var.set("E:/demo/transcript.txt")
+                    app.asset_notes_text.insert("1.0", "Transcript reference for timecode reopen readability.")
+                    app.add_matching_prep_asset()
+                    app.candidate_block_var.set(app.candidate_block_combo["values"][0])
+                    app.candidate_asset_var.set(app.candidate_asset_combo["values"][0])
+                    app.candidate_note_var.set("Accepted prep reference remains readable with timecode.")
+                    app.add_matching_candidate_stub()
+                    app.candidate_stub_var.set(app.candidate_stub_combo["values"][0])
+                    app.on_candidate_stub_selected()
+                    app.candidate_status_var.set("selected")
+                    app.save_matching_candidate_status()
+                    app.promote_matching_candidate_to_accepted_reference()
+
+                    app._switch_view("Scene Matching")
+                    app.scene_reference_label_var.set("Opening courtroom exchange")
+                    app.save_accepted_scene_reference_stub()
+                    app.timecode_start_var.set("00:00:10")
+                    app.timecode_end_var.set("00:00:18")
+                    app.save_timecode_range_stub()
+
+                    target_block_id = app.project.semantic_blocks[1]["record_id"]
+                    app._select_block_by_id(target_block_id)
+                    app.reorder_selected_block("up")
+
+                app._switch_view("Scene Matching")
+                handoff = app.scene_matching_handoff.get("1.0", "end").strip()
+                self.assertEqual(app.scene_matching_text.get(), "Scene matching readiness: blocked | accepted reference remains visible but upstream semantic approval was reopened")
+                self.assertIn("current provisional temporal artifact exists", app.scene_matching_timecode_summary_text.get())
+                self.assertIn("Start: 00:00:10", handoff)
                 self.assertIn("Scene Matching remains blocked", handoff)
             finally:
                 root.destroy()

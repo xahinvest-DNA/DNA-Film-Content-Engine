@@ -8,25 +8,25 @@ Title: Await Next Bounded Packet Selection
 
 ## Goal
 
-Hold repository state honestly after completed `F-031 First Accepted Scene Reference Stub Slice` until ChatGPT selects one strongest next bounded packet.
+Hold repository state honestly after completed `F-032 First Timecode Range Stub Slice` until ChatGPT selects one strongest next bounded packet.
 
 ## Why this is next
 
-`F-031` is now implemented, tested, and synchronized. The next packet should be chosen by manager review rather than inferred automatically.
+`F-032` is now implemented, tested, and synchronized. The next packet should be chosen by manager review rather than inferred automatically.
 
 ## In scope
 
-- preserve synchronized completion state for `F-031`
+- preserve synchronized completion state for `F-032`
 - wait for one explicit manager-selected next packet
 
 ## Out of scope
 
 - inventing a new implementation packet without manager review
-- reopening `F-031` scope implicitly
+- reopening `F-032` scope implicitly
 
 ## Recommended validation
 
-Validate that live state no longer claims `F-031` is still active.
+Validate that live state no longer claims `F-032` is still active.
 
 ## Required handoff format
 

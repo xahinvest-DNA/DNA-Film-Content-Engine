@@ -15,6 +15,7 @@ MATCHING_PREP_ASSET_FILENAME = "asset_references.json"
 MATCHING_CANDIDATE_FILENAME = "candidate_stubs.json"
 ACCEPTED_REFERENCE_FILENAME = "accepted_reference.json"
 ACCEPTED_SCENE_REFERENCE_STUB_FILENAME = "accepted_scene_reference_stub.json"
+TIMECODE_RANGE_STUB_FILENAME = "timecode_range_stub.json"
 ALLOWED_SEMANTIC_ROLES = (
     "claim",
     "insight",
@@ -190,6 +191,16 @@ def normalize_accepted_scene_reference_stub(accepted_scene_reference_stub: dict 
     return current
 
 
+def normalize_timecode_range_stub(timecode_range_stub: dict | None) -> dict | None:
+    if not timecode_range_stub:
+        return None
+    current = dict(timecode_range_stub)
+    current["start_timecode"] = current.get("start_timecode", "").strip()
+    current["end_timecode"] = current.get("end_timecode", "").strip()
+    current["timecode_state"] = current.get("timecode_state", "provisional_timecode_range_for_later_assembly_only").strip() or "provisional_timecode_range_for_later_assembly_only"
+    return current
+
+
 def semantic_completeness(intake_record: dict, semantic_blocks: list[dict]) -> tuple[str, int, int]:
     if intake_record.get("intake_readiness") != "ready" or not semantic_blocks:
         return ("Incomplete", 0, 0)
@@ -253,6 +264,7 @@ class ProjectSlice:
     matching_candidate_stubs: list[dict]
     accepted_reference: dict | None
     accepted_scene_reference_stub: dict | None
+    timecode_range_stub: dict | None
 
 
 class ProjectSliceStore:
@@ -325,6 +337,7 @@ class ProjectSliceStore:
         matching_candidate_path = project_dir / "records" / "matching_prep" / MATCHING_CANDIDATE_FILENAME
         accepted_reference_path = project_dir / "records" / "matching_prep" / ACCEPTED_REFERENCE_FILENAME
         accepted_scene_reference_stub_path = project_dir / "records" / "scene_matching" / ACCEPTED_SCENE_REFERENCE_STUB_FILENAME
+        timecode_range_stub_path = project_dir / "records" / "scene_matching" / TIMECODE_RANGE_STUB_FILENAME
 
         if analysis_record_path.exists():
             analysis_source_record = read_json(analysis_record_path)
@@ -347,6 +360,8 @@ class ProjectSliceStore:
         accepted_reference = normalize_accepted_reference(read_json(accepted_reference_path) if accepted_reference_path.exists() else None)
         accepted_scene_reference_stub = normalize_accepted_scene_reference_stub(read_json(accepted_scene_reference_stub_path) if accepted_scene_reference_stub_path.exists() else None)
         accepted_scene_reference_stub = self._reconcile_accepted_scene_reference_stub(accepted_scene_reference_stub, accepted_reference)
+        timecode_range_stub = normalize_timecode_range_stub(read_json(timecode_range_stub_path) if timecode_range_stub_path.exists() else None)
+        timecode_range_stub = self._reconcile_timecode_range_stub(timecode_range_stub, accepted_scene_reference_stub)
         return ProjectSlice(
             project_dir=project_dir,
             manifest=manifest,
@@ -359,6 +374,7 @@ class ProjectSliceStore:
             matching_candidate_stubs=matching_candidate_stubs,
             accepted_reference=accepted_reference,
             accepted_scene_reference_stub=accepted_scene_reference_stub,
+            timecode_range_stub=timecode_range_stub,
         )
 
     def save_analysis_text(
@@ -911,6 +927,66 @@ class ProjectSliceStore:
         )
         return self.load_project(project_dir)
 
+    def save_timecode_range_stub(
+        self,
+        project_dir: Path,
+        start_timecode: str,
+        end_timecode: str,
+    ) -> ProjectSlice:
+        clean_start = start_timecode.strip()
+        clean_end = end_timecode.strip()
+        if not clean_start or not clean_end:
+            raise ValueError("Enter both start and end timecode values before saving the timecode range stub.")
+
+        project = self.load_project(project_dir)
+        if project.accepted_scene_reference_stub is None:
+            raise ValueError("Timecode range stub creation is blocked until one current accepted scene reference stub exists.")
+        if project.accepted_reference is None or project.semantic_review_record.get("reopened_after_change"):
+            raise ValueError("Timecode range stub creation is only available while Scene Matching is open from the current accepted scene reference stub.")
+
+        now = utc_now()
+        timecode_range_stub = {
+            "project_id": project.manifest["project_id"],
+            "record_id": "timecode-range-current",
+            "record_type": "timecode_range_stub",
+            "source_accepted_scene_reference_stub_id": project.accepted_scene_reference_stub["record_id"],
+            "source_candidate_stub_id": project.accepted_scene_reference_stub.get("source_candidate_stub_id", ""),
+            "semantic_block_id": project.accepted_scene_reference_stub.get("semantic_block_id", ""),
+            "prep_asset_id": project.accepted_scene_reference_stub.get("prep_asset_id", ""),
+            "start_timecode": clean_start,
+            "end_timecode": clean_end,
+            "timecode_state": "provisional_timecode_range_for_later_assembly_only",
+            "created_at": now,
+            "updated_at": now,
+        }
+
+        manifest = dict(project.manifest)
+        manifest["updated_at"] = now
+        project_record = dict(project.project_record)
+        project_record["updated_at"] = now
+        intake_record = dict(project.intake_record)
+        intake_record["updated_at"] = now
+        analysis_source_record = self._copy_analysis_record(project.analysis_source_record, now)
+        semantic_review_record = dict(project.semantic_review_record)
+        semantic_review_record["updated_at"] = now
+
+        self._apply_project_summary(project_record, intake_record, project.semantic_blocks, semantic_review_record)
+        self._write_project_state(
+            project_dir,
+            manifest,
+            project_record,
+            intake_record,
+            analysis_source_record,
+            semantic_review_record,
+            project.semantic_blocks,
+            project.matching_prep_assets,
+            project.matching_candidate_stubs,
+            project.accepted_reference,
+            project.accepted_scene_reference_stub,
+            timecode_range_stub,
+        )
+        return self.load_project(project_dir)
+
     def update_matching_candidate_stub_rationale(
         self,
         project_dir: Path,
@@ -1113,6 +1189,25 @@ class ProjectSliceStore:
         updated_stub["prep_asset_id"] = normalized_reference.get("prep_asset_id", "")
         return updated_stub
 
+    def _reconcile_timecode_range_stub(
+        self,
+        timecode_range_stub: dict | None,
+        accepted_scene_reference_stub: dict | None,
+    ) -> dict | None:
+        normalized_stub = normalize_timecode_range_stub(timecode_range_stub)
+        if normalized_stub is None:
+            return None
+        normalized_scene_reference_stub = normalize_accepted_scene_reference_stub(accepted_scene_reference_stub)
+        if normalized_scene_reference_stub is None:
+            return None
+        if normalized_stub.get("source_candidate_stub_id", "").strip() != normalized_scene_reference_stub.get("source_candidate_stub_id", "").strip():
+            return None
+        updated_stub = dict(normalized_stub)
+        updated_stub["source_accepted_scene_reference_stub_id"] = normalized_scene_reference_stub.get("record_id", "")
+        updated_stub["semantic_block_id"] = normalized_scene_reference_stub.get("semantic_block_id", "")
+        updated_stub["prep_asset_id"] = normalized_scene_reference_stub.get("prep_asset_id", "")
+        return updated_stub
+
     def _persist_semantic_update(
         self,
         project_dir: Path,
@@ -1178,10 +1273,12 @@ class ProjectSliceStore:
         matching_candidate_stubs: list[dict],
         accepted_reference: dict | None | object = KEEP_EXISTING,
         accepted_scene_reference_stub: dict | None | object = KEEP_EXISTING,
+        timecode_range_stub: dict | None | object = KEEP_EXISTING,
     ) -> None:
         semantic_blocks = normalize_semantic_blocks(semantic_blocks)
         accepted_reference_path = project_dir / "records" / "matching_prep" / ACCEPTED_REFERENCE_FILENAME
         accepted_scene_reference_stub_path = project_dir / "records" / "scene_matching" / ACCEPTED_SCENE_REFERENCE_STUB_FILENAME
+        timecode_range_stub_path = project_dir / "records" / "scene_matching" / TIMECODE_RANGE_STUB_FILENAME
         if accepted_reference is KEEP_EXISTING:
             accepted_reference_payload = normalize_accepted_reference(read_json(accepted_reference_path) if accepted_reference_path.exists() else None)
         else:
@@ -1191,6 +1288,11 @@ class ProjectSliceStore:
         else:
             accepted_scene_reference_stub_payload = normalize_accepted_scene_reference_stub(accepted_scene_reference_stub if isinstance(accepted_scene_reference_stub, dict) else None)
         accepted_scene_reference_stub_payload = self._reconcile_accepted_scene_reference_stub(accepted_scene_reference_stub_payload, accepted_reference_payload)
+        if timecode_range_stub is KEEP_EXISTING:
+            timecode_range_stub_payload = normalize_timecode_range_stub(read_json(timecode_range_stub_path) if timecode_range_stub_path.exists() else None)
+        else:
+            timecode_range_stub_payload = normalize_timecode_range_stub(timecode_range_stub if isinstance(timecode_range_stub, dict) else None)
+        timecode_range_stub_payload = self._reconcile_timecode_range_stub(timecode_range_stub_payload, accepted_scene_reference_stub_payload)
         write_json(project_dir / "project.manifest", manifest)
         write_json(project_dir / "project.meta" / "status.json", self._status_payload(project_record, intake_record, semantic_review_record, semantic_blocks))
         write_json(project_dir / "records" / "project" / "project.json", project_record)
@@ -1209,6 +1311,10 @@ class ProjectSliceStore:
             write_json(accepted_scene_reference_stub_path, accepted_scene_reference_stub_payload)
         elif accepted_scene_reference_stub_path.exists():
             accepted_scene_reference_stub_path.unlink()
+        if timecode_range_stub_payload is not None:
+            write_json(timecode_range_stub_path, timecode_range_stub_payload)
+        elif timecode_range_stub_path.exists():
+            timecode_range_stub_path.unlink()
 
     def _status_payload(
         self,

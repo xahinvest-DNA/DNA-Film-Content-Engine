@@ -1,3 +1,22 @@
+## 2026-04-10 - F-032 completed and Scene Matching gained its first temporal downstream artifact
+
+### Completed
+- completed the first timecode range stub slice as one bounded follow-up to the accepted scene reference stub boundary inside `Scene Matching`;
+- added one singular persisted timecode range stub that can be saved only from the current accepted scene reference stub while `Scene Matching` is open;
+- surfaced timecode range stub present/absent state plus one minimal start/end save control inside `Scene Matching`;
+- displayed the timecode range stub as the dominant temporal downstream artifact above the accepted scene reference stub and accepted prep-reference handoff;
+- reconciled the timecode range stub against upstream scene-side invalidation so it disappears coherently when the accepted scene reference stub disappears;
+- verified store-level guard, creation, replacement, persistence, and invalidation behavior plus app-level visibility and reopen coherence through local tests;
+- synchronized the repository state layer after real implementation progress.
+
+### Repository effect
+- the repository now contains the first explicit temporal artifact inside `Scene Matching` rather than a scene-side-only lane;
+- accepted prep reference, accepted scene reference stub, and timecode range stub are now distinct runtime boundaries, preserving the canonical chain from semantic meaning into temporal downstream artifacts;
+- the implementation remains intentionally narrow and does not open transcript alignment, automatic matching, ranking, confidence engines, backend, or workflow-engine execution work.
+
+### Recommended next step
+ChatGPT should select the next strongest bounded packet after `F-032`, based on the fact that Scene Matching can now emit one singular temporal downstream artifact.
+
 ## 2026-04-10 - F-031 completed and Scene Matching gained its first scene-side downstream artifact
 
 ### Completed

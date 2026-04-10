@@ -71,6 +71,7 @@ class DNAFilmApp:
         self.matching_prep_text = tk.StringVar(value="Matching prep readiness: blocked | semantic map not established yet")
         self.scene_matching_text = tk.StringVar(value="Scene matching readiness: blocked | no accepted reference available yet")
         self.scene_matching_reference_summary_text = tk.StringVar(value="Accepted scene reference stub: none created yet.")
+        self.scene_matching_timecode_summary_text = tk.StringVar(value="Timecode range stub: none saved yet.")
         self.matching_prep_status_text = tk.StringVar(value="Matching Prep is blocked until the semantic map is approved.")
         self.matching_prep_summary_text = tk.StringVar(value="Prep handoff: 0 approved semantic blocks available.")
         self.matching_asset_summary_text = tk.StringVar(value="Film-side registration: no prep inputs registered yet.")
@@ -102,6 +103,8 @@ class DNAFilmApp:
         self.candidate_rationale_var = tk.StringVar()
         self.candidate_focus_var = tk.StringVar(value=CANDIDATE_STATUS_FOCUS_OPTIONS[0])
         self.scene_reference_label_var = tk.StringVar()
+        self.timecode_start_var = tk.StringVar()
+        self.timecode_end_var = tk.StringVar()
         self.candidate_block_options: dict[str, str] = {}
         self.candidate_asset_options: dict[str, str] = {}
         self.candidate_stub_options: dict[str, str] = {}
@@ -383,16 +386,17 @@ class DNAFilmApp:
         frame = ttk.Frame(parent, padding=12)
         frame.grid(row=0, column=0, sticky="nsew")
         frame.columnconfigure(0, weight=1)
-        frame.rowconfigure(5, weight=1)
+        frame.rowconfigure(7, weight=1)
 
         ttk.Label(frame, text="Scene Matching", font=("Segoe UI", 14, "bold")).grid(row=0, column=0, sticky="w")
         ttk.Label(frame, text="This is the first scene-matching-facing entry lane. It opens only when one current accepted prep reference exists and stays explicitly pre-automation, pre-timecode, and pre-final-match.", wraplength=760).grid(row=1, column=0, sticky="w", pady=(8, 6))
         self.scene_matching_status_label = ttk.Label(frame, textvariable=self.scene_matching_text, wraplength=760)
         self.scene_matching_status_label.grid(row=2, column=0, sticky="w", pady=(0, 4))
-        ttk.Label(frame, textvariable=self.scene_matching_reference_summary_text, wraplength=760).grid(row=3, column=0, sticky="w", pady=(0, 8))
+        ttk.Label(frame, textvariable=self.scene_matching_reference_summary_text, wraplength=760).grid(row=3, column=0, sticky="w", pady=(0, 4))
+        ttk.Label(frame, textvariable=self.scene_matching_timecode_summary_text, wraplength=760).grid(row=4, column=0, sticky="w", pady=(0, 8))
 
         scene_reference_frame = ttk.LabelFrame(frame, text="Accepted scene reference stub", padding=8)
-        scene_reference_frame.grid(row=4, column=0, sticky="ew", pady=(0, 8))
+        scene_reference_frame.grid(row=5, column=0, sticky="ew", pady=(0, 8))
         scene_reference_frame.columnconfigure(1, weight=1)
         ttk.Label(scene_reference_frame, text="Scene-side label").grid(row=0, column=0, sticky="w")
         self.scene_reference_label_entry = ttk.Entry(scene_reference_frame, textvariable=self.scene_reference_label_var, width=48)
@@ -400,8 +404,21 @@ class DNAFilmApp:
         self.save_scene_reference_button = ttk.Button(scene_reference_frame, text="Save Accepted Scene Reference Stub", command=self.save_accepted_scene_reference_stub)
         self.save_scene_reference_button.grid(row=0, column=2, sticky="w")
 
-        self.scene_matching_handoff = tk.Text(frame, height=20, wrap="word")
-        self.scene_matching_handoff.grid(row=5, column=0, sticky="nsew")
+        timecode_frame = ttk.LabelFrame(frame, text="Timecode range stub", padding=8)
+        timecode_frame.grid(row=6, column=0, sticky="ew", pady=(0, 8))
+        timecode_frame.columnconfigure(1, weight=1)
+        timecode_frame.columnconfigure(3, weight=1)
+        ttk.Label(timecode_frame, text="Start").grid(row=0, column=0, sticky="w")
+        self.timecode_start_entry = ttk.Entry(timecode_frame, textvariable=self.timecode_start_var, width=18)
+        self.timecode_start_entry.grid(row=0, column=1, sticky="ew", padx=(8, 12))
+        ttk.Label(timecode_frame, text="End").grid(row=0, column=2, sticky="w")
+        self.timecode_end_entry = ttk.Entry(timecode_frame, textvariable=self.timecode_end_var, width=18)
+        self.timecode_end_entry.grid(row=0, column=3, sticky="ew", padx=(8, 12))
+        self.save_timecode_button = ttk.Button(timecode_frame, text="Save Timecode Range Stub", command=self.save_timecode_range_stub)
+        self.save_timecode_button.grid(row=0, column=4, sticky="w")
+
+        self.scene_matching_handoff = tk.Text(frame, height=18, wrap="word")
+        self.scene_matching_handoff.grid(row=7, column=0, sticky="nsew")
         self.scene_matching_handoff.configure(state="disabled")
         return frame
 
@@ -749,6 +766,27 @@ class DNAFilmApp:
         self.scene_reference_label_var.set((project.accepted_scene_reference_stub or {}).get("scene_reference_label", ""))
         messagebox.showinfo("Scene Matching", "Accepted scene reference stub was saved in the local project package.")
 
+    def save_timecode_range_stub(self) -> None:
+        if self.project is None:
+            messagebox.showerror("Scene Matching", "Create or open a project first.")
+            return
+        try:
+            project = self.store.save_timecode_range_stub(
+                self.project.project_dir,
+                self.timecode_start_var.get(),
+                self.timecode_end_var.get(),
+            )
+        except ValueError as exc:
+            messagebox.showerror("Scene Matching", str(exc))
+            return
+
+        current_block_id = self.selected_block_id
+        self._load_project_into_ui(project, select_block_id=current_block_id)
+        self._switch_view("Scene Matching")
+        self.timecode_start_var.set((project.timecode_range_stub or {}).get("start_timecode", ""))
+        self.timecode_end_var.set((project.timecode_range_stub or {}).get("end_timecode", ""))
+        messagebox.showinfo("Scene Matching", "Timecode range stub was saved in the local project package.")
+
     def on_candidate_stub_selected(self, _event: object | None = None) -> None:
         if self.project is None:
             self.candidate_status_var.set(ALLOWED_CANDIDATE_REVIEW_STATUSES[0])
@@ -813,6 +851,8 @@ class DNAFilmApp:
         self._update_scene_matching_surface(project)
         self._refresh_matching_candidate_controls(project)
         self.scene_reference_label_var.set((project.accepted_scene_reference_stub or {}).get("scene_reference_label", ""))
+        self.timecode_start_var.set((project.timecode_range_stub or {}).get("start_timecode", ""))
+        self.timecode_end_var.set((project.timecode_range_stub or {}).get("end_timecode", ""))
         warnings = project.intake_record.get("intake_warnings", [])
         warning_text = f"Warnings: {', '.join(warnings)}" if warnings else "Warnings: none"
         suitability_summary = self._project_suitability_summary(project)
@@ -1033,6 +1073,9 @@ class DNAFilmApp:
         button_state = "normal" if enabled else "disabled"
         self.scene_reference_label_entry.configure(state=entry_state)
         self.save_scene_reference_button.configure(state=button_state)
+        self.timecode_start_entry.configure(state=entry_state)
+        self.timecode_end_entry.configure(state=entry_state)
+        self.save_timecode_button.configure(state=button_state)
 
     def _set_editor_enabled(self, enabled: bool) -> None:
         entry_state = "normal" if enabled else "disabled"
@@ -1228,6 +1271,11 @@ class DNAFilmApp:
             return "Accepted scene reference stub: none created yet."
         return "Accepted scene reference stub: current scene-side artifact exists for later timecode prep."
 
+    def _timecode_range_stub_summary(self, project: ProjectSlice) -> str:
+        if project.timecode_range_stub is None:
+            return "Timecode range stub: none saved yet."
+        return "Timecode range stub: current provisional temporal artifact exists for later assembly work."
+
     def _accepted_reference_lines(self, project: ProjectSlice) -> list[str]:
         accepted_reference = project.accepted_reference
         if accepted_reference is None:
@@ -1277,6 +1325,22 @@ class DNAFilmApp:
             f"  Upstream preferred rationale: {rationale}",
             f"  Upstream note: {note}",
             f"  Accepted scene reference stub id: {accepted_scene_reference_stub.get('record_id', 'accepted-scene-reference-current')}",
+            "",
+        ]
+
+    def _timecode_range_stub_lines(self, project: ProjectSlice) -> list[str]:
+        timecode_range_stub = project.timecode_range_stub
+        if timecode_range_stub is None:
+            return ["- none saved yet", ""]
+        accepted_scene_reference_stub = project.accepted_scene_reference_stub or {}
+        scene_label = accepted_scene_reference_stub.get("scene_reference_label", "none")
+        return [
+            "",
+            f"- Start: {timecode_range_stub.get('start_timecode', 'none')}",
+            f"  End: {timecode_range_stub.get('end_timecode', 'none')}",
+            f"  Scene-side source: {scene_label}",
+            "  Temporal scope: provisional timecode range stub for later assembly only, not transcript-aligned timing or final edit output.",
+            f"  Timecode range stub id: {timecode_range_stub.get('record_id', 'timecode-range-current')}",
             "",
         ]
 
@@ -1471,7 +1535,9 @@ class DNAFilmApp:
         gate_state, gate_reason = self._scene_matching_gate(project)
         accepted_reference_summary = self._accepted_reference_summary(project)
         accepted_scene_reference_stub_summary = self._accepted_scene_reference_stub_summary(project)
+        timecode_range_stub_summary = self._timecode_range_stub_summary(project)
         self.scene_matching_reference_summary_text.set(accepted_scene_reference_stub_summary)
+        self.scene_matching_timecode_summary_text.set(timecode_range_stub_summary)
         self._set_scene_matching_enabled(gate_state == "ready")
         lines: list[str]
         if gate_state != "ready":
@@ -1481,7 +1547,10 @@ class DNAFilmApp:
                 f"Reason: {gate_reason}.",
                 accepted_reference_summary,
                 accepted_scene_reference_stub_summary,
+                timecode_range_stub_summary,
                 "",
+                "Current timecode range stub",
+                *self._timecode_range_stub_lines(project),
                 "Current accepted scene reference stub",
                 *self._accepted_scene_reference_stub_lines(project),
                 "Current accepted reference handoff",
@@ -1493,13 +1562,16 @@ class DNAFilmApp:
                 "Scene Matching handoff is open.",
                 accepted_reference_summary,
                 accepted_scene_reference_stub_summary,
+                timecode_range_stub_summary,
                 "",
+                "Current timecode range stub",
+                *self._timecode_range_stub_lines(project),
                 "Current accepted scene reference stub",
                 *self._accepted_scene_reference_stub_lines(project),
                 "Current accepted reference for scene matching work",
                 *self._accepted_reference_lines(project),
                 "This lane is the first honest entry into scene matching work.",
-                "It remains pre-automation, pre-timecode, and pre-final-match.",
+                "It remains provisional, pre-automation, pre-timecode, and pre-final-match.",
             ]
         handoff_text = "\n".join(lines).rstrip()
         self.scene_matching_handoff.configure(state="normal")
@@ -1566,3 +1638,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
