@@ -700,6 +700,227 @@ class ProjectSliceStoreTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "blocked until one current accepted scene reference stub exists"):
                 store.save_timecode_range_stub(project.project_dir, "00:00:10", "00:00:18")
 
+
+    def test_timecode_range_stub_save_is_blocked_without_start_timecode(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = store.create_project("Timecode Missing Start", film_title="Demo Film", language="en")
+            project = store.save_analysis_text(project.project_dir, SAMPLE_ANALYSIS)
+
+            for block in list(project.semantic_blocks):
+                project = store.update_semantic_block(
+                    project.project_dir,
+                    block["record_id"],
+                    block["title"],
+                    block["semantic_role"],
+                    "Editor clarification added.",
+                )
+
+            project = store.update_semantic_review_status(project.project_dir, "ready_for_review")
+            project = store.update_semantic_review_status(project.project_dir, "approved")
+            project = store.add_matching_prep_asset(
+                project.project_dir,
+                "Main subtitle file",
+                "subtitle_reference",
+                "E:/demo/subtitles.srt",
+                "Primary subtitle reference.",
+            )
+            project = store.add_matching_candidate_stub(
+                project.project_dir,
+                project.semantic_blocks[0]["record_id"],
+                project.matching_prep_assets[0]["record_id"],
+                "Accepted prep reference feeds timecode stub.",
+            )
+            project = store.update_matching_candidate_stub_status(
+                project.project_dir,
+                project.matching_candidate_stubs[0]["record_id"],
+                "selected",
+            )
+            project = store.promote_matching_candidate_stub_to_accepted_reference(
+                project.project_dir,
+                project.matching_candidate_stubs[0]["record_id"],
+            )
+            project = store.save_accepted_scene_reference_stub(project.project_dir, "Opening courtroom exchange")
+
+            with self.assertRaisesRegex(ValueError, "Enter a start timecode"):
+                store.save_timecode_range_stub(project.project_dir, "", "00:00:18")
+
+    def test_timecode_range_stub_save_is_blocked_without_end_timecode(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = store.create_project("Timecode Missing End", film_title="Demo Film", language="en")
+            project = store.save_analysis_text(project.project_dir, SAMPLE_ANALYSIS)
+
+            for block in list(project.semantic_blocks):
+                project = store.update_semantic_block(
+                    project.project_dir,
+                    block["record_id"],
+                    block["title"],
+                    block["semantic_role"],
+                    "Editor clarification added.",
+                )
+
+            project = store.update_semantic_review_status(project.project_dir, "ready_for_review")
+            project = store.update_semantic_review_status(project.project_dir, "approved")
+            project = store.add_matching_prep_asset(
+                project.project_dir,
+                "Main subtitle file",
+                "subtitle_reference",
+                "E:/demo/subtitles.srt",
+                "Primary subtitle reference.",
+            )
+            project = store.add_matching_candidate_stub(
+                project.project_dir,
+                project.semantic_blocks[0]["record_id"],
+                project.matching_prep_assets[0]["record_id"],
+                "Accepted prep reference feeds timecode stub.",
+            )
+            project = store.update_matching_candidate_stub_status(
+                project.project_dir,
+                project.matching_candidate_stubs[0]["record_id"],
+                "selected",
+            )
+            project = store.promote_matching_candidate_stub_to_accepted_reference(
+                project.project_dir,
+                project.matching_candidate_stubs[0]["record_id"],
+            )
+            project = store.save_accepted_scene_reference_stub(project.project_dir, "Opening courtroom exchange")
+
+            with self.assertRaisesRegex(ValueError, "Enter an end timecode"):
+                store.save_timecode_range_stub(project.project_dir, "00:00:10", "")
+
+    def test_timecode_range_stub_save_is_blocked_for_invalid_start_format(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = store.create_project("Timecode Invalid Start", film_title="Demo Film", language="en")
+            project = store.save_analysis_text(project.project_dir, SAMPLE_ANALYSIS)
+
+            for block in list(project.semantic_blocks):
+                project = store.update_semantic_block(
+                    project.project_dir,
+                    block["record_id"],
+                    block["title"],
+                    block["semantic_role"],
+                    "Editor clarification added.",
+                )
+
+            project = store.update_semantic_review_status(project.project_dir, "ready_for_review")
+            project = store.update_semantic_review_status(project.project_dir, "approved")
+            project = store.add_matching_prep_asset(
+                project.project_dir,
+                "Main subtitle file",
+                "subtitle_reference",
+                "E:/demo/subtitles.srt",
+                "Primary subtitle reference.",
+            )
+            project = store.add_matching_candidate_stub(
+                project.project_dir,
+                project.semantic_blocks[0]["record_id"],
+                project.matching_prep_assets[0]["record_id"],
+                "Accepted prep reference feeds timecode stub.",
+            )
+            project = store.update_matching_candidate_stub_status(
+                project.project_dir,
+                project.matching_candidate_stubs[0]["record_id"],
+                "selected",
+            )
+            project = store.promote_matching_candidate_stub_to_accepted_reference(
+                project.project_dir,
+                project.matching_candidate_stubs[0]["record_id"],
+            )
+            project = store.save_accepted_scene_reference_stub(project.project_dir, "Opening courtroom exchange")
+
+            with self.assertRaisesRegex(ValueError, "Start timecode must use HH:MM:SS format"):
+                store.save_timecode_range_stub(project.project_dir, "0:00:10", "00:00:18")
+
+    def test_timecode_range_stub_save_is_blocked_for_invalid_end_format(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = store.create_project("Timecode Invalid End", film_title="Demo Film", language="en")
+            project = store.save_analysis_text(project.project_dir, SAMPLE_ANALYSIS)
+
+            for block in list(project.semantic_blocks):
+                project = store.update_semantic_block(
+                    project.project_dir,
+                    block["record_id"],
+                    block["title"],
+                    block["semantic_role"],
+                    "Editor clarification added.",
+                )
+
+            project = store.update_semantic_review_status(project.project_dir, "ready_for_review")
+            project = store.update_semantic_review_status(project.project_dir, "approved")
+            project = store.add_matching_prep_asset(
+                project.project_dir,
+                "Main subtitle file",
+                "subtitle_reference",
+                "E:/demo/subtitles.srt",
+                "Primary subtitle reference.",
+            )
+            project = store.add_matching_candidate_stub(
+                project.project_dir,
+                project.semantic_blocks[0]["record_id"],
+                project.matching_prep_assets[0]["record_id"],
+                "Accepted prep reference feeds timecode stub.",
+            )
+            project = store.update_matching_candidate_stub_status(
+                project.project_dir,
+                project.matching_candidate_stubs[0]["record_id"],
+                "selected",
+            )
+            project = store.promote_matching_candidate_stub_to_accepted_reference(
+                project.project_dir,
+                project.matching_candidate_stubs[0]["record_id"],
+            )
+            project = store.save_accepted_scene_reference_stub(project.project_dir, "Opening courtroom exchange")
+
+            with self.assertRaisesRegex(ValueError, "End timecode must use HH:MM:SS format"):
+                store.save_timecode_range_stub(project.project_dir, "00:00:10", "00:61:18")
+
+    def test_timecode_range_stub_save_is_blocked_when_end_is_earlier_than_start(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = store.create_project("Timecode Invalid Ordering", film_title="Demo Film", language="en")
+            project = store.save_analysis_text(project.project_dir, SAMPLE_ANALYSIS)
+
+            for block in list(project.semantic_blocks):
+                project = store.update_semantic_block(
+                    project.project_dir,
+                    block["record_id"],
+                    block["title"],
+                    block["semantic_role"],
+                    "Editor clarification added.",
+                )
+
+            project = store.update_semantic_review_status(project.project_dir, "ready_for_review")
+            project = store.update_semantic_review_status(project.project_dir, "approved")
+            project = store.add_matching_prep_asset(
+                project.project_dir,
+                "Main subtitle file",
+                "subtitle_reference",
+                "E:/demo/subtitles.srt",
+                "Primary subtitle reference.",
+            )
+            project = store.add_matching_candidate_stub(
+                project.project_dir,
+                project.semantic_blocks[0]["record_id"],
+                project.matching_prep_assets[0]["record_id"],
+                "Accepted prep reference feeds timecode stub.",
+            )
+            project = store.update_matching_candidate_stub_status(
+                project.project_dir,
+                project.matching_candidate_stubs[0]["record_id"],
+                "selected",
+            )
+            project = store.promote_matching_candidate_stub_to_accepted_reference(
+                project.project_dir,
+                project.matching_candidate_stubs[0]["record_id"],
+            )
+            project = store.save_accepted_scene_reference_stub(project.project_dir, "Opening courtroom exchange")
+
+            with self.assertRaisesRegex(ValueError, "must not be earlier than start timecode"):
+                store.save_timecode_range_stub(project.project_dir, "00:00:18", "00:00:10")
+
     def test_timecode_range_stub_can_be_saved_and_persist_after_reload(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             store = ProjectSliceStore(Path(temp_dir))
@@ -802,6 +1023,57 @@ class ProjectSliceStoreTests(unittest.TestCase):
             self.assertEqual(replaced.timecode_range_stub["start_timecode"], "00:00:12")
             self.assertEqual(replaced.timecode_range_stub["end_timecode"], "00:00:22")
             self.assertEqual(replaced.timecode_range_stub["record_id"], "timecode-range-current")
+
+
+    def test_invalid_timecode_range_stub_save_preserves_prior_valid_saved_range(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = store.create_project("Timecode Preserve Prior Valid Range", film_title="Demo Film", language="en")
+            project = store.save_analysis_text(project.project_dir, SAMPLE_ANALYSIS)
+
+            for block in list(project.semantic_blocks):
+                project = store.update_semantic_block(
+                    project.project_dir,
+                    block["record_id"],
+                    block["title"],
+                    block["semantic_role"],
+                    "Editor clarification added.",
+                )
+
+            project = store.update_semantic_review_status(project.project_dir, "ready_for_review")
+            project = store.update_semantic_review_status(project.project_dir, "approved")
+            project = store.add_matching_prep_asset(
+                project.project_dir,
+                "Main subtitle file",
+                "subtitle_reference",
+                "E:/demo/subtitles.srt",
+                "Primary subtitle reference.",
+            )
+            project = store.add_matching_candidate_stub(
+                project.project_dir,
+                project.semantic_blocks[0]["record_id"],
+                project.matching_prep_assets[0]["record_id"],
+                "Accepted prep reference feeds timecode stub.",
+            )
+            project = store.update_matching_candidate_stub_status(
+                project.project_dir,
+                project.matching_candidate_stubs[0]["record_id"],
+                "selected",
+            )
+            project = store.promote_matching_candidate_stub_to_accepted_reference(
+                project.project_dir,
+                project.matching_candidate_stubs[0]["record_id"],
+            )
+            project = store.save_accepted_scene_reference_stub(project.project_dir, "Opening courtroom exchange")
+            project = store.save_timecode_range_stub(project.project_dir, "00:00:10", "00:00:18")
+
+            with self.assertRaisesRegex(ValueError, "End timecode must use HH:MM:SS format"):
+                store.save_timecode_range_stub(project.project_dir, "00:00:12", "invalid")
+
+            reloaded = store.load_project(project.project_dir)
+            self.assertIsNotNone(reloaded.timecode_range_stub)
+            self.assertEqual(reloaded.timecode_range_stub["start_timecode"], "00:00:10")
+            self.assertEqual(reloaded.timecode_range_stub["end_timecode"], "00:00:18")
 
     def test_timecode_range_stub_disappears_when_scene_reference_stub_becomes_unavailable(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -2106,6 +2378,22 @@ class DNAFilmAppTests(unittest.TestCase):
 
                 handoff = app.scene_matching_handoff.get("1.0", "end").strip()
                 self.assertIn("current provisional temporal artifact exists", app.scene_matching_timecode_summary_text.get())
+                self.assertEqual(app.current_view.get(), "Scene Matching")
+                scene_matching_texts = []
+                for child in app.views["Scene Matching"].winfo_children():
+                    if hasattr(child, "cget"):
+                        try:
+                            scene_matching_texts.append(child.cget("text"))
+                        except Exception:
+                            pass
+                    if hasattr(child, "winfo_children"):
+                        for nested in child.winfo_children():
+                            if hasattr(nested, "cget"):
+                                try:
+                                    scene_matching_texts.append(nested.cget("text"))
+                                except Exception:
+                                    pass
+                self.assertIn("Use HH:MM:SS | manual provisional range only", scene_matching_texts)
                 self.assertIn("Current timecode range stub", handoff)
                 self.assertIn("Start: 00:00:10", handoff)
                 self.assertIn("End: 00:00:18", handoff)

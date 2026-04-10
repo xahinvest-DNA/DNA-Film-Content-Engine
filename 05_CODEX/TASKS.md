@@ -1,16 +1,22 @@
 # Codex Tasks
 
 Last updated: 2026-04-10
-Current focus: manager review and next bounded packet selection after F-032
+Current focus: manager review and next bounded packet selection after F-033
 
 ## Working rule
 Tasks should be bounded, product-visible, and small enough to preserve continuity without turning the repository into micro-slice overload.
 
 ## Active task
 
-- No new implementation packet is active until ChatGPT selects the next bounded step after reviewing the completed `F-032` handoff.
+- No new implementation packet is active until ChatGPT selects the next bounded step after reviewing the completed `F-033` handoff.
 
 ## Completed tasks
+
+### F-033
+- Status: completed
+- Module: timecode range readability and sanity guard slice
+- Goal: strengthen the current `timecode_range_stub` boundary inside `Scene Matching` with one bounded manual-format and ordering sanity guard without drifting into transcript alignment, parsing engines, auto-matching, confidence engines, backend, or workflow buildout.
+- Outcome: fixed `HH:MM:SS` as the single manual timecode format, blocked missing or malformed start/end values plus end-earlier-than-start saves through the existing local-first error path, added one compact UI cue for manual provisional range entry, verified valid-save persistence and invalid-save preservation of prior stored ranges through local store-level and app-level tests, and kept the packet intentionally narrow.
 
 ### F-032
 - Status: completed

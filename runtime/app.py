@@ -416,6 +416,7 @@ class DNAFilmApp:
         self.timecode_end_entry.grid(row=0, column=3, sticky="ew", padx=(8, 12))
         self.save_timecode_button = ttk.Button(timecode_frame, text="Save Timecode Range Stub", command=self.save_timecode_range_stub)
         self.save_timecode_button.grid(row=0, column=4, sticky="w")
+        ttk.Label(timecode_frame, text="Use HH:MM:SS | manual provisional range only", wraplength=760).grid(row=1, column=0, columnspan=5, sticky="w", pady=(6, 0))
 
         self.scene_matching_handoff = tk.Text(frame, height=18, wrap="word")
         self.scene_matching_handoff.grid(row=7, column=0, sticky="nsew")

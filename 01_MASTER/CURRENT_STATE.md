@@ -2,9 +2,9 @@
 
 Last updated: 2026-04-10
 Status: active
-Current stage: F-032 first timecode range stub slice is completed
+Current stage: F-033 timecode range readability and sanity guard slice is completed
 Active module: manager review and next bounded packet selection
-Active frontier: post-F-032 state synchronization
+Active frontier: post-F-033 state synchronization
 Active question: which one strongest bounded packet should follow now that Scene Matching can emit one singular timecode range stub from the current accepted scene reference stub without opening transcript alignment, automatic matching, confidence engines, backend, or workflow-engine scope
 
 ## Where the project is now
@@ -37,13 +37,14 @@ At this point:
 - the runtime now also opens one real `Scene Matching` entry surface that receives the current accepted reference as the first honest downstream-facing handoff, stays blocked when no accepted reference exists, remains honestly readable when semantic approval reopens, and keeps explicit pre-automation/pre-timecode wording;
 - the runtime now also lets open `Scene Matching` save one singular accepted scene reference stub from the current accepted prep reference, persists that scene-side artifact locally, surfaces it as the dominant downstream handoff inside `Scene Matching`, and keeps it honestly readable across reload and blocked-after-reopen states without opening automatic matching or timecodes;
 - the runtime now also lets open `Scene Matching` save one singular timecode range stub from the current accepted scene reference stub, persists that temporal artifact locally, reconciles it against upstream scene-side invalidation, and surfaces it as the dominant current temporal handoff without opening transcript alignment or final timing semantics;
+- the timecode range stub now also enforces one bounded manual `HH:MM:SS` format plus one end-not-earlier-than-start sanity rule, making the temporal artifact more trustworthy without turning it into a parsing, alignment, or final-timing subsystem;
 - the main MVP operating surface remains fixed as `Semantic Map Workspace`;
 - the meaning-first architecture is now explicit across product, domain, schema, project-package, asset, downstream output, and implementation layers;
 - the project now uses a manager-led execution model;
 - ChatGPT owns strongest-next-step selection;
 - Codex owns repository execution and state synchronization;
 - manager review depth and next-step efficiency-gate doctrine are now fixed in repository governance documents rather than left to chat memory;
-- F-032 is completed and no longer the active runtime frontier;
+- F-033 is completed and no longer the active runtime frontier;
 - the repository is now waiting for ChatGPT to select the next strongest bounded packet.
 
 ## Accepted boundaries right now
@@ -64,12 +65,13 @@ At this point:
 ## Open items
 
 - preserve the new timecode range stub boundary as a bounded temporal artifact slice rather than letting it drift into transcript alignment, automatic timing extraction, ranking, or workflow-engine semantics;
+- keep the new `HH:MM:SS` manual-format and ordering guard narrow rather than letting it grow into smart parsing, normalization, or frame-accurate validation policy;
 - choose one strongest next bounded packet now that the runtime can cross from accepted prep reference into scene-side and temporal downstream artifacts inside `Scene Matching`;
 - keep later scene-matching work explicitly outside automatic matching, transcript alignment, confidence engines, timecodes beyond this stub, backend, dashboard, and workflow-engine scope until a stronger packet justifies opening them.
 
 ## Next step
 
-ChatGPT should review the completed `F-032 First Timecode Range Stub Slice` handoff and select one strongest next bounded packet.
+ChatGPT should review the completed `F-033 Timecode Range Readability and Sanity Guard Slice` handoff and select one strongest next bounded packet.
 
 ## What must not be lost in a new chat
 
@@ -78,6 +80,6 @@ ChatGPT should review the completed `F-032 First Timecode Range Stub Slice` hand
 - manager-led execution model is fixed.
 - MVP main surface is `Semantic Map Workspace`.
 - product, domain, schema, project-file, asset, and downstream output-boundary layers are fixed.
-- F-032 is completed with one singular timecode range stub emitted from the current accepted scene reference stub, so the runtime now crosses from scene-side handoff into the first explicit temporal downstream artifact while still staying provisional, pre-automation, and outside workflow-engine semantics.
+- F-033 is completed with one singular `timecode_range_stub` that now enforces bounded manual `HH:MM:SS` readability and one end-not-earlier-than-start sanity rule, so the first temporal downstream artifact is more trustworthy while still staying provisional, pre-automation, and outside workflow-engine semantics.
 - ChatGPT must read Codex handoffs as management signals about capability gained, capability unlocked, unresolved gap, and packet-size efficiency before choosing what comes next.
 - the next strong active runtime step must be re-selected from current repository capability rather than assumed by inertia from the just-completed matching-prep status slice.

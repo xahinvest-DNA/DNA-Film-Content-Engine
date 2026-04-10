@@ -53,6 +53,7 @@ REOPEN_STRUCTURE_REASON = "Approval was reopened because semantic block boundari
 REOPEN_SUITABILITY_REASON = "Approval was reopened because output suitability changed after approval."
 SEVERE_WARNING_FLAGS = {"missing_title", "missing_semantic_role", "very_short_content"}
 KEEP_EXISTING = object()
+MANUAL_TIMECODE_PATTERN = re.compile(r"^(\d{2}):(\d{2}):(\d{2})$")
 
 
 def utc_now() -> str:
@@ -62,6 +63,16 @@ def utc_now() -> str:
 def slugify(value: str) -> str:
     normalized = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
     return normalized or "dna-project"
+
+
+def parse_manual_timecode(value: str) -> int | None:
+    match = MANUAL_TIMECODE_PATTERN.fullmatch(value)
+    if match is None:
+        return None
+    hours, minutes, seconds = (int(part) for part in match.groups())
+    if minutes >= 60 or seconds >= 60:
+        return None
+    return (hours * 3600) + (minutes * 60) + seconds
 
 
 def write_json(path: Path, payload: dict) -> None:
@@ -935,8 +946,19 @@ class ProjectSliceStore:
     ) -> ProjectSlice:
         clean_start = start_timecode.strip()
         clean_end = end_timecode.strip()
-        if not clean_start or not clean_end:
-            raise ValueError("Enter both start and end timecode values before saving the timecode range stub.")
+        if not clean_start:
+            raise ValueError("Enter a start timecode before saving the timecode range stub.")
+        if not clean_end:
+            raise ValueError("Enter an end timecode before saving the timecode range stub.")
+
+        start_seconds = parse_manual_timecode(clean_start)
+        if start_seconds is None:
+            raise ValueError("Start timecode must use HH:MM:SS format for this Scene Matching slice.")
+        end_seconds = parse_manual_timecode(clean_end)
+        if end_seconds is None:
+            raise ValueError("End timecode must use HH:MM:SS format for this Scene Matching slice.")
+        if end_seconds < start_seconds:
+            raise ValueError("End timecode must not be earlier than start timecode for this provisional range.")
 
         project = self.load_project(project_dir)
         if project.accepted_scene_reference_stub is None:

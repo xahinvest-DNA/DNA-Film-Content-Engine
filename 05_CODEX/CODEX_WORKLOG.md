@@ -1,3 +1,21 @@
+## 2026-04-10 - F-033 completed and Scene Matching gained timecode readability and sanity guard
+
+### Completed
+- completed the timecode range readability and sanity guard slice as one bounded follow-up to the first temporal stub boundary inside `Scene Matching`;
+- fixed `HH:MM:SS` as the one accepted manual timecode format and blocked missing values, malformed values, and end-earlier-than-start ordering through the existing local-first error path;
+- added one compact UI cue telling the editor to use `HH:MM:SS` for this manual provisional range;
+- preserved valid saved ranges across reload and kept prior valid saved ranges intact when later invalid save attempts fail;
+- verified the new validation layer plus app-level visibility and reopen coherence through local tests;
+- synchronized the repository state layer after real implementation progress.
+
+### Repository effect
+- the repository now treats the first temporal downstream artifact as minimally readable and sanity-checked rather than as arbitrary free text;
+- `Scene Matching` gained one bounded trust/readability improvement without opening transcript alignment, smart parsing, ranking, backend, or workflow-engine semantics;
+- the next bounded packet should now be selected by manager review against current repository capability rather than assumed by inertia.
+
+### Recommended next step
+ChatGPT should select the next strongest bounded packet after `F-033`, based on the fact that the current manual timecode boundary is now more trustworthy but still intentionally provisional.
+
 ## 2026-04-10 - F-032 completed and Scene Matching gained its first temporal downstream artifact
 
 ### Completed
