@@ -14,6 +14,7 @@ REVIEW_RECORD_FILENAME = "semantic_review.json"
 MATCHING_PREP_ASSET_FILENAME = "asset_references.json"
 MATCHING_CANDIDATE_FILENAME = "candidate_stubs.json"
 ACCEPTED_REFERENCE_FILENAME = "accepted_reference.json"
+ACCEPTED_SCENE_REFERENCE_STUB_FILENAME = "accepted_scene_reference_stub.json"
 ALLOWED_SEMANTIC_ROLES = (
     "claim",
     "insight",
@@ -180,6 +181,15 @@ def normalize_accepted_reference(accepted_reference: dict | None) -> dict | None
     return current
 
 
+def normalize_accepted_scene_reference_stub(accepted_scene_reference_stub: dict | None) -> dict | None:
+    if not accepted_scene_reference_stub:
+        return None
+    current = dict(accepted_scene_reference_stub)
+    current["scene_reference_label"] = current.get("scene_reference_label", "").strip()
+    current["scene_reference_state"] = current.get("scene_reference_state", "accepted_scene_reference_stub_for_later_timecode_prep_only").strip() or "accepted_scene_reference_stub_for_later_timecode_prep_only"
+    return current
+
+
 def semantic_completeness(intake_record: dict, semantic_blocks: list[dict]) -> tuple[str, int, int]:
     if intake_record.get("intake_readiness") != "ready" or not semantic_blocks:
         return ("Incomplete", 0, 0)
@@ -242,6 +252,7 @@ class ProjectSlice:
     matching_prep_assets: list[dict]
     matching_candidate_stubs: list[dict]
     accepted_reference: dict | None
+    accepted_scene_reference_stub: dict | None
 
 
 class ProjectSliceStore:
@@ -313,6 +324,7 @@ class ProjectSliceStore:
         matching_prep_asset_path = project_dir / "records" / "matching_prep" / MATCHING_PREP_ASSET_FILENAME
         matching_candidate_path = project_dir / "records" / "matching_prep" / MATCHING_CANDIDATE_FILENAME
         accepted_reference_path = project_dir / "records" / "matching_prep" / ACCEPTED_REFERENCE_FILENAME
+        accepted_scene_reference_stub_path = project_dir / "records" / "scene_matching" / ACCEPTED_SCENE_REFERENCE_STUB_FILENAME
 
         if analysis_record_path.exists():
             analysis_source_record = read_json(analysis_record_path)
@@ -333,6 +345,8 @@ class ProjectSliceStore:
         matching_candidate_stubs = read_json(matching_candidate_path)["entries"] if matching_candidate_path.exists() else []
         matching_candidate_stubs = normalize_matching_candidate_stubs(matching_candidate_stubs)
         accepted_reference = normalize_accepted_reference(read_json(accepted_reference_path) if accepted_reference_path.exists() else None)
+        accepted_scene_reference_stub = normalize_accepted_scene_reference_stub(read_json(accepted_scene_reference_stub_path) if accepted_scene_reference_stub_path.exists() else None)
+        accepted_scene_reference_stub = self._reconcile_accepted_scene_reference_stub(accepted_scene_reference_stub, accepted_reference)
         return ProjectSlice(
             project_dir=project_dir,
             manifest=manifest,
@@ -344,6 +358,7 @@ class ProjectSliceStore:
             matching_prep_assets=matching_prep_assets,
             matching_candidate_stubs=matching_candidate_stubs,
             accepted_reference=accepted_reference,
+            accepted_scene_reference_stub=accepted_scene_reference_stub,
         )
 
     def save_analysis_text(
@@ -840,6 +855,62 @@ class ProjectSliceStore:
         )
         return self.load_project(project_dir)
 
+    def save_accepted_scene_reference_stub(
+        self,
+        project_dir: Path,
+        scene_reference_label: str,
+    ) -> ProjectSlice:
+        clean_label = scene_reference_label.strip()
+        if not clean_label:
+            raise ValueError("Enter one scene-side reference label before saving the accepted scene reference stub.")
+
+        project = self.load_project(project_dir)
+        if project.accepted_reference is None:
+            raise ValueError("Accepted scene reference stub creation is blocked until one current accepted prep reference exists.")
+        if project.semantic_review_record.get("reopened_after_change"):
+            raise ValueError("Accepted scene reference stub creation is only available while Scene Matching is open from the current accepted prep reference.")
+
+        now = utc_now()
+        accepted_scene_reference_stub = {
+            "project_id": project.manifest["project_id"],
+            "record_id": "accepted-scene-reference-current",
+            "record_type": "accepted_scene_reference_stub",
+            "source_accepted_reference_id": project.accepted_reference["record_id"],
+            "source_candidate_stub_id": project.accepted_reference.get("source_candidate_stub_id", ""),
+            "semantic_block_id": project.accepted_reference.get("semantic_block_id", ""),
+            "prep_asset_id": project.accepted_reference.get("prep_asset_id", ""),
+            "scene_reference_label": clean_label,
+            "scene_reference_state": "accepted_scene_reference_stub_for_later_timecode_prep_only",
+            "created_at": now,
+            "updated_at": now,
+        }
+
+        manifest = dict(project.manifest)
+        manifest["updated_at"] = now
+        project_record = dict(project.project_record)
+        project_record["updated_at"] = now
+        intake_record = dict(project.intake_record)
+        intake_record["updated_at"] = now
+        analysis_source_record = self._copy_analysis_record(project.analysis_source_record, now)
+        semantic_review_record = dict(project.semantic_review_record)
+        semantic_review_record["updated_at"] = now
+
+        self._apply_project_summary(project_record, intake_record, project.semantic_blocks, semantic_review_record)
+        self._write_project_state(
+            project_dir,
+            manifest,
+            project_record,
+            intake_record,
+            analysis_source_record,
+            semantic_review_record,
+            project.semantic_blocks,
+            project.matching_prep_assets,
+            project.matching_candidate_stubs,
+            project.accepted_reference,
+            accepted_scene_reference_stub,
+        )
+        return self.load_project(project_dir)
+
     def update_matching_candidate_stub_rationale(
         self,
         project_dir: Path,
@@ -1023,6 +1094,25 @@ class ProjectSliceStore:
         updated_reference["prep_asset_id"] = source_candidate.get("prep_asset_id", "")
         return updated_reference
 
+    def _reconcile_accepted_scene_reference_stub(
+        self,
+        accepted_scene_reference_stub: dict | None,
+        accepted_reference: dict | None,
+    ) -> dict | None:
+        normalized_stub = normalize_accepted_scene_reference_stub(accepted_scene_reference_stub)
+        if normalized_stub is None:
+            return None
+        normalized_reference = normalize_accepted_reference(accepted_reference)
+        if normalized_reference is None:
+            return None
+        if normalized_stub.get("source_candidate_stub_id", "").strip() != normalized_reference.get("source_candidate_stub_id", "").strip():
+            return None
+        updated_stub = dict(normalized_stub)
+        updated_stub["source_accepted_reference_id"] = normalized_reference.get("record_id", "")
+        updated_stub["semantic_block_id"] = normalized_reference.get("semantic_block_id", "")
+        updated_stub["prep_asset_id"] = normalized_reference.get("prep_asset_id", "")
+        return updated_stub
+
     def _persist_semantic_update(
         self,
         project_dir: Path,
@@ -1087,13 +1177,20 @@ class ProjectSliceStore:
         matching_prep_assets: list[dict],
         matching_candidate_stubs: list[dict],
         accepted_reference: dict | None | object = KEEP_EXISTING,
+        accepted_scene_reference_stub: dict | None | object = KEEP_EXISTING,
     ) -> None:
         semantic_blocks = normalize_semantic_blocks(semantic_blocks)
         accepted_reference_path = project_dir / "records" / "matching_prep" / ACCEPTED_REFERENCE_FILENAME
+        accepted_scene_reference_stub_path = project_dir / "records" / "scene_matching" / ACCEPTED_SCENE_REFERENCE_STUB_FILENAME
         if accepted_reference is KEEP_EXISTING:
             accepted_reference_payload = normalize_accepted_reference(read_json(accepted_reference_path) if accepted_reference_path.exists() else None)
         else:
             accepted_reference_payload = normalize_accepted_reference(accepted_reference if isinstance(accepted_reference, dict) else None)
+        if accepted_scene_reference_stub is KEEP_EXISTING:
+            accepted_scene_reference_stub_payload = normalize_accepted_scene_reference_stub(read_json(accepted_scene_reference_stub_path) if accepted_scene_reference_stub_path.exists() else None)
+        else:
+            accepted_scene_reference_stub_payload = normalize_accepted_scene_reference_stub(accepted_scene_reference_stub if isinstance(accepted_scene_reference_stub, dict) else None)
+        accepted_scene_reference_stub_payload = self._reconcile_accepted_scene_reference_stub(accepted_scene_reference_stub_payload, accepted_reference_payload)
         write_json(project_dir / "project.manifest", manifest)
         write_json(project_dir / "project.meta" / "status.json", self._status_payload(project_record, intake_record, semantic_review_record, semantic_blocks))
         write_json(project_dir / "records" / "project" / "project.json", project_record)
@@ -1108,6 +1205,10 @@ class ProjectSliceStore:
             write_json(accepted_reference_path, accepted_reference_payload)
         elif accepted_reference_path.exists():
             accepted_reference_path.unlink()
+        if accepted_scene_reference_stub_payload is not None:
+            write_json(accepted_scene_reference_stub_path, accepted_scene_reference_stub_payload)
+        elif accepted_scene_reference_stub_path.exists():
+            accepted_scene_reference_stub_path.unlink()
 
     def _status_payload(
         self,

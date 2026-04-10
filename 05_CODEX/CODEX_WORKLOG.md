@@ -1,3 +1,22 @@
+## 2026-04-10 - F-031 completed and Scene Matching gained its first scene-side downstream artifact
+
+### Completed
+- completed the first accepted scene reference stub slice as one bounded follow-up to the real `Scene Matching` entry lane;
+- added one singular persisted accepted scene reference stub that can be saved only from the current accepted prep reference while `Scene Matching` is open;
+- surfaced accepted scene reference stub present/absent state plus one minimal save control inside `Scene Matching`;
+- displayed the accepted scene reference stub as the dominant scene-side downstream artifact above the accepted prep-reference handoff;
+- kept the artifact honestly readable across reload and blocked-after-reopen behavior without opening automatic matching, confidence engines, or timecodes;
+- verified store-level guard, creation, replacement, and reload behavior plus app-level visibility and reopen coherence through local tests;
+- synchronized the repository state layer after real implementation progress.
+
+### Repository effect
+- the repository now contains the first explicit scene-side artifact inside `Scene Matching` rather than an entry-only lane;
+- accepted prep reference and accepted scene reference stub are now distinct runtime boundaries, preserving the canonical chain from semantic meaning into scene-side downstream artifacts;
+- the implementation remains intentionally narrow and does not open automatic matching, ranking, confidence engines, timecodes, backend, or workflow-engine execution work.
+
+### Recommended next step
+ChatGPT should select the next strongest bounded packet after `F-031`, based on the fact that Scene Matching can now emit one singular scene-side downstream artifact.
+
 # Codex Worklog
 
 ## 2026-04-10 - F-030 completed and the runtime gained its first Scene Matching entry surface

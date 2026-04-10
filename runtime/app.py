@@ -70,6 +70,7 @@ class DNAFilmApp:
         self.reopen_text = tk.StringVar(value="Reopen state: none")
         self.matching_prep_text = tk.StringVar(value="Matching prep readiness: blocked | semantic map not established yet")
         self.scene_matching_text = tk.StringVar(value="Scene matching readiness: blocked | no accepted reference available yet")
+        self.scene_matching_reference_summary_text = tk.StringVar(value="Accepted scene reference stub: none created yet.")
         self.matching_prep_status_text = tk.StringVar(value="Matching Prep is blocked until the semantic map is approved.")
         self.matching_prep_summary_text = tk.StringVar(value="Prep handoff: 0 approved semantic blocks available.")
         self.matching_asset_summary_text = tk.StringVar(value="Film-side registration: no prep inputs registered yet.")
@@ -100,6 +101,7 @@ class DNAFilmApp:
         self.candidate_status_var = tk.StringVar(value=ALLOWED_CANDIDATE_REVIEW_STATUSES[0])
         self.candidate_rationale_var = tk.StringVar()
         self.candidate_focus_var = tk.StringVar(value=CANDIDATE_STATUS_FOCUS_OPTIONS[0])
+        self.scene_reference_label_var = tk.StringVar()
         self.candidate_block_options: dict[str, str] = {}
         self.candidate_asset_options: dict[str, str] = {}
         self.candidate_stub_options: dict[str, str] = {}
@@ -110,6 +112,7 @@ class DNAFilmApp:
         self._set_structure_enabled(False, False, False, False, False)
         self._set_focus_navigation_enabled(False, False)
         self._set_matching_candidate_enabled(False, False, False)
+        self._set_scene_matching_enabled(False)
 
     def _build_layout(self) -> None:
         self.root.columnconfigure(1, weight=1)
@@ -380,14 +383,25 @@ class DNAFilmApp:
         frame = ttk.Frame(parent, padding=12)
         frame.grid(row=0, column=0, sticky="nsew")
         frame.columnconfigure(0, weight=1)
-        frame.rowconfigure(3, weight=1)
+        frame.rowconfigure(5, weight=1)
 
         ttk.Label(frame, text="Scene Matching", font=("Segoe UI", 14, "bold")).grid(row=0, column=0, sticky="w")
         ttk.Label(frame, text="This is the first scene-matching-facing entry lane. It opens only when one current accepted prep reference exists and stays explicitly pre-automation, pre-timecode, and pre-final-match.", wraplength=760).grid(row=1, column=0, sticky="w", pady=(8, 6))
         self.scene_matching_status_label = ttk.Label(frame, textvariable=self.scene_matching_text, wraplength=760)
-        self.scene_matching_status_label.grid(row=2, column=0, sticky="w", pady=(0, 8))
-        self.scene_matching_handoff = tk.Text(frame, height=22, wrap="word")
-        self.scene_matching_handoff.grid(row=3, column=0, sticky="nsew")
+        self.scene_matching_status_label.grid(row=2, column=0, sticky="w", pady=(0, 4))
+        ttk.Label(frame, textvariable=self.scene_matching_reference_summary_text, wraplength=760).grid(row=3, column=0, sticky="w", pady=(0, 8))
+
+        scene_reference_frame = ttk.LabelFrame(frame, text="Accepted scene reference stub", padding=8)
+        scene_reference_frame.grid(row=4, column=0, sticky="ew", pady=(0, 8))
+        scene_reference_frame.columnconfigure(1, weight=1)
+        ttk.Label(scene_reference_frame, text="Scene-side label").grid(row=0, column=0, sticky="w")
+        self.scene_reference_label_entry = ttk.Entry(scene_reference_frame, textvariable=self.scene_reference_label_var, width=48)
+        self.scene_reference_label_entry.grid(row=0, column=1, sticky="ew", padx=(8, 12))
+        self.save_scene_reference_button = ttk.Button(scene_reference_frame, text="Save Accepted Scene Reference Stub", command=self.save_accepted_scene_reference_stub)
+        self.save_scene_reference_button.grid(row=0, column=2, sticky="w")
+
+        self.scene_matching_handoff = tk.Text(frame, height=20, wrap="word")
+        self.scene_matching_handoff.grid(row=5, column=0, sticky="nsew")
         self.scene_matching_handoff.configure(state="disabled")
         return frame
 
@@ -716,6 +730,25 @@ class DNAFilmApp:
         self.candidate_rationale_var.set("")
         messagebox.showinfo("Matching Prep", "Manual candidate stub was removed from the local project package.")
 
+    def save_accepted_scene_reference_stub(self) -> None:
+        if self.project is None:
+            messagebox.showerror("Scene Matching", "Create or open a project first.")
+            return
+        try:
+            project = self.store.save_accepted_scene_reference_stub(
+                self.project.project_dir,
+                self.scene_reference_label_var.get(),
+            )
+        except ValueError as exc:
+            messagebox.showerror("Scene Matching", str(exc))
+            return
+
+        current_block_id = self.selected_block_id
+        self._load_project_into_ui(project, select_block_id=current_block_id)
+        self._switch_view("Scene Matching")
+        self.scene_reference_label_var.set((project.accepted_scene_reference_stub or {}).get("scene_reference_label", ""))
+        messagebox.showinfo("Scene Matching", "Accepted scene reference stub was saved in the local project package.")
+
     def on_candidate_stub_selected(self, _event: object | None = None) -> None:
         if self.project is None:
             self.candidate_status_var.set(ALLOWED_CANDIDATE_REVIEW_STATUSES[0])
@@ -779,6 +812,7 @@ class DNAFilmApp:
         self._update_matching_prep_surface(project)
         self._update_scene_matching_surface(project)
         self._refresh_matching_candidate_controls(project)
+        self.scene_reference_label_var.set((project.accepted_scene_reference_stub or {}).get("scene_reference_label", ""))
         warnings = project.intake_record.get("intake_warnings", [])
         warning_text = f"Warnings: {', '.join(warnings)}" if warnings else "Warnings: none"
         suitability_summary = self._project_suitability_summary(project)
@@ -994,6 +1028,12 @@ class DNAFilmApp:
         self.remove_candidate_button.configure(state="normal" if review_enabled else "disabled")
         self.promote_accepted_reference_button.configure(state="normal" if promote_enabled else "disabled")
 
+    def _set_scene_matching_enabled(self, enabled: bool) -> None:
+        entry_state = "normal" if enabled else "disabled"
+        button_state = "normal" if enabled else "disabled"
+        self.scene_reference_label_entry.configure(state=entry_state)
+        self.save_scene_reference_button.configure(state=button_state)
+
     def _set_editor_enabled(self, enabled: bool) -> None:
         entry_state = "normal" if enabled else "disabled"
         combo_state = "readonly" if enabled else "disabled"
@@ -1183,6 +1223,11 @@ class DNAFilmApp:
             return "Accepted reference: none accepted yet for later matching work."
         return "Accepted reference: current accepted reference exists for later matching work."
 
+    def _accepted_scene_reference_stub_summary(self, project: ProjectSlice) -> str:
+        if project.accepted_scene_reference_stub is None:
+            return "Accepted scene reference stub: none created yet."
+        return "Accepted scene reference stub: current scene-side artifact exists for later timecode prep."
+
     def _accepted_reference_lines(self, project: ProjectSlice) -> list[str]:
         accepted_reference = project.accepted_reference
         if accepted_reference is None:
@@ -1205,6 +1250,33 @@ class DNAFilmApp:
             f"  Preferred rationale: {rationale}",
             f"  Note: {note}",
             f"  Accepted reference id: {accepted_reference.get('record_id', 'accepted-reference-current')}",
+            "",
+        ]
+
+    def _accepted_scene_reference_stub_lines(self, project: ProjectSlice) -> list[str]:
+        accepted_scene_reference_stub = project.accepted_scene_reference_stub
+        if accepted_scene_reference_stub is None:
+            return ["- none created yet", ""]
+        accepted_reference = project.accepted_reference or {}
+        source_candidate = self._accepted_reference_source_candidate(project)
+        block_lookup = {block['record_id']: block for block in project.semantic_blocks}
+        asset_lookup = {asset['record_id']: asset for asset in project.matching_prep_assets}
+        block = block_lookup.get(accepted_scene_reference_stub.get("semantic_block_id"))
+        asset = asset_lookup.get(accepted_scene_reference_stub.get("prep_asset_id"))
+        block_label = f"{block['sequence']:02d}. {block['title']}" if block else accepted_scene_reference_stub.get("semantic_block_id", "unknown semantic block")
+        asset_label = f"{asset['asset_label']} [{asset['asset_type']}]" if asset else accepted_scene_reference_stub.get("prep_asset_id", "unknown prep input")
+        rationale = (source_candidate or {}).get("preferred_rationale", "").strip() or "not recorded yet"
+        note = (source_candidate or {}).get("note", "").strip() or "none"
+        return [
+            "",
+            f"- Scene-side label: {accepted_scene_reference_stub.get('scene_reference_label', 'none')}",
+            f"  Semantic block: {block_label}",
+            f"  Prep input: {asset_label}",
+            f"  Source accepted prep reference: {accepted_reference.get('record_id', 'accepted-reference-current')}",
+            "  Scene-side scope: current accepted scene reference stub for later timecode prep only, not automatic matching or final output.",
+            f"  Upstream preferred rationale: {rationale}",
+            f"  Upstream note: {note}",
+            f"  Accepted scene reference stub id: {accepted_scene_reference_stub.get('record_id', 'accepted-scene-reference-current')}",
             "",
         ]
 
@@ -1398,6 +1470,9 @@ class DNAFilmApp:
     def _update_scene_matching_surface(self, project: ProjectSlice) -> None:
         gate_state, gate_reason = self._scene_matching_gate(project)
         accepted_reference_summary = self._accepted_reference_summary(project)
+        accepted_scene_reference_stub_summary = self._accepted_scene_reference_stub_summary(project)
+        self.scene_matching_reference_summary_text.set(accepted_scene_reference_stub_summary)
+        self._set_scene_matching_enabled(gate_state == "ready")
         lines: list[str]
         if gate_state != "ready":
             lines = [
@@ -1405,7 +1480,10 @@ class DNAFilmApp:
                 "",
                 f"Reason: {gate_reason}.",
                 accepted_reference_summary,
+                accepted_scene_reference_stub_summary,
                 "",
+                "Current accepted scene reference stub",
+                *self._accepted_scene_reference_stub_lines(project),
                 "Current accepted reference handoff",
                 *self._accepted_reference_lines(project),
                 "This lane is scene-matching-facing only. It remains pre-automation, pre-timecode, and pre-final-output and does not perform automatic matching yet.",
@@ -1414,7 +1492,10 @@ class DNAFilmApp:
             lines = [
                 "Scene Matching handoff is open.",
                 accepted_reference_summary,
+                accepted_scene_reference_stub_summary,
                 "",
+                "Current accepted scene reference stub",
+                *self._accepted_scene_reference_stub_lines(project),
                 "Current accepted reference for scene matching work",
                 *self._accepted_reference_lines(project),
                 "This lane is the first honest entry into scene matching work.",

@@ -1,16 +1,22 @@
 # Codex Tasks
 
 Last updated: 2026-04-10
-Current focus: manager review and next bounded packet selection after F-030
+Current focus: manager review and next bounded packet selection after F-031
 
 ## Working rule
 Tasks should be bounded, product-visible, and small enough to preserve continuity without turning the repository into micro-slice overload.
 
 ## Active task
 
-- No new implementation packet is active until ChatGPT selects the next bounded step after reviewing the completed `F-030` handoff.
+- No new implementation packet is active until ChatGPT selects the next bounded step after reviewing the completed `F-031` handoff.
 
 ## Completed tasks
+
+### F-031
+- Status: completed
+- Module: first accepted scene reference stub slice
+- Goal: add one bounded local-first accepted scene reference stub inside `Scene Matching` so the current accepted prep reference can become one explicit scene-side downstream artifact without drifting into automatic matching, confidence engines, timecodes, backend, or workflow-engine buildout.
+- Outcome: added one singular persisted accepted scene reference stub in the `Scene Matching` lane, restricted stub creation to the current accepted prep reference while the lane is open, replaced prior stub cleanly on newer save, surfaced accepted scene reference present/absent state plus dominant scene-side handoff visibility in open and blocked-after-reopen states, verified store-level creation/replacement/persistence rules and app-level visibility through local tests, and kept the packet intentionally narrow.
 
 ### F-030
 - Status: completed

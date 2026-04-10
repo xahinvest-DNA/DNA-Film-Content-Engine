@@ -585,6 +585,113 @@ class ProjectSliceStoreTests(unittest.TestCase):
             self.assertEqual(replaced.accepted_reference["prep_asset_id"], replaced.matching_candidate_stubs[1]["prep_asset_id"])
             self.assertEqual(replaced.accepted_reference["record_id"], "accepted-reference-current")
 
+    def test_accepted_scene_reference_stub_creation_is_blocked_without_accepted_prep_reference(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = store.create_project("Scene Reference Guard", film_title="Demo Film", language="en")
+
+            with self.assertRaisesRegex(ValueError, "blocked until one current accepted prep reference exists"):
+                store.save_accepted_scene_reference_stub(project.project_dir, "Opening courtroom exchange")
+
+    def test_accepted_scene_reference_stub_can_be_saved_and_persist_after_reload(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = store.create_project("Scene Reference Stub Map", film_title="Demo Film", language="en")
+            project = store.save_analysis_text(project.project_dir, SAMPLE_ANALYSIS)
+
+            for block in list(project.semantic_blocks):
+                project = store.update_semantic_block(
+                    project.project_dir,
+                    block["record_id"],
+                    block["title"],
+                    block["semantic_role"],
+                    "Editor clarification added.",
+                )
+
+            project = store.update_semantic_review_status(project.project_dir, "ready_for_review")
+            project = store.update_semantic_review_status(project.project_dir, "approved")
+            project = store.add_matching_prep_asset(
+                project.project_dir,
+                "Main subtitle file",
+                "subtitle_reference",
+                "E:/demo/subtitles.srt",
+                "Primary subtitle reference.",
+            )
+            project = store.add_matching_candidate_stub(
+                project.project_dir,
+                project.semantic_blocks[0]["record_id"],
+                project.matching_prep_assets[0]["record_id"],
+                "Accepted prep reference feeds first scene-side stub.",
+            )
+            project = store.update_matching_candidate_stub_status(
+                project.project_dir,
+                project.matching_candidate_stubs[0]["record_id"],
+                "selected",
+            )
+            project = store.promote_matching_candidate_stub_to_accepted_reference(
+                project.project_dir,
+                project.matching_candidate_stubs[0]["record_id"],
+            )
+
+            saved = store.save_accepted_scene_reference_stub(project.project_dir, "Opening courtroom exchange")
+
+            self.assertIsNotNone(saved.accepted_scene_reference_stub)
+            self.assertEqual(saved.accepted_scene_reference_stub["scene_reference_label"], "Opening courtroom exchange")
+            self.assertEqual(saved.accepted_scene_reference_stub["source_candidate_stub_id"], saved.accepted_reference["source_candidate_stub_id"])
+            self.assertTrue((saved.project_dir / "records" / "scene_matching" / "accepted_scene_reference_stub.json").exists())
+
+            reloaded = store.load_project(saved.project_dir)
+            self.assertIsNotNone(reloaded.accepted_scene_reference_stub)
+            self.assertEqual(reloaded.accepted_scene_reference_stub["scene_reference_label"], "Opening courtroom exchange")
+            self.assertEqual(reloaded.accepted_scene_reference_stub["record_type"], "accepted_scene_reference_stub")
+
+    def test_newer_accepted_scene_reference_stub_replaces_prior_one(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = store.create_project("Scene Reference Stub Replacement", film_title="Demo Film", language="en")
+            project = store.save_analysis_text(project.project_dir, SAMPLE_ANALYSIS)
+
+            for block in list(project.semantic_blocks):
+                project = store.update_semantic_block(
+                    project.project_dir,
+                    block["record_id"],
+                    block["title"],
+                    block["semantic_role"],
+                    "Editor clarification added.",
+                )
+
+            project = store.update_semantic_review_status(project.project_dir, "ready_for_review")
+            project = store.update_semantic_review_status(project.project_dir, "approved")
+            project = store.add_matching_prep_asset(
+                project.project_dir,
+                "Main subtitle file",
+                "subtitle_reference",
+                "E:/demo/subtitles.srt",
+                "Primary subtitle reference.",
+            )
+            project = store.add_matching_candidate_stub(
+                project.project_dir,
+                project.semantic_blocks[0]["record_id"],
+                project.matching_prep_assets[0]["record_id"],
+                "Accepted prep reference feeds first scene-side stub.",
+            )
+            project = store.update_matching_candidate_stub_status(
+                project.project_dir,
+                project.matching_candidate_stubs[0]["record_id"],
+                "selected",
+            )
+            project = store.promote_matching_candidate_stub_to_accepted_reference(
+                project.project_dir,
+                project.matching_candidate_stubs[0]["record_id"],
+            )
+            project = store.save_accepted_scene_reference_stub(project.project_dir, "Opening courtroom exchange")
+
+            replaced = store.save_accepted_scene_reference_stub(project.project_dir, "Reframed close-up on the same exchange")
+
+            self.assertIsNotNone(replaced.accepted_scene_reference_stub)
+            self.assertEqual(replaced.accepted_scene_reference_stub["scene_reference_label"], "Reframed close-up on the same exchange")
+            self.assertEqual(replaced.accepted_scene_reference_stub["record_id"], "accepted-scene-reference-current")
+
     def test_analysis_text_must_be_meaningful(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             store = ProjectSliceStore(Path(temp_dir))
@@ -1648,6 +1755,134 @@ class DNAFilmAppTests(unittest.TestCase):
                 self.assertIn("Accepted reference remains readable in blocked scene matching.", handoff)
                 self.assertIn("Scene Matching remains blocked", handoff)
                 self.assertIn("pre-timecode", handoff)
+            finally:
+                root.destroy()
+
+    def test_app_scene_matching_shows_accepted_scene_reference_stub(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Scene Reference Stub Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+
+                    project = app.project
+                    for block in list(project.semantic_blocks):
+                        project = app.store.update_semantic_block(
+                            project.project_dir,
+                            block["record_id"],
+                            block["title"],
+                            block["semantic_role"],
+                            "Editor clarification added.",
+                        )
+                    app._load_project_into_ui(project)
+                    app.review_status_var.set("ready_for_review")
+                    app.save_review_status()
+                    app.review_status_var.set("approved")
+                    app.save_review_status()
+
+                    app._switch_view("Matching Prep")
+                    app.asset_label_var.set("Main subtitle file")
+                    app.asset_type_var.set("subtitle_reference")
+                    app.asset_reference_var.set("E:/demo/subtitles.srt")
+                    app.asset_notes_text.insert("1.0", "Subtitle reference for accepted scene reference stub.")
+                    app.add_matching_prep_asset()
+                    app.candidate_block_var.set(app.candidate_block_combo["values"][0])
+                    app.candidate_asset_var.set(app.candidate_asset_combo["values"][0])
+                    app.candidate_note_var.set("Accepted prep reference feeds accepted scene reference stub.")
+                    app.add_matching_candidate_stub()
+                    app.candidate_stub_var.set(app.candidate_stub_combo["values"][0])
+                    app.on_candidate_stub_selected()
+                    app.candidate_status_var.set("selected")
+                    app.save_matching_candidate_status()
+                    app.candidate_rationale_var.set("Scene-side stub should now become reusable downstream.")
+                    app.save_matching_candidate_rationale()
+                    app.promote_matching_candidate_to_accepted_reference()
+
+                    app._switch_view("Scene Matching")
+                    app.scene_reference_label_var.set("Opening courtroom exchange")
+                    app.save_accepted_scene_reference_stub()
+
+                handoff = app.scene_matching_handoff.get("1.0", "end").strip()
+                self.assertIn("current scene-side artifact exists", app.scene_matching_reference_summary_text.get())
+                self.assertIn("Current accepted scene reference stub", handoff)
+                self.assertIn("Opening courtroom exchange", handoff)
+                self.assertIn("Scene-side scope: current accepted scene reference stub for later timecode prep only", handoff)
+                self.assertIn("Scene-side stub should now become reusable downstream.", handoff)
+            finally:
+                root.destroy()
+
+    def test_app_scene_matching_scene_reference_stub_remains_visible_when_reopened(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.project_name_var.set("UI Scene Reference Stub Reopen Map")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+
+                    project = app.project
+                    for block in list(project.semantic_blocks):
+                        project = app.store.update_semantic_block(
+                            project.project_dir,
+                            block["record_id"],
+                            block["title"],
+                            block["semantic_role"],
+                            "Editor clarification added.",
+                        )
+                    app._load_project_into_ui(project)
+                    app.review_status_var.set("ready_for_review")
+                    app.save_review_status()
+                    app.review_status_var.set("approved")
+                    app.save_review_status()
+
+                    app._switch_view("Matching Prep")
+                    app.asset_label_var.set("Transcript reference")
+                    app.asset_type_var.set("transcript_reference")
+                    app.asset_reference_var.set("E:/demo/transcript.txt")
+                    app.asset_notes_text.insert("1.0", "Transcript reference for scene reference reopen readability.")
+                    app.add_matching_prep_asset()
+                    app.candidate_block_var.set(app.candidate_block_combo["values"][0])
+                    app.candidate_asset_var.set(app.candidate_asset_combo["values"][0])
+                    app.candidate_note_var.set("Accepted prep reference remains visible with scene-side stub.")
+                    app.add_matching_candidate_stub()
+                    app.candidate_stub_var.set(app.candidate_stub_combo["values"][0])
+                    app.on_candidate_stub_selected()
+                    app.candidate_status_var.set("selected")
+                    app.save_matching_candidate_status()
+                    app.promote_matching_candidate_to_accepted_reference()
+
+                    app._switch_view("Scene Matching")
+                    app.scene_reference_label_var.set("Opening courtroom exchange")
+                    app.save_accepted_scene_reference_stub()
+
+                    target_block_id = app.project.semantic_blocks[1]["record_id"]
+                    app._select_block_by_id(target_block_id)
+                    app.reorder_selected_block("up")
+
+                app._switch_view("Scene Matching")
+                handoff = app.scene_matching_handoff.get("1.0", "end").strip()
+                self.assertEqual(app.scene_matching_text.get(), "Scene matching readiness: blocked | accepted reference remains visible but upstream semantic approval was reopened")
+                self.assertIn("current scene-side artifact exists", app.scene_matching_reference_summary_text.get())
+                self.assertIn("Opening courtroom exchange", handoff)
+                self.assertIn("Scene Matching remains blocked", handoff)
             finally:
                 root.destroy()
 
