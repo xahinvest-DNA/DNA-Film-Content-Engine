@@ -1049,6 +1049,12 @@ class DNAFilmApp:
             return f"Selected candidates currently preferred for review: {selected_count} present."
         return "Selected candidates currently preferred for review: none yet."
 
+    def _selected_candidate_readiness_cue(self, project: ProjectSlice) -> str:
+        selected_count = len(self._selected_candidate_stubs(project))
+        if selected_count:
+            return f"Preferred subset readiness: preferred subset exists now ({selected_count} selected candidate(s))."
+        return "Preferred subset readiness: preferred subset not fixed yet (no selected candidates)."
+
     def _candidate_entry_lines(self, project: ProjectSlice, entry: dict) -> list[str]:
         block_lookup = {block['record_id']: block for block in project.semantic_blocks}
         asset_lookup = {asset['record_id']: asset for asset in project.matching_prep_assets}
@@ -1110,13 +1116,15 @@ class DNAFilmApp:
             else:
                 self.matching_asset_summary_text.set("Film-side registration: no prep inputs registered yet.")
             if candidate_count:
-                self.matching_candidate_summary_text.set(f"{self._selected_candidate_summary(project)} | Manual candidate stubs: {visible_candidate_count} visible of {candidate_count} stored but currently gated | focus: {focus_label} | {self._candidate_status_summary(project)}.")
+                self.matching_candidate_summary_text.set(f"{self._selected_candidate_readiness_cue(project)} | {self._selected_candidate_summary(project)} | Manual candidate stubs: {visible_candidate_count} visible of {candidate_count} stored but currently gated | focus: {focus_label} | {self._candidate_status_summary(project)}.")
             else:
                 self.matching_candidate_summary_text.set("Manual candidate stubs: none yet.")
             lines = [
                 "Matching Prep remains blocked in this project state.",
                 "",
                 f"Reason: {gate_reason}.",
+                self._selected_candidate_readiness_cue(project),
+                self._selected_candidate_summary(project),
                 "",
                 "Registered film-side inputs",
             ]
@@ -1152,7 +1160,7 @@ class DNAFilmApp:
             else:
                 self.matching_asset_summary_text.set("Film-side registration: no prep inputs registered yet.")
             if candidate_count:
-                self.matching_candidate_summary_text.set(f"{self._selected_candidate_summary(project)} | Manual candidate stubs: {visible_candidate_count} visible of {candidate_count} saved in this project | focus: {focus_label} | {self._candidate_status_summary(project)}.")
+                self.matching_candidate_summary_text.set(f"{self._selected_candidate_readiness_cue(project)} | {self._selected_candidate_summary(project)} | Manual candidate stubs: {visible_candidate_count} visible of {candidate_count} saved in this project | focus: {focus_label} | {self._candidate_status_summary(project)}.")
             else:
                 self.matching_candidate_summary_text.set("Manual candidate stubs: no manual candidate stubs yet.")
             lines = [
@@ -1160,6 +1168,8 @@ class DNAFilmApp:
                 f"Project: {project.project_record['title']}",
                 f"Semantic blocks: {block_count}",
                 f"Registered prep inputs: {asset_count}",
+                self._selected_candidate_readiness_cue(project),
+                self._selected_candidate_summary(project),
                 f"Manual candidate stubs: {visible_candidate_count} visible of {candidate_count} | focus: {focus_label} | {self._candidate_status_summary(project)}",
                 "",
                 "Registered film-side inputs",

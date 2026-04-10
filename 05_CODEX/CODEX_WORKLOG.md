@@ -1,5 +1,23 @@
 # Codex Worklog
 
+## 2026-04-10 - F-024 completed and Matching Prep gained selected-readiness visibility
+
+### Completed
+- completed the selected candidate readiness cue slice as one bounded follow-up to the selected-dominant handoff layer;
+- added one compact readiness-style cue that explicitly distinguishes whether a current preferred selected subset exists now or is not fixed yet;
+- surfaced that cue directly in the Matching Prep candidate summary and handoff-facing status area using the existing selected subset only;
+- kept the cue presentation-only and did not convert selected candidates into accepted references, approval workflow states, final matches, or ranking winners;
+- verified selected-present, selected-absent, reload-coherent, and gated-after-reopen cue behavior through local app-level tests alongside prior regressions;
+- synchronized the repository state layer after real implementation progress.
+
+### Repository effect
+- the repository now gives editors and managers a fast answer to whether a manually preferred subset currently exists as a prep-readiness signal;
+- Matching Prep gained one compact readiness/readability layer without opening accepted-reference semantics, ranking, timecodes, backend/API, or a new subsystem;
+- the next bounded packet should now be selected by manager review against current repository capability rather than assumed by inertia.
+
+### Recommended next step
+ChatGPT should select one strongest next bounded packet after reviewing `F-024`.
+
 ## 2026-04-10 - F-023 completed and Matching Prep gained selected-dominant handoff readability
 
 ### Completed

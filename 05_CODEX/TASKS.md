@@ -1,7 +1,7 @@
 # Codex Tasks
 
 Last updated: 2026-04-10
-Current focus: manager review and next bounded packet selection after F-023
+Current focus: manager review and next bounded packet selection after F-024
 
 ## Working rule
 Tasks should be bounded, product-visible, and small enough to preserve continuity without turning the repository into micro-slice overload.
@@ -11,6 +11,12 @@ Tasks should be bounded, product-visible, and small enough to preserve continuit
 - No new implementation packet is active until ChatGPT selects the next bounded step after reviewing the completed `F-021` handoff.
 
 ## Completed tasks
+
+### F-024
+- Status: completed
+- Module: selected candidate readiness cue slice
+- Goal: add one compact selected-readiness cue inside Matching Prep without drifting into accepted-reference pre-state, approval workflow, ranking, timecodes, backend, or workflow execution buildout.
+- Outcome: added one explicit readiness-style cue that distinguishes whether a preferred selected subset exists now or is not fixed yet, surfaced that cue in Matching Prep summary and handoff status areas, kept selected semantics limited to manually preferred-for-review only, verified selected-present, selected-absent, reload-coherent, and gated-after-reopen cue behavior through local app-level tests, and kept the packet intentionally narrow.
 
 ### F-023
 - Status: completed
