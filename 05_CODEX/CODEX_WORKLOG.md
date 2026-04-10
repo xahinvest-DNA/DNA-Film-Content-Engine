@@ -1,5 +1,22 @@
 # Codex Worklog
 
+## 2026-04-10 - F-028 completed and Matching Prep gained exact-pair duplicate guard
+
+### Completed
+- completed the manual candidate stub duplicate guard slice as one bounded follow-up to the existing candidate creation, annotation, cleanup, and visibility surfaces;
+- added one exact-pair duplicate guard on manual candidate stub creation so the same semantic-block-to-prep-asset pair cannot be stored twice inside the existing local persistence family;
+- reused the existing Matching Prep error path so duplicate attempts fail honestly without creating a second stub or introducing soft policy semantics;
+- verified duplicate blocking and unchanged persisted stub count through local store-level and app-level tests alongside prior regressions;
+- synchronized the repository state layer after real implementation progress.
+
+### Repository effect
+- the repository now protects Matching Prep from exact duplicate manual candidate links while keeping candidate creation local-first and intentionally narrow;
+- Matching Prep gained one integrity improvement without opening ranking, accepted-reference semantics, backend/API, workflow engine, or a candidate-management subsystem;
+- the next bounded packet should now be selected by manager review against current repository capability rather than assumed by inertia.
+
+### Recommended next step
+ChatGPT should select one strongest next bounded packet after reviewing `F-028`.
+
 ## 2026-04-10 - F-027 completed and Matching Prep gained selected-first visible listing order
 
 ### Completed

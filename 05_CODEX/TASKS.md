@@ -1,16 +1,22 @@
 # Codex Tasks
 
 Last updated: 2026-04-10
-Current focus: manager review and next bounded packet selection after F-027
+Current focus: manager review and next bounded packet selection after F-028
 
 ## Working rule
 Tasks should be bounded, product-visible, and small enough to preserve continuity without turning the repository into micro-slice overload.
 
 ## Active task
 
-- No new implementation packet is active until ChatGPT selects the next bounded step after reviewing the completed `F-027` handoff.
+- No new implementation packet is active until ChatGPT selects the next bounded step after reviewing the completed `F-028` handoff.
 
 ## Completed tasks
+
+### F-028
+- Status: completed
+- Module: manual candidate stub duplicate guard slice
+- Goal: add one minimal local-first duplicate guard that blocks creation of an exact manual candidate stub duplicate for the same semantic block and prep input pair without drifting into candidate policy, ranking, accepted-reference semantics, backend, or workflow buildout.
+- Outcome: added one store-level exact-pair duplicate guard on manual candidate stub creation using the existing semantic-block-to-prep-asset relationship only, reused the existing Matching Prep error path so duplicate attempts fail honestly without writing a second stub, verified duplicate blocking through store-level and app-level tests, and kept the packet intentionally narrow.
 
 ### F-027
 - Status: completed

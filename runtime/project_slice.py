@@ -715,6 +715,17 @@ class ProjectSliceStore:
         prep_asset = next((entry for entry in project.matching_prep_assets if entry["record_id"] == clean_asset_id), None)
         if prep_asset is None:
             raise ValueError("Selected prep input was not found for this manual candidate stub.")
+        duplicate_entry = next(
+            (
+                entry
+                for entry in project.matching_candidate_stubs
+                if entry.get("semantic_block_id") == semantic_block["record_id"]
+                and entry.get("prep_asset_id") == prep_asset["record_id"]
+            ),
+            None,
+        )
+        if duplicate_entry is not None:
+            raise ValueError("This manual candidate stub already exists for the selected semantic block and prep input.")
 
         now = utc_now()
         entries = [dict(entry) for entry in project.matching_candidate_stubs]

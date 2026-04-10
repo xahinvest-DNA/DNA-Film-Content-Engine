@@ -274,6 +274,7 @@ class ProjectSliceStoreTests(unittest.TestCase):
                 )
 
             project = store.update_semantic_review_status(project.project_dir, "ready_for_review")
+            project = store.update_semantic_review_status(project.project_dir, "ready_for_review")
             project = store.update_semantic_review_status(project.project_dir, "approved")
             project = store.add_matching_prep_asset(
                 project.project_dir,
@@ -338,6 +339,49 @@ class ProjectSliceStoreTests(unittest.TestCase):
             removed_reloaded = store.load_project(removed.project_dir)
             self.assertEqual(len(removed_reloaded.matching_candidate_stubs), 1)
             self.assertEqual(removed_reloaded.matching_candidate_stubs[0]["record_id"], "candidate-stub-001")
+
+    def test_duplicate_manual_candidate_stub_is_blocked_for_same_semantic_block_and_prep_asset(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = store.create_project("Duplicate Guard", film_title="Demo Film", language="en")
+            project = store.save_analysis_text(project.project_dir, SAMPLE_ANALYSIS)
+
+            for block in list(project.semantic_blocks):
+                project = store.update_semantic_block(
+                    project.project_dir,
+                    block["record_id"],
+                    block["title"],
+                    block["semantic_role"],
+                    "Editor clarification added.",
+                )
+
+            project = store.update_semantic_review_status(project.project_dir, "ready_for_review")
+            project = store.update_semantic_review_status(project.project_dir, "approved")
+            project = store.add_matching_prep_asset(
+                project.project_dir,
+                "Main subtitle file",
+                "subtitle_reference",
+                "E:/demo/subtitles.srt",
+                "Primary subtitle reference.",
+            )
+            project = store.add_matching_candidate_stub(
+                project.project_dir,
+                project.semantic_blocks[0]["record_id"],
+                project.matching_prep_assets[0]["record_id"],
+                "Original manual candidate.",
+            )
+
+            with self.assertRaisesRegex(ValueError, "already exists for the selected semantic block and prep input"):
+                store.add_matching_candidate_stub(
+                    project.project_dir,
+                    project.semantic_blocks[0]["record_id"],
+                    project.matching_prep_assets[0]["record_id"],
+                    "Duplicate manual candidate.",
+                )
+
+            reloaded = store.load_project(project.project_dir)
+            self.assertEqual(len(reloaded.matching_candidate_stubs), 1)
+            self.assertEqual(reloaded.matching_candidate_stubs[0]["note"], "Original manual candidate.")
 
     def test_analysis_text_must_be_meaningful(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -1388,6 +1432,61 @@ class DNAFilmAppTests(unittest.TestCase):
                 self.assertEqual(reloaded.matching_candidate_stubs[0]["review_status"], "selected")
                 self.assertEqual(reloaded.matching_candidate_stubs[1]["record_id"], "candidate-stub-002")
                 self.assertEqual(reloaded.matching_candidate_stubs[1]["review_status"], "rejected")
+            finally:
+                root.destroy()
+
+    def test_app_matching_prep_blocks_exact_duplicate_manual_candidate_stub(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror") as mock_error:
+                    app.project_name_var.set("Duplicate Guard")
+                    app.film_title_var.set("Demo Film")
+                    app.language_var.set("en")
+                    app.create_project()
+                    app.analysis_text.insert("1.0", SAMPLE_ANALYSIS)
+                    app.save_analysis_text()
+
+                    project = app.project
+                    for block in list(project.semantic_blocks):
+                        project = app.store.update_semantic_block(
+                            project.project_dir,
+                            block["record_id"],
+                            block["title"],
+                            block["semantic_role"],
+                            "Editor clarification added.",
+                        )
+                    project = app.store.update_semantic_review_status(project.project_dir, "ready_for_review")
+                    project = app.store.update_semantic_review_status(project.project_dir, "approved")
+                    app._load_project_into_ui(project)
+
+                    app._switch_view("Matching Prep")
+                    app.asset_label_var.set("Main subtitle file")
+                    app.asset_type_var.set("subtitle_reference")
+                    app.asset_reference_var.set("E:/demo/subtitles.srt")
+                    app.asset_notes_text.insert("1.0", "Subtitle reference for manual candidate linking.")
+                    app.add_matching_prep_asset()
+
+                    app.candidate_block_var.set(app.candidate_block_combo["values"][0])
+                    app.candidate_asset_var.set(app.candidate_asset_combo["values"][0])
+                    app.candidate_note_var.set("Original manual candidate.")
+                    app.add_matching_candidate_stub()
+
+                    app.candidate_block_var.set(app.candidate_block_combo["values"][0])
+                    app.candidate_asset_var.set(app.candidate_asset_combo["values"][0])
+                    app.candidate_note_var.set("Duplicate manual candidate.")
+                    app.add_matching_candidate_stub()
+
+                reloaded = app.store.load_project(app.project.project_dir)
+                self.assertEqual(len(reloaded.matching_candidate_stubs), 1)
+                self.assertEqual(reloaded.matching_candidate_stubs[0]["note"], "Original manual candidate.")
+                mock_error.assert_called_once()
+                self.assertIn("already exists for the selected semantic block and prep input", mock_error.call_args.args[1])
+                self.assertIn("1 visible of 1 saved in this project", app.matching_candidate_summary_text.get())
             finally:
                 root.destroy()
 
