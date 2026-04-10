@@ -1,5 +1,23 @@
 # Codex Worklog
 
+## 2026-04-10 - F-022 completed and Matching Prep gained manual candidate status focus
+
+### Completed
+- completed the manual candidate status focus slice as one bounded follow-up to the manual candidate review-status layer;
+- added one compact status focus control inside Matching Prep with `all`, `tentative`, `selected`, and `rejected` options;
+- changed the visible candidate subset directly in the Matching Prep candidate summary and handoff text using the existing `review_status` field rather than adding a new persistence or query subsystem;
+- kept the focus state local to the active UI session and intentionally did not persist it to disk;
+- verified status-based filtering behavior, reload-coherent visibility, and gated-after-reopen focused visibility through local app-level tests alongside prior regressions;
+- synchronized the repository state layer after real implementation progress.
+
+### Repository effect
+- the repository now lets editors quickly read only selected, tentative, rejected, or all manual candidate stubs without changing candidate meaning or opening a queue/dashboard surface;
+- Matching Prep gained one operational readability layer without opening ranking, accepted-reference semantics, timecodes, backend/API, or a candidate-management subsystem;
+- the next bounded packet should now be selected by manager review against current repository capability rather than assumed by inertia.
+
+### Recommended next step
+ChatGPT should select one strongest next bounded packet after reviewing `F-022`.
+
 ## 2026-04-10 - F-021 completed and Matching Prep gained manual candidate review status
 
 ### Completed

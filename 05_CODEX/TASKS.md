@@ -1,7 +1,7 @@
 # Codex Tasks
 
 Last updated: 2026-04-10
-Current focus: manager review and next bounded packet selection after F-021
+Current focus: manager review and next bounded packet selection after F-022
 
 ## Working rule
 Tasks should be bounded, product-visible, and small enough to preserve continuity without turning the repository into micro-slice overload.
@@ -11,6 +11,12 @@ Tasks should be bounded, product-visible, and small enough to preserve continuit
 - No new implementation packet is active until ChatGPT selects the next bounded step after reviewing the completed `F-021` handoff.
 
 ## Completed tasks
+
+### F-022
+- Status: completed
+- Module: manual candidate status focus slice
+- Goal: add one compact local-first focus/filter control for manual candidate stubs inside Matching Prep without drifting into candidate management, ranking, accepted-reference semantics, timecodes, backend, or workflow execution buildout.
+- Outcome: added one compact status focus control with `all`, `tentative`, `selected`, and `rejected` options, filtered the visible candidate subset in Matching Prep summary and handoff surfaces using the existing `review_status` field, kept focus state non-persisted and local to the active UI session, verified reload-coherent filtering and gated-after-reopen visibility through local app-level tests, and kept the packet intentionally narrow.
 
 ### F-021
 - Status: completed
