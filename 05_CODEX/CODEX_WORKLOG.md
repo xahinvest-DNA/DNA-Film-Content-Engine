@@ -1,3 +1,22 @@
+## 2026-04-11 - F-036 completed and Rough Cut gained its first preferred current rough-cut subset
+
+### Completed
+- completed the rough cut preferred subset readability slice as one bounded follow-up to the ordered rough-cut segment set boundary;
+- added one bounded persisted `subset_status` field on saved rough-cut segment stubs so the runtime can distinguish between saved-only segments and segments selected for the current preferred rough cut;
+- added one minimal local-first include/remove path for the currently selected rough-cut segment inside the real `Rough Cut` lane;
+- surfaced one dominant `Current preferred rough-cut subset` handoff section while preserving the full ordered saved rough-cut set and existing reorder behavior;
+- kept preferred-subset status coherent across reload, reorder, and blocked-but-readable semantic reopen states;
+- verified store-level subset update, reload, reorder, and invalidation behavior plus app-level preferred-subset readability, selected-segment coherence, and reopen behavior through local tests;
+- synchronized the repository state layer after real implementation progress.
+
+### Repository effect
+- the runtime now holds not only one ordered rough-cut segment set, but also the first editorial distinction inside that set between all saved segments and the current preferred subset for later assembly;
+- the repository gained one stronger rough-cut readability boundary without opening playback, trimming, mini-timeline, render/export, backend, or workflow-engine semantics;
+- the next bounded packet should now be selected by manager review against current repository capability rather than assumed by inertia.
+
+### Recommended next step
+ChatGPT should select the next strongest bounded packet after `F-036`, based on the fact that the runtime now expresses one current preferred rough-cut subset inside the saved ordered rough-cut structure.
+
 ## 2026-04-11 - F-035 completed and Rough Cut gained its first ordered rough-cut segment set
 
 ### Completed

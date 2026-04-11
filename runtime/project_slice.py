@@ -43,6 +43,10 @@ ALLOWED_CANDIDATE_REVIEW_STATUSES = (
     "selected",
     "rejected",
 )
+ALLOWED_ROUGH_CUT_SUBSET_STATUSES = (
+    "saved_only",
+    "selected_for_current_rough_cut",
+)
 
 
 APPROVAL_READY_REASON = "Semantic map is ready for approval."
@@ -221,6 +225,10 @@ def normalize_rough_cut_segment_stubs(rough_cut_segment_stubs: list[dict]) -> li
         current["start_timecode"] = current.get("start_timecode", "").strip()
         current["end_timecode"] = current.get("end_timecode", "").strip()
         current["segment_state"] = current.get("segment_state", "provisional_rough_cut_segment_for_later_assembly_only").strip() or "provisional_rough_cut_segment_for_later_assembly_only"
+        subset_status = current.get("subset_status", ALLOWED_ROUGH_CUT_SUBSET_STATUSES[0])
+        if subset_status not in ALLOWED_ROUGH_CUT_SUBSET_STATUSES:
+            subset_status = ALLOWED_ROUGH_CUT_SUBSET_STATUSES[0]
+        current["subset_status"] = subset_status
         current["sequence"] = index
         normalized.append(current)
     return normalized
@@ -1070,6 +1078,7 @@ class ProjectSliceStore:
                 "end_timecode": project.timecode_range_stub.get("end_timecode", ""),
                 "segment_label": clean_label,
                 "sequence": len(rough_cut_segment_entries) + 1,
+                "subset_status": ALLOWED_ROUGH_CUT_SUBSET_STATUSES[0],
                 "segment_state": "provisional_rough_cut_segment_for_later_assembly_only",
                 "created_at": now,
                 "updated_at": now,
@@ -1132,6 +1141,64 @@ class ProjectSliceStore:
         for index, entry in enumerate(entries, start=1):
             entry["sequence"] = index
             entry["updated_at"] = now
+
+        manifest = dict(project.manifest)
+        manifest["updated_at"] = now
+        project_record = dict(project.project_record)
+        project_record["updated_at"] = now
+        intake_record = dict(project.intake_record)
+        intake_record["updated_at"] = now
+        analysis_source_record = self._copy_analysis_record(project.analysis_source_record, now)
+        semantic_review_record = dict(project.semantic_review_record)
+        semantic_review_record["updated_at"] = now
+
+        self._apply_project_summary(project_record, intake_record, project.semantic_blocks, semantic_review_record)
+        self._write_project_state(
+            project_dir,
+            manifest,
+            project_record,
+            intake_record,
+            analysis_source_record,
+            semantic_review_record,
+            project.semantic_blocks,
+            project.matching_prep_assets,
+            project.matching_candidate_stubs,
+            project.accepted_reference,
+            project.accepted_scene_reference_stub,
+            project.timecode_range_stub,
+            entries,
+        )
+        return self.load_project(project_dir)
+
+    def update_rough_cut_segment_subset_status(
+        self,
+        project_dir: Path,
+        rough_cut_segment_stub_id: str,
+        subset_status: str,
+    ) -> ProjectSlice:
+        clean_stub_id = rough_cut_segment_stub_id.strip()
+        clean_subset_status = subset_status.strip()
+        if not clean_stub_id:
+            raise ValueError("Select one rough-cut segment stub before changing its current rough-cut subset status.")
+        if clean_subset_status not in ALLOWED_ROUGH_CUT_SUBSET_STATUSES:
+            raise ValueError("Rough-cut subset status must be 'saved_only' or 'selected_for_current_rough_cut'.")
+
+        project = self.load_project(project_dir)
+        if project.accepted_reference is None or project.accepted_scene_reference_stub is None or project.timecode_range_stub is None or project.semantic_review_record.get("reopened_after_change"):
+            raise ValueError("Rough-cut subset status can only be changed while Rough Cut is open from the current accepted downstream handoff chain.")
+
+        now = utc_now()
+        updated = False
+        entries: list[dict] = []
+        for entry in project.rough_cut_segment_stubs:
+            current = dict(entry)
+            if current.get("record_id") == clean_stub_id:
+                current["subset_status"] = clean_subset_status
+                current["updated_at"] = now
+                updated = True
+            entries.append(current)
+        if not updated:
+            raise ValueError("Selected rough-cut segment stub was not found in the current rough-cut set.")
 
         manifest = dict(project.manifest)
         manifest["updated_at"] = now

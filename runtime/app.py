@@ -73,7 +73,7 @@ class DNAFilmApp:
         self.rough_cut_text = tk.StringVar(value="Rough cut readiness: blocked | no accepted reference available yet")
         self.scene_matching_reference_summary_text = tk.StringVar(value="Accepted scene reference stub: none created yet.")
         self.scene_matching_timecode_summary_text = tk.StringVar(value="Timecode range stub: none saved yet.")
-        self.rough_cut_segment_summary_text = tk.StringVar(value="Rough-cut segment stub: none saved yet.")
+        self.rough_cut_segment_summary_text = tk.StringVar(value="Rough-cut segment set: none saved yet.")
         self.matching_prep_status_text = tk.StringVar(value="Matching Prep is blocked until the semantic map is approved.")
         self.matching_prep_summary_text = tk.StringVar(value="Prep handoff: 0 approved semantic blocks available.")
         self.matching_asset_summary_text = tk.StringVar(value="Film-side registration: no prep inputs registered yet.")
@@ -466,6 +466,10 @@ class DNAFilmApp:
         self.rough_cut_move_up_button.pack(side="left")
         self.rough_cut_move_down_button = ttk.Button(controls, text="Move Down", command=lambda: self.reorder_selected_rough_cut_segment("down"))
         self.rough_cut_move_down_button.pack(side="left", padx=(8, 0))
+        self.include_rough_cut_subset_button = ttk.Button(controls, text="Include in Current Rough Cut", command=self.include_selected_rough_cut_segment)
+        self.include_rough_cut_subset_button.pack(side="left", padx=(8, 0))
+        self.remove_rough_cut_subset_button = ttk.Button(controls, text="Remove from Current Rough Cut", command=self.remove_selected_rough_cut_segment)
+        self.remove_rough_cut_subset_button.pack(side="left", padx=(8, 0))
 
         self.rough_cut_handoff = tk.Text(frame, height=18, wrap="word")
         self.rough_cut_handoff.grid(row=6, column=0, sticky="nsew")
@@ -881,6 +885,29 @@ class DNAFilmApp:
         self._select_rough_cut_segment_by_id(selected_segment_id)
         self._switch_view("Rough Cut")
 
+    def include_selected_rough_cut_segment(self) -> None:
+        self._update_selected_rough_cut_subset_status("selected_for_current_rough_cut", "Selected rough-cut segment was included in the current preferred rough-cut subset.")
+
+    def remove_selected_rough_cut_segment(self) -> None:
+        self._update_selected_rough_cut_subset_status("saved_only", "Selected rough-cut segment was returned to the saved-only rough-cut set.")
+
+    def _update_selected_rough_cut_subset_status(self, subset_status: str, success_message: str) -> None:
+        if self.project is None:
+            messagebox.showerror("Rough Cut", "Create or open a project first.")
+            return
+        segment_id = self.rough_cut_segment_options.get(self.rough_cut_segment_var.get(), "")
+        try:
+            project = self.store.update_rough_cut_segment_subset_status(self.project.project_dir, segment_id, subset_status)
+        except ValueError as exc:
+            messagebox.showerror("Rough Cut", str(exc))
+            return
+
+        current_block_id = self.selected_block_id
+        self._load_project_into_ui(project, select_block_id=current_block_id)
+        self._select_rough_cut_segment_by_id(segment_id)
+        self._switch_view("Rough Cut")
+        messagebox.showinfo("Rough Cut", success_message)
+
     def on_candidate_stub_selected(self, _event: object | None = None) -> None:
         if self.project is None:
             self.candidate_status_var.set(ALLOWED_CANDIDATE_REVIEW_STATUSES[0])
@@ -1185,6 +1212,8 @@ class DNAFilmApp:
         if not enabled:
             self.rough_cut_move_up_button.configure(state="disabled")
             self.rough_cut_move_down_button.configure(state="disabled")
+            self.include_rough_cut_subset_button.configure(state="disabled")
+            self.remove_rough_cut_subset_button.configure(state="disabled")
 
     def _set_editor_enabled(self, enabled: bool) -> None:
         entry_state = "normal" if enabled else "disabled"
@@ -1309,6 +1338,8 @@ class DNAFilmApp:
             self.rough_cut_segment_combo.configure(values=())
             self.rough_cut_segment_var.set("")
             self.rough_cut_segment_label_var.set("")
+            self.include_rough_cut_subset_button.configure(state="disabled")
+            self.remove_rough_cut_subset_button.configure(state="disabled")
             return
         current_display = self.rough_cut_segment_var.get()
         self.rough_cut_segment_options = {
@@ -1331,6 +1362,14 @@ class DNAFilmApp:
         move_enabled = gate_state == "ready" and selected_index >= 0
         self.rough_cut_move_up_button.configure(state="normal" if move_enabled and selected_index > 0 else "disabled")
         self.rough_cut_move_down_button.configure(state="normal" if move_enabled and 0 <= selected_index < len(values) - 1 else "disabled")
+        selected_subset_status = (selected_entry or {}).get("subset_status", "saved_only")
+        subset_enabled = gate_state == "ready" and selected_entry is not None
+        self.include_rough_cut_subset_button.configure(
+            state="normal" if subset_enabled and selected_subset_status != "selected_for_current_rough_cut" else "disabled"
+        )
+        self.remove_rough_cut_subset_button.configure(
+            state="normal" if subset_enabled and selected_subset_status == "selected_for_current_rough_cut" else "disabled"
+        )
 
     def _rough_cut_segment_option_label(self, entry: dict) -> str:
         return f"{entry.get('sequence', 0):02d}. {entry.get('segment_label', 'Untitled segment')} [{entry.get('record_id', 'unknown')}]"
@@ -1442,9 +1481,25 @@ class DNAFilmApp:
 
     def _rough_cut_segment_stub_summary(self, project: ProjectSlice) -> str:
         segment_count = len(project.rough_cut_segment_stubs)
+        preferred_count = len(self._preferred_rough_cut_segments(project))
         if not segment_count:
             return "Rough-cut segment set: none saved yet."
-        return f"Rough-cut segment set: {segment_count} assembly-facing segment stub(s) saved in current order."
+        if preferred_count:
+            return f"Rough-cut segment set: {segment_count} assembly-facing segment stub(s) saved in current order | Preferred current rough cut: {preferred_count} segment(s) currently selected for later assembly."
+        return f"Rough-cut segment set: {segment_count} assembly-facing segment stub(s) saved in current order | Preferred current rough cut: none selected yet."
+
+    def _preferred_rough_cut_segments(self, project: ProjectSlice) -> list[dict]:
+        return [
+            entry
+            for entry in project.rough_cut_segment_stubs
+            if entry.get("subset_status", "saved_only") == "selected_for_current_rough_cut"
+        ]
+
+    def _rough_cut_preferred_subset_summary(self, project: ProjectSlice) -> str:
+        preferred_count = len(self._preferred_rough_cut_segments(project))
+        if preferred_count:
+            return f"Preferred current rough cut: {preferred_count} segment(s) currently selected for later assembly."
+        return "Preferred current rough cut: none selected yet."
 
     def _accepted_reference_lines(self, project: ProjectSlice) -> list[str]:
         accepted_reference = project.accepted_reference
@@ -1521,12 +1576,31 @@ class DNAFilmApp:
         lines: list[str] = [""]
         for entry in project.rough_cut_segment_stubs:
             selected_marker = " | selected" if entry.get("record_id") == selected_segment_id else ""
+            subset_marker = " | in current preferred rough cut" if entry.get("subset_status", "saved_only") == "selected_for_current_rough_cut" else ""
+            lines.extend([
+                f"- {entry.get('sequence', 0):02d}. {entry.get('segment_label', 'none')}{selected_marker}{subset_marker}",
+                f"  Start: {entry.get('start_timecode', 'none')}",
+                f"  End: {entry.get('end_timecode', 'none')}",
+                f"  Rough-cut segment stub id: {entry.get('record_id', 'unknown')}",
+                "  Assembly scope: provisional rough-cut segment stub for later assembly only, not a real cut or render-ready output.",
+                "",
+            ])
+        return lines
+
+    def _preferred_rough_cut_segment_lines(self, project: ProjectSlice) -> list[str]:
+        preferred_entries = self._preferred_rough_cut_segments(project)
+        if not preferred_entries:
+            return ["- none selected yet", ""]
+        selected_segment_id = self.rough_cut_segment_options.get(self.rough_cut_segment_var.get(), "")
+        lines: list[str] = [""]
+        for entry in preferred_entries:
+            selected_marker = " | selected" if entry.get("record_id") == selected_segment_id else ""
             lines.extend([
                 f"- {entry.get('sequence', 0):02d}. {entry.get('segment_label', 'none')}{selected_marker}",
                 f"  Start: {entry.get('start_timecode', 'none')}",
                 f"  End: {entry.get('end_timecode', 'none')}",
                 f"  Rough-cut segment stub id: {entry.get('record_id', 'unknown')}",
-                "  Assembly scope: provisional rough-cut segment stub for later assembly only, not a real cut or render-ready output.",
+                "  Editorial scope: current preferred rough-cut subset for later assembly only, not a real cut or final timeline.",
                 "",
             ])
         return lines
@@ -1772,6 +1846,7 @@ class DNAFilmApp:
         accepted_scene_reference_stub_summary = self._accepted_scene_reference_stub_summary(project)
         timecode_range_stub_summary = self._timecode_range_stub_summary(project)
         rough_cut_segment_stub_summary = self._rough_cut_segment_stub_summary(project)
+        rough_cut_preferred_subset_summary = self._rough_cut_preferred_subset_summary(project)
         self.rough_cut_segment_summary_text.set(rough_cut_segment_stub_summary)
         self._set_rough_cut_enabled(gate_state == "ready")
         if gate_state != "ready":
@@ -1783,7 +1858,10 @@ class DNAFilmApp:
                 accepted_scene_reference_stub_summary,
                 timecode_range_stub_summary,
                 rough_cut_segment_stub_summary,
+                rough_cut_preferred_subset_summary,
                 "",
+                "Current preferred rough-cut subset",
+                *self._preferred_rough_cut_segment_lines(project),
                 "Current rough-cut segment set",
                 *self._rough_cut_segment_stub_lines(project),
                 "Current timecode range stub",
@@ -1801,7 +1879,10 @@ class DNAFilmApp:
                 accepted_scene_reference_stub_summary,
                 timecode_range_stub_summary,
                 rough_cut_segment_stub_summary,
+                rough_cut_preferred_subset_summary,
                 "",
+                "Current preferred rough-cut subset",
+                *self._preferred_rough_cut_segment_lines(project),
                 "Current rough-cut segment set",
                 *self._rough_cut_segment_stub_lines(project),
                 "Current timecode range stub",

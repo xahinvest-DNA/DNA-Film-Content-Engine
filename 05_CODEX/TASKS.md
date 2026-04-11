@@ -1,16 +1,22 @@
 # Codex Tasks
 
 Last updated: 2026-04-10
-Current focus: manager review and next bounded packet selection after F-035
+Current focus: manager review and next bounded packet selection after F-036
 
 ## Working rule
 Tasks should be bounded, product-visible, and small enough to preserve continuity without turning the repository into micro-slice overload.
 
 ## Active task
 
-- No new implementation packet is active until ChatGPT selects the next bounded step after reviewing the completed `F-035` handoff.
+- No new implementation packet is active until ChatGPT selects the next bounded step after reviewing the completed `F-036` handoff.
 
 ## Completed tasks
+
+### F-036
+- Status: completed
+- Module: rough cut preferred subset readability slice
+- Goal: extend the ordered local-first rough-cut segment set so the runtime can distinguish between all saved rough-cut segment stubs and the current preferred rough-cut subset without drifting into playback, timeline, render/export, backend, or workflow buildout.
+- Outcome: added one bounded persisted `subset_status` layer on saved rough-cut segment stubs, allowed the current selected segment to be included in or removed from the current preferred rough-cut subset, kept preferred-subset status coherent across reload and reorder, surfaced one dominant preferred-subset handoff section inside the real `Rough Cut` lane, preserved the full ordered saved set alongside that editorial subset, verified store-level and app-level subset, reload, reorder, and reopen behavior through local tests, and kept the packet intentionally narrow.
 
 ### F-035
 - Status: completed
