@@ -1,13 +1,64 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
-import json
 import re
 import uuid
-from datetime import datetime, timezone
 from pathlib import Path
 
+from runtime.builders import build_packaging_script_bundle, packaging_bundle_source_segments
 from runtime.domain.project_types import ProjectSlice
-from runtime.services.output_builder import build_packaging_script_bundle, packaging_bundle_source_segments
+from runtime.domain.semantic_rules import (
+    ALLOWED_CANDIDATE_REVIEW_STATUSES,
+    ALLOWED_MATCHING_ASSET_TYPES,
+    ALLOWED_MERGE_DIRECTIONS,
+    ALLOWED_OUTPUT_SUITABILITY,
+    ALLOWED_REORDER_DIRECTIONS,
+    ALLOWED_REVIEW_STATES,
+    ALLOWED_ROUGH_CUT_SUBSET_STATUSES,
+    ALLOWED_SEMANTIC_ROLES,
+    APPROVAL_BLOCK_REASON,
+    APPROVAL_READY_REASON,
+    MANUAL_TIMECODE_PATTERN,
+    REOPEN_BLOCK_EDIT_REASON,
+    REOPEN_REORDER_REASON,
+    REOPEN_SOURCE_REASON,
+    REOPEN_STRUCTURE_REASON,
+    REOPEN_SUITABILITY_REASON,
+    build_semantic_blocks,
+    completeness_readiness_hint,
+    copy_analysis_record,
+    describe_warning_flags,
+    derive_warning_flags,
+    next_block_id,
+    normalize_accepted_reference,
+    normalize_accepted_scene_reference_stub,
+    normalize_matching_candidate_stubs,
+    normalize_output_suitability,
+    normalize_packaging_script_bundle,
+    normalize_rough_cut_segment_stubs,
+    normalize_semantic_blocks,
+    normalize_timecode_range_stub,
+    parse_manual_timecode,
+    resequence_blocks,
+    semantic_completeness,
+    semantic_role_for,
+    slugify,
+    split_sentences,
+    title_for,
+    utc_now,
+)
+from runtime.domain.workflow_rules import (
+    apply_project_summary,
+    approval_readiness_label,
+    default_review_record,
+    mark_reopened_if_needed,
+    reconcile_accepted_reference,
+    reconcile_accepted_scene_reference_stub,
+    reconcile_packaging_script_bundle,
+    reconcile_rough_cut_segment_stubs,
+    reconcile_timecode_range_stub,
+    status_payload,
+)
+from runtime.persistence.json_store import read_json, write_json
 
 
 PROJECT_FORMAT_VERSION = "0.5"
@@ -20,287 +71,7 @@ ACCEPTED_SCENE_REFERENCE_STUB_FILENAME = "accepted_scene_reference_stub.json"
 TIMECODE_RANGE_STUB_FILENAME = "timecode_range_stub.json"
 ROUGH_CUT_SEGMENTS_FILENAME = "rough_cut_segments.json"
 PACKAGING_SCRIPT_BUNDLE_FILENAME = "packaging_script_bundle.json"
-ALLOWED_SEMANTIC_ROLES = (
-    "claim",
-    "insight",
-    "mechanism",
-    "emotional_beat",
-    "transition",
-)
-ALLOWED_REVIEW_STATES = (
-    "under_edit",
-    "ready_for_review",
-    "approved",
-)
-ALLOWED_REORDER_DIRECTIONS = ("up", "down")
-ALLOWED_MERGE_DIRECTIONS = ("up", "down")
-ALLOWED_OUTPUT_SUITABILITY = ("candidate", "strong", "weak", "not_suitable")
-ALLOWED_MATCHING_ASSET_TYPES = (
-    "film_asset_reference",
-    "subtitle_reference",
-    "transcript_reference",
-    "other_prep_reference",
-)
-ALLOWED_CANDIDATE_REVIEW_STATUSES = (
-    "tentative",
-    "selected",
-    "rejected",
-)
-ALLOWED_ROUGH_CUT_SUBSET_STATUSES = (
-    "saved_only",
-    "selected_for_current_rough_cut",
-)
-
-
-APPROVAL_READY_REASON = "Semantic map is ready for approval."
-APPROVAL_BLOCK_REASON = "Approve is blocked until semantic review is moved to ready_for_review."
-REOPEN_BLOCK_EDIT_REASON = "Approval was reopened because a semantic block changed after approval."
-REOPEN_REORDER_REASON = "Approval was reopened because semantic block order changed after approval."
-REOPEN_SOURCE_REASON = "Approval was reopened because the analysis source was replaced after approval."
-REOPEN_STRUCTURE_REASON = "Approval was reopened because semantic block boundaries changed after approval."
-REOPEN_SUITABILITY_REASON = "Approval was reopened because output suitability changed after approval."
-SEVERE_WARNING_FLAGS = {"missing_title", "missing_semantic_role", "very_short_content"}
 KEEP_EXISTING = object()
-MANUAL_TIMECODE_PATTERN = re.compile(r"^(\d{2}):(\d{2}):(\d{2})$")
-
-
-def utc_now() -> str:
-    return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
-
-
-def slugify(value: str) -> str:
-    normalized = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
-    return normalized or "dna-project"
-
-
-def parse_manual_timecode(value: str) -> int | None:
-    match = MANUAL_TIMECODE_PATTERN.fullmatch(value)
-    if match is None:
-        return None
-    hours, minutes, seconds = (int(part) for part in match.groups())
-    if minutes >= 60 or seconds >= 60:
-        return None
-    return (hours * 3600) + (minutes * 60) + seconds
-
-
-def write_json(path: Path, payload: dict) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2, ensure_ascii=True) + "\n", encoding="utf-8")
-
-
-def read_json(path: Path) -> dict:
-    return json.loads(path.read_text(encoding="utf-8-sig"))
-
-
-def semantic_role_for(paragraph: str) -> str:
-    lowered = paragraph.lower()
-    if any(token in lowered for token in ("because", "therefore", "so that", "reveals how")):
-        return "mechanism"
-    if any(token in lowered for token in ("feel", "emotion", "fear", "love", "grief", "hope")):
-        return "emotional_beat"
-    if any(token in lowered for token in ("however", "but", "meanwhile", "then", "finally")):
-        return "transition"
-    if any(token in lowered for token in ("shows", "argues", "suggests", "demonstrates", "means")):
-        return "insight"
-    return "claim"
-
-
-def title_for(paragraph: str) -> str:
-    words = paragraph.split()
-    return " ".join(words[:8]).strip(" .,;:") or "Untitled block"
-
-
-def split_sentences(content: str) -> list[str]:
-    normalized = re.sub(r"\s+", " ", content.strip())
-    if not normalized:
-        return []
-    sentences = [chunk.strip() for chunk in re.split(r"(?<=[.!?])\s+", normalized) if chunk.strip()]
-    return sentences or [normalized]
-
-
-def describe_warning_flags(flags: list[str]) -> list[str]:
-    labels = {
-        "missing_title": "missing title",
-        "weak_title": "weak title",
-        "missing_semantic_role": "missing semantic role",
-        "very_short_content": "very short content",
-        "notes_recommended": "notes recommended",
-    }
-    return [labels.get(flag, flag.replace("_", " ")) for flag in flags]
-
-
-def normalize_output_suitability(output_suitability: dict | None) -> dict:
-    base = {
-        "long_video": "candidate",
-        "shorts_reels": "candidate",
-        "carousel": "candidate",
-        "packaging": "candidate",
-    }
-    if not output_suitability:
-        return base
-    normalized = dict(base)
-    for key, value in output_suitability.items():
-        if key in normalized and value in ALLOWED_OUTPUT_SUITABILITY:
-            normalized[key] = value
-    return normalized
-
-
-def derive_warning_flags(block: dict) -> list[str]:
-    flags: list[str] = []
-    title = block.get("title", "").strip()
-    role = block.get("semantic_role", "").strip()
-    content = block.get("content", "").strip()
-    notes = block.get("notes", "").strip()
-    content_words = len(content.split())
-
-    if not title:
-        flags.append("missing_title")
-    elif title.lower() == "untitled block" or len(title.split()) < 3:
-        flags.append("weak_title")
-
-    if not role:
-        flags.append("missing_semantic_role")
-
-    if content_words < 12:
-        flags.append("very_short_content")
-
-    if not notes and content_words >= 12:
-        flags.append("notes_recommended")
-
-    return flags
-
-
-def normalize_semantic_blocks(semantic_blocks: list[dict]) -> list[dict]:
-    normalized: list[dict] = []
-    for index, block in enumerate(semantic_blocks, start=1):
-        current = dict(block)
-        current["sequence"] = index
-        current["output_suitability"] = normalize_output_suitability(current.get("output_suitability"))
-        current["warning_flags"] = derive_warning_flags(current)
-        normalized.append(current)
-    return normalized
-
-
-def normalize_matching_candidate_stubs(matching_candidate_stubs: list[dict]) -> list[dict]:
-    normalized: list[dict] = []
-    for entry in matching_candidate_stubs:
-        current = dict(entry)
-        if current.get("review_status") not in ALLOWED_CANDIDATE_REVIEW_STATUSES:
-            current["review_status"] = "tentative"
-        current["preferred_rationale"] = current.get("preferred_rationale", "").strip()
-        normalized.append(current)
-    return normalized
-
-
-def normalize_accepted_reference(accepted_reference: dict | None) -> dict | None:
-    if not accepted_reference:
-        return None
-    current = dict(accepted_reference)
-    current["acceptance_state"] = current.get("acceptance_state", "accepted_for_later_matching_work_only").strip() or "accepted_for_later_matching_work_only"
-    current["accepted_from_candidate_review_status"] = current.get("accepted_from_candidate_review_status", "selected").strip() or "selected"
-    return current
-
-
-def normalize_accepted_scene_reference_stub(accepted_scene_reference_stub: dict | None) -> dict | None:
-    if not accepted_scene_reference_stub:
-        return None
-    current = dict(accepted_scene_reference_stub)
-    current["scene_reference_label"] = current.get("scene_reference_label", "").strip()
-    current["scene_reference_state"] = current.get("scene_reference_state", "accepted_scene_reference_stub_for_later_timecode_prep_only").strip() or "accepted_scene_reference_stub_for_later_timecode_prep_only"
-    return current
-
-
-def normalize_timecode_range_stub(timecode_range_stub: dict | None) -> dict | None:
-    if not timecode_range_stub:
-        return None
-    current = dict(timecode_range_stub)
-    current["start_timecode"] = current.get("start_timecode", "").strip()
-    current["end_timecode"] = current.get("end_timecode", "").strip()
-    current["timecode_state"] = current.get("timecode_state", "provisional_timecode_range_for_later_assembly_only").strip() or "provisional_timecode_range_for_later_assembly_only"
-    return current
-
-
-def normalize_rough_cut_segment_stubs(rough_cut_segment_stubs: list[dict]) -> list[dict]:
-    normalized: list[dict] = []
-    for index, entry in enumerate(rough_cut_segment_stubs, start=1):
-        current = dict(entry)
-        current["segment_label"] = current.get("segment_label", "").strip()
-        current["start_timecode"] = current.get("start_timecode", "").strip()
-        current["end_timecode"] = current.get("end_timecode", "").strip()
-        current["segment_state"] = current.get("segment_state", "provisional_rough_cut_segment_for_later_assembly_only").strip() or "provisional_rough_cut_segment_for_later_assembly_only"
-        subset_status = current.get("subset_status", ALLOWED_ROUGH_CUT_SUBSET_STATUSES[0])
-        if subset_status not in ALLOWED_ROUGH_CUT_SUBSET_STATUSES:
-            subset_status = ALLOWED_ROUGH_CUT_SUBSET_STATUSES[0]
-        current["subset_status"] = subset_status
-        current["sequence"] = index
-        normalized.append(current)
-    return normalized
-
-
-def normalize_packaging_script_bundle(packaging_script_bundle: dict | None) -> dict | None:
-    if not packaging_script_bundle:
-        return None
-    current = dict(packaging_script_bundle)
-    current["title"] = current.get("title", "").strip()
-    current["builder_id"] = current.get("builder_id", "packaging_script_bundle_v1").strip() or "packaging_script_bundle_v1"
-    current["source_focus_mode"] = current.get("source_focus_mode", "all_saved_segments").strip() or "all_saved_segments"
-    current["source_candidate_stub_id"] = current.get("source_candidate_stub_id", "").strip()
-    current["artifact_relative_path"] = current.get("artifact_relative_path", "outputs/packaging/packaging_script_bundle.md").strip() or "outputs/packaging/packaging_script_bundle.md"
-    current["markdown_content"] = current.get("markdown_content", "")
-    current["source_rough_cut_segment_ids"] = list(current.get("source_rough_cut_segment_ids", []))
-    current["segments"] = list(current.get("segments", []))
-    current["segment_count"] = len(current["segments"])
-    return current
-
-
-def semantic_completeness(intake_record: dict, semantic_blocks: list[dict]) -> tuple[str, int, int]:
-    if intake_record.get("intake_readiness") != "ready" or not semantic_blocks:
-        return ("Incomplete", 0, 0)
-    issue_count = sum(len(block.get("warning_flags", [])) for block in semantic_blocks)
-    blocks_with_issues = sum(1 for block in semantic_blocks if block.get("warning_flags"))
-    has_severe = any(any(flag in SEVERE_WARNING_FLAGS for flag in block.get("warning_flags", [])) for block in semantic_blocks)
-    if has_severe:
-        return ("Incomplete", issue_count, blocks_with_issues)
-    if issue_count:
-        return ("Mixed", issue_count, blocks_with_issues)
-    return ("Plausibly ready for review", 0, 0)
-
-
-def completeness_readiness_hint(completeness_label: str) -> str:
-    if completeness_label == "Incomplete":
-        return "premature"
-    if completeness_label == "Mixed":
-        return "mixed"
-    return "plausibly_reasonable"
-
-
-def build_semantic_blocks(project_id: str, source_record_id: str, analysis_text: str) -> list[dict]:
-    paragraphs = [chunk.strip() for chunk in re.split(r"\n\s*\n", analysis_text) if chunk.strip()]
-    blocks: list[dict] = []
-    for index, paragraph in enumerate(paragraphs, start=1):
-        block_id = f"sb-{index:03d}"
-        blocks.append(
-            {
-                "project_id": project_id,
-                "record_id": block_id,
-                "record_type": "semantic_block",
-                "source_record_id": source_record_id,
-                "sequence": index,
-                "title": title_for(paragraph),
-                "content": paragraph,
-                "semantic_role": semantic_role_for(paragraph),
-                "output_suitability": {
-                    "long_video": "candidate",
-                    "shorts_reels": "candidate",
-                    "carousel": "candidate",
-                    "packaging": "candidate",
-                },
-                "notes": "",
-                "review_state": "proposed",
-                "warning_flags": [],
-            }
-        )
-    return normalize_semantic_blocks(blocks)
 
 
 class ProjectSliceStore:
@@ -356,7 +127,7 @@ class ProjectSliceStore:
             "created_at": created_at,
             "updated_at": created_at,
         }
-        semantic_review_record = self._default_review_record(project_id, created_at)
+        semantic_review_record = default_review_record(project_id, created_at)
 
         self._write_project_state(project_dir, manifest, project_record, intake_record, None, semantic_review_record, [], [], [])
         return self.load_project(project_dir)
@@ -388,7 +159,7 @@ class ProjectSliceStore:
             semantic_review_record = read_json(review_record_path)
         else:
             timestamp = project_record.get("updated_at", utc_now())
-            semantic_review_record = self._default_review_record(manifest["project_id"], timestamp)
+            semantic_review_record = default_review_record(manifest["project_id"], timestamp)
 
         semantic_blocks = read_json(semantic_record_path)["blocks"] if semantic_record_path.exists() else []
         semantic_blocks = normalize_semantic_blocks(semantic_blocks)
@@ -396,15 +167,16 @@ class ProjectSliceStore:
         matching_candidate_stubs = read_json(matching_candidate_path)["entries"] if matching_candidate_path.exists() else []
         matching_candidate_stubs = normalize_matching_candidate_stubs(matching_candidate_stubs)
         accepted_reference = normalize_accepted_reference(read_json(accepted_reference_path) if accepted_reference_path.exists() else None)
+        accepted_reference = reconcile_accepted_reference(accepted_reference, matching_candidate_stubs, semantic_review_record)
         accepted_scene_reference_stub = normalize_accepted_scene_reference_stub(read_json(accepted_scene_reference_stub_path) if accepted_scene_reference_stub_path.exists() else None)
-        accepted_scene_reference_stub = self._reconcile_accepted_scene_reference_stub(accepted_scene_reference_stub, accepted_reference)
+        accepted_scene_reference_stub = reconcile_accepted_scene_reference_stub(accepted_scene_reference_stub, accepted_reference)
         timecode_range_stub = normalize_timecode_range_stub(read_json(timecode_range_stub_path) if timecode_range_stub_path.exists() else None)
-        timecode_range_stub = self._reconcile_timecode_range_stub(timecode_range_stub, accepted_scene_reference_stub)
+        timecode_range_stub = reconcile_timecode_range_stub(timecode_range_stub, accepted_scene_reference_stub)
         rough_cut_segment_stubs = read_json(rough_cut_segments_path)["entries"] if rough_cut_segments_path.exists() else []
         rough_cut_segment_stubs = normalize_rough_cut_segment_stubs(rough_cut_segment_stubs)
-        rough_cut_segment_stubs = self._reconcile_rough_cut_segment_stubs(rough_cut_segment_stubs, accepted_reference, accepted_scene_reference_stub, timecode_range_stub)
+        rough_cut_segment_stubs = reconcile_rough_cut_segment_stubs(rough_cut_segment_stubs, accepted_reference, accepted_scene_reference_stub, timecode_range_stub)
         packaging_script_bundle = normalize_packaging_script_bundle(read_json(packaging_script_bundle_path) if packaging_script_bundle_path.exists() else None)
-        packaging_script_bundle = self._reconcile_packaging_script_bundle(
+        packaging_script_bundle = reconcile_packaging_script_bundle(
             packaging_script_bundle,
             rough_cut_segment_stubs,
             accepted_reference,
@@ -474,10 +246,10 @@ class ProjectSliceStore:
         intake_record["updated_at"] = now
 
         semantic_review_record = dict(project.semantic_review_record)
-        self._mark_reopened_if_needed(semantic_review_record, REOPEN_SOURCE_REASON)
+        mark_reopened_if_needed(semantic_review_record, REOPEN_SOURCE_REASON)
         semantic_review_record["updated_at"] = now
 
-        self._apply_project_summary(project_record, intake_record, semantic_blocks, semantic_review_record)
+        apply_project_summary(project_record, intake_record, semantic_blocks, semantic_review_record)
         self._write_project_state(
             project_dir,
             manifest,
@@ -565,7 +337,7 @@ class ProjectSliceStore:
             return project
 
         semantic_blocks[current_index], semantic_blocks[target_index] = semantic_blocks[target_index], semantic_blocks[current_index]
-        self._resequence_blocks(semantic_blocks)
+        resequence_blocks(semantic_blocks)
 
         return self._persist_semantic_update(
             project_dir,
@@ -598,14 +370,14 @@ class ProjectSliceStore:
         first_block["content"] = first_content
 
         second_block = dict(original_block)
-        second_block["record_id"] = self._next_block_id(project.semantic_blocks)
+        second_block["record_id"] = next_block_id(project.semantic_blocks)
         second_block["title"] = title_for(second_content)
         second_block["content"] = second_content
         second_block["notes"] = ""
 
         semantic_blocks = [dict(block) for block in project.semantic_blocks]
         semantic_blocks[current_index: current_index + 1] = [first_block, second_block]
-        self._resequence_blocks(semantic_blocks)
+        resequence_blocks(semantic_blocks)
 
         return self._persist_semantic_update(
             project_dir,
@@ -651,7 +423,7 @@ class ProjectSliceStore:
         semantic_blocks[start : end + 1] = [merged_block]
         if insert_index != start:
             insert_index = start
-        self._resequence_blocks(semantic_blocks)
+        resequence_blocks(semantic_blocks)
 
         return self._persist_semantic_update(
             project_dir,
@@ -677,14 +449,14 @@ class ProjectSliceStore:
         project_record["updated_at"] = now
         intake_record = dict(project.intake_record)
         intake_record["updated_at"] = now
-        analysis_source_record = self._copy_analysis_record(project.analysis_source_record, now)
+        analysis_source_record = copy_analysis_record(project.analysis_source_record, now)
         semantic_review_record = dict(project.semantic_review_record)
-        readiness = self._approval_readiness_label(project.intake_record, project.semantic_blocks, project.semantic_review_record)
+        readiness = approval_readiness_label(project.intake_record, project.semantic_blocks, project.semantic_review_record)
         if clean_status == "approved" and readiness != "ready_for_approval":
             semantic_review_record["approval_block_reason"] = APPROVAL_BLOCK_REASON
             semantic_review_record["approval_transition_message"] = "Approval remains blocked until the map is explicitly ready for review."
             semantic_review_record["updated_at"] = now
-            self._apply_project_summary(project_record, intake_record, project.semantic_blocks, semantic_review_record)
+            apply_project_summary(project_record, intake_record, project.semantic_blocks, semantic_review_record)
             self._write_project_state(
                 project_dir,
                 manifest,
@@ -713,7 +485,7 @@ class ProjectSliceStore:
             semantic_review_record["reopen_reason"] = ""
         semantic_review_record["updated_at"] = now
 
-        self._apply_project_summary(project_record, intake_record, project.semantic_blocks, semantic_review_record)
+        apply_project_summary(project_record, intake_record, project.semantic_blocks, semantic_review_record)
         self._write_project_state(
             project_dir,
             manifest,
@@ -769,11 +541,11 @@ class ProjectSliceStore:
         project_record["updated_at"] = now
         intake_record = dict(project.intake_record)
         intake_record["updated_at"] = now
-        analysis_source_record = self._copy_analysis_record(project.analysis_source_record, now)
+        analysis_source_record = copy_analysis_record(project.analysis_source_record, now)
         semantic_review_record = dict(project.semantic_review_record)
         semantic_review_record["updated_at"] = now
 
-        self._apply_project_summary(project_record, intake_record, project.semantic_blocks, semantic_review_record)
+        apply_project_summary(project_record, intake_record, project.semantic_blocks, semantic_review_record)
         self._write_project_state(
             project_dir,
             manifest,
@@ -847,11 +619,11 @@ class ProjectSliceStore:
         project_record["updated_at"] = now
         intake_record = dict(project.intake_record)
         intake_record["updated_at"] = now
-        analysis_source_record = self._copy_analysis_record(project.analysis_source_record, now)
+        analysis_source_record = copy_analysis_record(project.analysis_source_record, now)
         semantic_review_record = dict(project.semantic_review_record)
         semantic_review_record["updated_at"] = now
 
-        self._apply_project_summary(project_record, intake_record, project.semantic_blocks, semantic_review_record)
+        apply_project_summary(project_record, intake_record, project.semantic_blocks, semantic_review_record)
         self._write_project_state(
             project_dir,
             manifest,
@@ -896,18 +668,18 @@ class ProjectSliceStore:
         if not updated:
             raise ValueError("Selected manual candidate stub was not found for this Matching Prep slice.")
 
-        accepted_reference = self._reconcile_accepted_reference(project.accepted_reference, entries)
+        accepted_reference = reconcile_accepted_reference(project.accepted_reference, entries, project.semantic_review_record)
         manifest = dict(project.manifest)
         manifest["updated_at"] = now
         project_record = dict(project.project_record)
         project_record["updated_at"] = now
         intake_record = dict(project.intake_record)
         intake_record["updated_at"] = now
-        analysis_source_record = self._copy_analysis_record(project.analysis_source_record, now)
+        analysis_source_record = copy_analysis_record(project.analysis_source_record, now)
         semantic_review_record = dict(project.semantic_review_record)
         semantic_review_record["updated_at"] = now
 
-        self._apply_project_summary(project_record, intake_record, project.semantic_blocks, semantic_review_record)
+        apply_project_summary(project_record, intake_record, project.semantic_blocks, semantic_review_record)
         self._write_project_state(
             project_dir,
             manifest,
@@ -958,11 +730,11 @@ class ProjectSliceStore:
         project_record["updated_at"] = now
         intake_record = dict(project.intake_record)
         intake_record["updated_at"] = now
-        analysis_source_record = self._copy_analysis_record(project.analysis_source_record, now)
+        analysis_source_record = copy_analysis_record(project.analysis_source_record, now)
         semantic_review_record = dict(project.semantic_review_record)
         semantic_review_record["updated_at"] = now
 
-        self._apply_project_summary(project_record, intake_record, project.semantic_blocks, semantic_review_record)
+        apply_project_summary(project_record, intake_record, project.semantic_blocks, semantic_review_record)
         self._write_project_state(
             project_dir,
             manifest,
@@ -1028,11 +800,11 @@ class ProjectSliceStore:
         project_record["updated_at"] = now
         intake_record = dict(project.intake_record)
         intake_record["updated_at"] = now
-        analysis_source_record = self._copy_analysis_record(project.analysis_source_record, now)
+        analysis_source_record = copy_analysis_record(project.analysis_source_record, now)
         semantic_review_record = dict(project.semantic_review_record)
         semantic_review_record["updated_at"] = now
 
-        self._apply_project_summary(project_record, intake_record, project.semantic_blocks, semantic_review_record)
+        apply_project_summary(project_record, intake_record, project.semantic_blocks, semantic_review_record)
         self._write_project_state(
             project_dir,
             manifest,
@@ -1103,11 +875,11 @@ class ProjectSliceStore:
         project_record["updated_at"] = now
         intake_record = dict(project.intake_record)
         intake_record["updated_at"] = now
-        analysis_source_record = self._copy_analysis_record(project.analysis_source_record, now)
+        analysis_source_record = copy_analysis_record(project.analysis_source_record, now)
         semantic_review_record = dict(project.semantic_review_record)
         semantic_review_record["updated_at"] = now
 
-        self._apply_project_summary(project_record, intake_record, project.semantic_blocks, semantic_review_record)
+        apply_project_summary(project_record, intake_record, project.semantic_blocks, semantic_review_record)
         self._write_project_state(
             project_dir,
             manifest,
@@ -1160,11 +932,11 @@ class ProjectSliceStore:
         project_record["updated_at"] = now
         intake_record = dict(project.intake_record)
         intake_record["updated_at"] = now
-        analysis_source_record = self._copy_analysis_record(project.analysis_source_record, now)
+        analysis_source_record = copy_analysis_record(project.analysis_source_record, now)
         semantic_review_record = dict(project.semantic_review_record)
         semantic_review_record["updated_at"] = now
 
-        self._apply_project_summary(project_record, intake_record, project.semantic_blocks, semantic_review_record)
+        apply_project_summary(project_record, intake_record, project.semantic_blocks, semantic_review_record)
         self._write_project_state(
             project_dir,
             manifest,
@@ -1218,11 +990,11 @@ class ProjectSliceStore:
         project_record["updated_at"] = now
         intake_record = dict(project.intake_record)
         intake_record["updated_at"] = now
-        analysis_source_record = self._copy_analysis_record(project.analysis_source_record, now)
+        analysis_source_record = copy_analysis_record(project.analysis_source_record, now)
         semantic_review_record = dict(project.semantic_review_record)
         semantic_review_record["updated_at"] = now
 
-        self._apply_project_summary(project_record, intake_record, project.semantic_blocks, semantic_review_record)
+        apply_project_summary(project_record, intake_record, project.semantic_blocks, semantic_review_record)
         self._write_project_state(
             project_dir,
             manifest,
@@ -1270,11 +1042,11 @@ class ProjectSliceStore:
         project_record["updated_at"] = now
         intake_record = dict(project.intake_record)
         intake_record["updated_at"] = now
-        analysis_source_record = self._copy_analysis_record(project.analysis_source_record, now)
+        analysis_source_record = copy_analysis_record(project.analysis_source_record, now)
         semantic_review_record = dict(project.semantic_review_record)
         semantic_review_record["updated_at"] = now
 
-        self._apply_project_summary(project_record, intake_record, project.semantic_blocks, semantic_review_record)
+        apply_project_summary(project_record, intake_record, project.semantic_blocks, semantic_review_record)
         self._write_project_state(
             project_dir,
             manifest,
@@ -1315,7 +1087,7 @@ class ProjectSliceStore:
         )
         intake_record = dict(project.intake_record)
         intake_record["updated_at"] = now
-        analysis_source_record = self._copy_analysis_record(project.analysis_source_record, now)
+        analysis_source_record = copy_analysis_record(project.analysis_source_record, now)
         semantic_review_record = dict(project.semantic_review_record)
         semantic_review_record["updated_at"] = now
 
@@ -1372,11 +1144,11 @@ class ProjectSliceStore:
         project_record["updated_at"] = now
         intake_record = dict(project.intake_record)
         intake_record["updated_at"] = now
-        analysis_source_record = self._copy_analysis_record(project.analysis_source_record, now)
+        analysis_source_record = copy_analysis_record(project.analysis_source_record, now)
         semantic_review_record = dict(project.semantic_review_record)
         semantic_review_record["updated_at"] = now
 
-        self._apply_project_summary(project_record, intake_record, project.semantic_blocks, semantic_review_record)
+        apply_project_summary(project_record, intake_record, project.semantic_blocks, semantic_review_record)
         self._write_project_state(
             project_dir,
             manifest,
@@ -1429,11 +1201,11 @@ class ProjectSliceStore:
         project_record["updated_at"] = now
         intake_record = dict(project.intake_record)
         intake_record["updated_at"] = now
-        analysis_source_record = self._copy_analysis_record(project.analysis_source_record, now)
+        analysis_source_record = copy_analysis_record(project.analysis_source_record, now)
         semantic_review_record = dict(project.semantic_review_record)
         semantic_review_record["updated_at"] = now
 
-        self._apply_project_summary(project_record, intake_record, project.semantic_blocks, semantic_review_record)
+        apply_project_summary(project_record, intake_record, project.semantic_blocks, semantic_review_record)
         self._write_project_state(
             project_dir,
             manifest,
@@ -1473,18 +1245,18 @@ class ProjectSliceStore:
         if not removed:
             raise ValueError("Selected manual candidate stub was not found for this Matching Prep slice.")
 
-        accepted_reference = self._reconcile_accepted_reference(project.accepted_reference, entries)
+        accepted_reference = reconcile_accepted_reference(project.accepted_reference, entries, project.semantic_review_record)
         manifest = dict(project.manifest)
         manifest["updated_at"] = now
         project_record = dict(project.project_record)
         project_record["updated_at"] = now
         intake_record = dict(project.intake_record)
         intake_record["updated_at"] = now
-        analysis_source_record = self._copy_analysis_record(project.analysis_source_record, now)
+        analysis_source_record = copy_analysis_record(project.analysis_source_record, now)
         semantic_review_record = dict(project.semantic_review_record)
         semantic_review_record["updated_at"] = now
 
-        self._apply_project_summary(project_record, intake_record, project.semantic_blocks, semantic_review_record)
+        apply_project_summary(project_record, intake_record, project.semantic_blocks, semantic_review_record)
         self._write_project_state(
             project_dir,
             manifest,
@@ -1498,139 +1270,6 @@ class ProjectSliceStore:
             accepted_reference,
         )
         return self.load_project(project_dir)
-
-    def _reconcile_accepted_reference(
-        self,
-        accepted_reference: dict | None,
-        matching_candidate_stubs: list[dict],
-    ) -> dict | None:
-        normalized_reference = normalize_accepted_reference(accepted_reference)
-        if normalized_reference is None:
-            return None
-        source_candidate_stub_id = normalized_reference.get("source_candidate_stub_id", "").strip()
-        if not source_candidate_stub_id:
-            return None
-        source_candidate = next((entry for entry in matching_candidate_stubs if entry.get("record_id") == source_candidate_stub_id), None)
-        if source_candidate is None:
-            return None
-        if source_candidate.get("review_status", ALLOWED_CANDIDATE_REVIEW_STATUSES[0]) != "selected":
-            return None
-        updated_reference = dict(normalized_reference)
-        updated_reference["semantic_block_id"] = source_candidate.get("semantic_block_id", "")
-        updated_reference["prep_asset_id"] = source_candidate.get("prep_asset_id", "")
-        return updated_reference
-
-    def _reconcile_accepted_scene_reference_stub(
-        self,
-        accepted_scene_reference_stub: dict | None,
-        accepted_reference: dict | None,
-    ) -> dict | None:
-        normalized_stub = normalize_accepted_scene_reference_stub(accepted_scene_reference_stub)
-        if normalized_stub is None:
-            return None
-        normalized_reference = normalize_accepted_reference(accepted_reference)
-        if normalized_reference is None:
-            return None
-        if normalized_stub.get("source_candidate_stub_id", "").strip() != normalized_reference.get("source_candidate_stub_id", "").strip():
-            return None
-        updated_stub = dict(normalized_stub)
-        updated_stub["source_accepted_reference_id"] = normalized_reference.get("record_id", "")
-        updated_stub["semantic_block_id"] = normalized_reference.get("semantic_block_id", "")
-        updated_stub["prep_asset_id"] = normalized_reference.get("prep_asset_id", "")
-        return updated_stub
-
-    def _reconcile_timecode_range_stub(
-        self,
-        timecode_range_stub: dict | None,
-        accepted_scene_reference_stub: dict | None,
-    ) -> dict | None:
-        normalized_stub = normalize_timecode_range_stub(timecode_range_stub)
-        if normalized_stub is None:
-            return None
-        normalized_scene_reference_stub = normalize_accepted_scene_reference_stub(accepted_scene_reference_stub)
-        if normalized_scene_reference_stub is None:
-            return None
-        if normalized_stub.get("source_candidate_stub_id", "").strip() != normalized_scene_reference_stub.get("source_candidate_stub_id", "").strip():
-            return None
-        updated_stub = dict(normalized_stub)
-        updated_stub["source_accepted_scene_reference_stub_id"] = normalized_scene_reference_stub.get("record_id", "")
-        updated_stub["semantic_block_id"] = normalized_scene_reference_stub.get("semantic_block_id", "")
-        updated_stub["prep_asset_id"] = normalized_scene_reference_stub.get("prep_asset_id", "")
-        return updated_stub
-
-    def _reconcile_rough_cut_segment_stubs(
-        self,
-        rough_cut_segment_stubs: list[dict],
-        accepted_reference: dict | None,
-        accepted_scene_reference_stub: dict | None,
-        timecode_range_stub: dict | None,
-    ) -> list[dict]:
-        normalized_reference = normalize_accepted_reference(accepted_reference)
-        normalized_scene_reference_stub = normalize_accepted_scene_reference_stub(accepted_scene_reference_stub)
-        normalized_timecode_range_stub = normalize_timecode_range_stub(timecode_range_stub)
-        if normalized_reference is None or normalized_scene_reference_stub is None or normalized_timecode_range_stub is None:
-            return []
-        current_source_candidate_stub_id = normalized_reference.get("source_candidate_stub_id", "").strip()
-        if not current_source_candidate_stub_id:
-            return []
-        reconciled: list[dict] = []
-        for entry in normalize_rough_cut_segment_stubs(rough_cut_segment_stubs):
-            if entry.get("source_candidate_stub_id", "").strip() != current_source_candidate_stub_id:
-                continue
-            if entry.get("source_timecode_range_stub_id", "").strip() and entry.get("source_timecode_range_stub_id", "").strip() != normalized_timecode_range_stub.get("record_id", "").strip():
-                continue
-            updated_entry = dict(entry)
-            updated_entry["source_accepted_reference_id"] = normalized_reference.get("record_id", "")
-            updated_entry["source_accepted_scene_reference_stub_id"] = normalized_scene_reference_stub.get("record_id", "")
-            updated_entry["source_timecode_range_stub_id"] = normalized_timecode_range_stub.get("record_id", "")
-            updated_entry["source_candidate_stub_id"] = current_source_candidate_stub_id
-            updated_entry["semantic_block_id"] = normalized_reference.get("semantic_block_id", "")
-            updated_entry["prep_asset_id"] = normalized_reference.get("prep_asset_id", "")
-            updated_entry["start_timecode"] = normalized_timecode_range_stub.get("start_timecode", "")
-            updated_entry["end_timecode"] = normalized_timecode_range_stub.get("end_timecode", "")
-            reconciled.append(updated_entry)
-        return normalize_rough_cut_segment_stubs(reconciled)
-
-    def _reconcile_packaging_script_bundle(
-        self,
-        packaging_script_bundle: dict | None,
-        rough_cut_segment_stubs: list[dict],
-        accepted_reference: dict | None,
-        accepted_scene_reference_stub: dict | None,
-        timecode_range_stub: dict | None,
-    ) -> dict | None:
-        normalized_bundle = normalize_packaging_script_bundle(packaging_script_bundle)
-        if normalized_bundle is None:
-            return None
-        if accepted_reference is None or accepted_scene_reference_stub is None or timecode_range_stub is None:
-            return None
-        if normalized_bundle.get("source_candidate_stub_id", "").strip() != accepted_reference.get("source_candidate_stub_id", "").strip():
-            return None
-
-        current_project = ProjectSlice(
-            project_dir=Path(),
-            manifest={},
-            project_record={},
-            intake_record={},
-            analysis_source_record=None,
-            semantic_review_record={},
-            semantic_blocks=[],
-            matching_prep_assets=[],
-            matching_candidate_stubs=[],
-            accepted_reference=accepted_reference,
-            accepted_scene_reference_stub=accepted_scene_reference_stub,
-            timecode_range_stub=timecode_range_stub,
-            rough_cut_segment_stubs=rough_cut_segment_stubs,
-            packaging_script_bundle=None,
-        )
-        current_focus_mode, current_segments = packaging_bundle_source_segments(current_project)
-        current_segment_ids = [entry["record_id"] for entry in current_segments]
-        if normalized_bundle.get("source_focus_mode", "") != current_focus_mode:
-            return None
-        if normalized_bundle.get("source_rough_cut_segment_ids", []) != current_segment_ids:
-            return None
-        normalized_bundle["segment_count"] = len(normalized_bundle.get("segments", []))
-        return normalized_bundle
 
     def _persist_semantic_update(
         self,
@@ -1646,12 +1285,12 @@ class ProjectSliceStore:
         project_record["updated_at"] = now
         intake_record = dict(project.intake_record)
         intake_record["updated_at"] = now
-        analysis_source_record = self._copy_analysis_record(project.analysis_source_record, now)
+        analysis_source_record = copy_analysis_record(project.analysis_source_record, now)
         semantic_review_record = dict(project.semantic_review_record)
-        self._mark_reopened_if_needed(semantic_review_record, reopen_reason)
+        mark_reopened_if_needed(semantic_review_record, reopen_reason)
         semantic_review_record["updated_at"] = now
 
-        self._apply_project_summary(project_record, intake_record, semantic_blocks, semantic_review_record)
+        apply_project_summary(project_record, intake_record, semantic_blocks, semantic_review_record)
         self._write_project_state(
             project_dir,
             manifest,
@@ -1666,23 +1305,21 @@ class ProjectSliceStore:
         return self.load_project(project_dir)
 
     def _copy_analysis_record(self, analysis_source_record: dict | None, now: str) -> dict | None:
-        if analysis_source_record is None:
-            return None
-        updated = dict(analysis_source_record)
-        updated["updated_at"] = now
-        return updated
+        return copy_analysis_record(analysis_source_record, now)
 
     def _next_block_id(self, semantic_blocks: list[dict]) -> str:
-        max_seen = 0
-        for block in semantic_blocks:
-            match = re.fullmatch(r"sb-(\d+)", block.get("record_id", ""))
-            if match:
-                max_seen = max(max_seen, int(match.group(1)))
-        return f"sb-{max_seen + 1:03d}"
+        return next_block_id(semantic_blocks)
 
     def _resequence_blocks(self, semantic_blocks: list[dict]) -> None:
-        for index, block in enumerate(semantic_blocks, start=1):
-            block["sequence"] = index
+        resequence_blocks(semantic_blocks)
+
+    def _approval_readiness_label(
+        self,
+        intake_record: dict,
+        semantic_blocks: list[dict],
+        semantic_review_record: dict,
+    ) -> str:
+        return approval_readiness_label(intake_record, semantic_blocks, semantic_review_record)
 
     def _write_project_state(
         self,
@@ -1712,26 +1349,27 @@ class ProjectSliceStore:
             accepted_reference_payload = normalize_accepted_reference(read_json(accepted_reference_path) if accepted_reference_path.exists() else None)
         else:
             accepted_reference_payload = normalize_accepted_reference(accepted_reference if isinstance(accepted_reference, dict) else None)
+        accepted_reference_payload = reconcile_accepted_reference(accepted_reference_payload, matching_candidate_stubs, semantic_review_record)
         if accepted_scene_reference_stub is KEEP_EXISTING:
             accepted_scene_reference_stub_payload = normalize_accepted_scene_reference_stub(read_json(accepted_scene_reference_stub_path) if accepted_scene_reference_stub_path.exists() else None)
         else:
             accepted_scene_reference_stub_payload = normalize_accepted_scene_reference_stub(accepted_scene_reference_stub if isinstance(accepted_scene_reference_stub, dict) else None)
-        accepted_scene_reference_stub_payload = self._reconcile_accepted_scene_reference_stub(accepted_scene_reference_stub_payload, accepted_reference_payload)
+        accepted_scene_reference_stub_payload = reconcile_accepted_scene_reference_stub(accepted_scene_reference_stub_payload, accepted_reference_payload)
         if timecode_range_stub is KEEP_EXISTING:
             timecode_range_stub_payload = normalize_timecode_range_stub(read_json(timecode_range_stub_path) if timecode_range_stub_path.exists() else None)
         else:
             timecode_range_stub_payload = normalize_timecode_range_stub(timecode_range_stub if isinstance(timecode_range_stub, dict) else None)
-        timecode_range_stub_payload = self._reconcile_timecode_range_stub(timecode_range_stub_payload, accepted_scene_reference_stub_payload)
+        timecode_range_stub_payload = reconcile_timecode_range_stub(timecode_range_stub_payload, accepted_scene_reference_stub_payload)
         if rough_cut_segment_stubs is KEEP_EXISTING:
             rough_cut_segment_entries = read_json(rough_cut_segments_path)["entries"] if rough_cut_segments_path.exists() else []
         else:
             rough_cut_segment_entries = list(rough_cut_segment_stubs) if isinstance(rough_cut_segment_stubs, list) else []
-        rough_cut_segment_entries = self._reconcile_rough_cut_segment_stubs(rough_cut_segment_entries, accepted_reference_payload, accepted_scene_reference_stub_payload, timecode_range_stub_payload)
+        rough_cut_segment_entries = reconcile_rough_cut_segment_stubs(rough_cut_segment_entries, accepted_reference_payload, accepted_scene_reference_stub_payload, timecode_range_stub_payload)
         if packaging_script_bundle is KEEP_EXISTING:
             packaging_script_bundle_payload = normalize_packaging_script_bundle(read_json(packaging_script_bundle_path) if packaging_script_bundle_path.exists() else None)
         else:
             packaging_script_bundle_payload = normalize_packaging_script_bundle(packaging_script_bundle if isinstance(packaging_script_bundle, dict) else None)
-        packaging_script_bundle_payload = self._reconcile_packaging_script_bundle(
+        packaging_script_bundle_payload = reconcile_packaging_script_bundle(
             packaging_script_bundle_payload,
             rough_cut_segment_entries,
             accepted_reference_payload,
@@ -1739,7 +1377,7 @@ class ProjectSliceStore:
             timecode_range_stub_payload,
         )
         write_json(project_dir / "project.manifest", manifest)
-        write_json(project_dir / "project.meta" / "status.json", self._status_payload(project_record, intake_record, semantic_review_record, semantic_blocks, packaging_script_bundle_payload))
+        write_json(project_dir / "project.meta" / "status.json", status_payload(project_record, intake_record, semantic_review_record, semantic_blocks, packaging_script_bundle_payload))
         write_json(project_dir / "records" / "project" / "project.json", project_record)
         write_json(project_dir / "records" / "intake" / "intake.json", intake_record)
         if analysis_source_record is not None:
@@ -1772,107 +1410,3 @@ class ProjectSliceStore:
             packaging_script_bundle_path.unlink()
             if packaging_script_markdown_path.exists():
                 packaging_script_markdown_path.unlink()
-
-    def _status_payload(
-        self,
-        project_record: dict,
-        intake_record: dict,
-        semantic_review_record: dict,
-        semantic_blocks: list[dict],
-        packaging_script_bundle: dict | None = None,
-    ) -> dict:
-        completeness_label, issue_count, blocks_with_issues = semantic_completeness(intake_record, semantic_blocks)
-        return {
-            "project_status": project_record["project_status"],
-            "current_readiness_summary": project_record["current_readiness_summary"],
-            "intake_readiness": intake_record["intake_readiness"],
-            "semantic_block_count": len(semantic_blocks),
-            "semantic_map_status": semantic_review_record["review_status"],
-            "semantic_review_approved": semantic_review_record["approved"],
-            "semantic_completeness": completeness_label,
-            "semantic_issue_count": issue_count,
-            "blocks_with_issues": blocks_with_issues,
-            "approval_readiness": self._approval_readiness_label(intake_record, semantic_blocks, semantic_review_record),
-            "approval_block_reason": semantic_review_record.get("approval_block_reason", ""),
-            "approval_transition_message": semantic_review_record.get("approval_transition_message", ""),
-            "reopened_after_change": semantic_review_record.get("reopened_after_change", False),
-            "reopen_reason": semantic_review_record.get("reopen_reason", ""),
-            "packaging_script_bundle_ready": packaging_script_bundle is not None,
-            "updated_at": project_record["updated_at"],
-        }
-
-    def _apply_project_summary(
-        self,
-        project_record: dict,
-        intake_record: dict,
-        semantic_blocks: list[dict],
-        semantic_review_record: dict,
-    ) -> None:
-        if intake_record["intake_readiness"] != "ready" or not semantic_blocks:
-            project_record["project_status"] = "intake_required"
-            project_record["current_readiness_summary"] = "Load analysis text to unlock semantic map."
-            return
-
-        review_status = semantic_review_record["review_status"]
-        block_count = len(semantic_blocks)
-        completeness_label, issue_count, blocks_with_issues = semantic_completeness(intake_record, semantic_blocks)
-        readiness = self._approval_readiness_label(intake_record, semantic_blocks, semantic_review_record)
-        issue_summary = f"Completeness: {completeness_label}. Issues: {issue_count} across {blocks_with_issues} block(s)."
-        if review_status == "approved":
-            project_record["project_status"] = "semantic_map_approved"
-            project_record["current_readiness_summary"] = f"{block_count} semantic blocks approved for later matching prep. {issue_summary}"
-        elif semantic_review_record.get("reopened_after_change"):
-            project_record["project_status"] = "semantic_map_reopened"
-            project_record["current_readiness_summary"] = f"{block_count} semantic blocks reopened after change. Readiness: {readiness}. {issue_summary}"
-        elif review_status == "ready_for_review":
-            project_record["project_status"] = "semantic_map_ready_for_review"
-            project_record["current_readiness_summary"] = f"{block_count} semantic blocks ready for approval review. Readiness: {readiness}. {issue_summary}"
-        else:
-            project_record["project_status"] = "semantic_map_under_edit"
-            project_record["current_readiness_summary"] = f"{block_count} semantic blocks under edit in Semantic Map Workspace. Readiness: {readiness}. {issue_summary}"
-
-    def _approval_readiness_label(
-        self,
-        intake_record: dict,
-        semantic_blocks: list[dict],
-        semantic_review_record: dict,
-    ) -> str:
-        if intake_record["intake_readiness"] != "ready" or not semantic_blocks:
-            return "not_ready"
-        if semantic_review_record["review_status"] == "approved":
-            return "approved"
-        if semantic_review_record["review_status"] == "ready_for_review":
-            return "ready_for_approval"
-        if semantic_review_record.get("reopened_after_change"):
-            return "reopened_after_change"
-        completeness_label, _, _ = semantic_completeness(intake_record, semantic_blocks)
-        return completeness_readiness_hint(completeness_label)
-
-    def _mark_reopened_if_needed(self, semantic_review_record: dict, reopen_reason: str) -> None:
-        if semantic_review_record.get("review_status") == "approved":
-            semantic_review_record["review_status"] = "under_edit"
-            semantic_review_record["approved"] = False
-            semantic_review_record["reopened_after_change"] = True
-            semantic_review_record["reopen_reason"] = reopen_reason
-            semantic_review_record["approval_transition_message"] = "Semantic approval was reopened after a change."
-            semantic_review_record["approval_block_reason"] = APPROVAL_BLOCK_REASON
-        else:
-            semantic_review_record.setdefault("reopened_after_change", False)
-            semantic_review_record.setdefault("reopen_reason", "")
-            if semantic_review_record.get("review_status") == "under_edit":
-                semantic_review_record["approval_transition_message"] = semantic_review_record.get("approval_transition_message") or "Semantic map remains under edit."
-
-    def _default_review_record(self, project_id: str, timestamp: str) -> dict:
-        return {
-            "project_id": project_id,
-            "record_id": "semantic-review-record",
-            "record_type": "semantic_review_state",
-            "review_status": "under_edit",
-            "approved": False,
-            "approval_block_reason": APPROVAL_BLOCK_REASON,
-            "approval_transition_message": "Semantic map remains under edit.",
-            "reopened_after_change": False,
-            "reopen_reason": "",
-            "created_at": timestamp,
-            "updated_at": timestamp,
-        }

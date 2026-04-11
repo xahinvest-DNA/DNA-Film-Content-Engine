@@ -1,2 +1,1 @@
-"""Persistence helpers for local project-package storage."""
-
+"""Persistence adapters for local project-package storage."""

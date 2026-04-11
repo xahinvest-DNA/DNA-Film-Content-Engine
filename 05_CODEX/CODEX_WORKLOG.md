@@ -1,5 +1,23 @@
 # Codex Worklog
 
+## 2026-04-11 - A-002 completed and runtime boundaries were hardened before Stage B expansion
+
+### Completed
+- reduced `runtime/app.py` to a thin runtime entrypoint and moved app shell + presentation logic into `runtime/ui`;
+- formalized `runtime/builders/` as the builder subsystem while keeping the packaging builder path intact;
+- moved semantic/runtime rules into `runtime/domain/semantic_rules.py` and `runtime/domain/workflow_rules.py`;
+- reduced `runtime/persistence/project_store.py` to persistence coordination plus state write/read flow instead of keeping most business rules inline;
+- added boundary tests for reopen-triggered downstream cleanup, builder reproducibility after reload, and builder-entrypoint consistency;
+- verified the full suite through `python -m unittest tests\\test_mvp_slice.py tests\\test_runtime_integration_smoke.py tests\\test_output_builder_slice.py tests\\test_runtime_boundaries.py -q`.
+
+### Repository effect
+- Stage B builder expansion now lands on a clearer UI/domain/persistence/builder split;
+- stale downstream artifacts no longer survive as if current after upstream approval is reopened;
+- the packaging builder remains working, but the extension contour for the next builder is much cleaner than before.
+
+### Recommended next step
+Execute `B-001 First Shorts/Reels Builder Expansion`.
+
 ## 2026-04-11 - P-001 completed and the product gained its first honest output artifact
 
 ### Completed

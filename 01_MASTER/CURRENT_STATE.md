@@ -23,6 +23,14 @@ The current runtime now proves a real local-first path through:
 
 The current runtime therefore no longer stops at preparation. It now reaches a reproducible exportable content artifact through the first honest builder path.
 
+The runtime boundary hardening pass is now also complete:
+
+- `runtime/app.py` is reduced to a thin entrypoint;
+- UI shell and presentation logic now live under `runtime/ui/`;
+- builder logic now has an explicit `runtime/builders/` zone;
+- `runtime/persistence/project_store.py` now coordinates persistence while domain rules own reopen, reconciliation, and downstream invalidation semantics;
+- boundary tests now protect reopen cleanup, reload reproducibility, and builder-entrypoint consistency.
+
 ## Main product gap
 
 The main gap has changed:
@@ -56,6 +64,12 @@ The first proven output builder is now real:
 - acceptance proof: analysis text to saved artifact is now test-covered.
 
 The next active packet is `B-001`, because the strongest next move is to expand from the first proven builder into the next practical output family.
+
+What A-002 changed before that move:
+
+- Stage B no longer has to expand builders on top of a hidden persistence-heavy core;
+- stale downstream chain state is now honestly cleared when upstream approval is reopened;
+- builder invocation now has a clearer extension contour for the next output family.
 
 What is preserved:
 
@@ -91,4 +105,5 @@ Execute `B-001 First Shorts/Reels Builder Expansion`.
 - Stage A has been proven by the first real output path;
 - Stage B is now the current program stage;
 - the first proven builder is the packaging-ready script bundle;
+- A-002 boundary hardening is complete and Stage B can expand on a cleaner runtime boundary;
 - `B-001` is now the one active packet because output expansion is the strongest next move.

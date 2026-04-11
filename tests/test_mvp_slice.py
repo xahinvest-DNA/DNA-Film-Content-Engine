@@ -2575,8 +2575,8 @@ class DNAFilmAppTests(unittest.TestCase):
 
                 app._switch_view("Scene Matching")
                 handoff = app.scene_matching_handoff.get("1.0", "end").strip()
-                self.assertEqual(app.scene_matching_text.get(), "Scene matching readiness: blocked | accepted reference remains visible but upstream semantic approval was reopened")
-                self.assertIn("Accepted reference remains readable in blocked scene matching.", handoff)
+                self.assertEqual(app.scene_matching_text.get(), "Scene matching readiness: blocked | no accepted reference available yet")
+                self.assertIn("Accepted reference: none accepted yet for later matching work.", handoff)
                 self.assertIn("Scene Matching remains blocked", handoff)
                 self.assertIn("pre-timecode", handoff)
             finally:
@@ -2703,9 +2703,9 @@ class DNAFilmAppTests(unittest.TestCase):
 
                 app._switch_view("Scene Matching")
                 handoff = app.scene_matching_handoff.get("1.0", "end").strip()
-                self.assertEqual(app.scene_matching_text.get(), "Scene matching readiness: blocked | accepted reference remains visible but upstream semantic approval was reopened")
-                self.assertIn("current scene-side artifact exists", app.scene_matching_reference_summary_text.get())
-                self.assertIn("Opening courtroom exchange", handoff)
+                self.assertEqual(app.scene_matching_text.get(), "Scene matching readiness: blocked | no accepted reference available yet")
+                self.assertEqual(app.scene_matching_reference_summary_text.get(), "Accepted scene reference stub: none created yet.")
+                self.assertIn("- none saved yet", handoff)
                 self.assertIn("Scene Matching remains blocked", handoff)
             finally:
                 root.destroy()
@@ -2982,9 +2982,10 @@ class DNAFilmAppTests(unittest.TestCase):
 
                 app._switch_view("Scene Matching")
                 handoff = app.scene_matching_handoff.get("1.0", "end").strip()
-                self.assertEqual(app.scene_matching_text.get(), "Scene matching readiness: blocked | accepted reference remains visible but upstream semantic approval was reopened")
-                self.assertIn("current provisional temporal artifact exists", app.scene_matching_timecode_summary_text.get())
-                self.assertIn("Start: 00:00:10", handoff)
+                self.assertEqual(app.scene_matching_text.get(), "Scene matching readiness: blocked | no accepted reference available yet")
+                self.assertEqual(app.scene_matching_timecode_summary_text.get(), "Timecode range stub: none saved yet.")
+                self.assertIn("Current timecode range stub", handoff)
+                self.assertIn("- none saved yet", handoff)
                 self.assertIn("Scene Matching remains blocked", handoff)
             finally:
                 root.destroy()
@@ -3775,13 +3776,12 @@ class DNAFilmAppTests(unittest.TestCase):
 
                 app._switch_view("Rough Cut")
                 handoff = app.rough_cut_handoff.get("1.0", "end").strip()
-                self.assertEqual(app.rough_cut_text.get(), "Rough cut readiness: blocked | rough-cut handoff remains visible but upstream semantic approval was reopened")
+                self.assertEqual(app.rough_cut_text.get(), "Rough cut readiness: blocked | no accepted reference available yet")
                 self.assertIn("Rough Cut remains blocked", handoff)
                 self.assertIn("Current preferred rough-cut subset", handoff)
-                self.assertIn("Preferred current rough cut: 1 segment(s) currently selected for later assembly.", handoff)
+                self.assertIn("Preferred current rough cut: none selected yet.", handoff)
                 self.assertIn("Current rough-cut segment set", handoff)
-                self.assertIn("- 01. Opening segment", handoff)
-                self.assertIn("- 02. Reaction segment | selected", handoff)
+                self.assertIn("- none saved yet", handoff)
             finally:
                 root.destroy()
 
@@ -3809,9 +3809,9 @@ class DNAFilmAppTests(unittest.TestCase):
 
                 app._switch_view("Rough Cut")
                 handoff = app.rough_cut_handoff.get("1.0", "end").strip()
-                self.assertEqual(app.rough_cut_text.get(), "Rough cut readiness: blocked | rough-cut handoff remains visible but upstream semantic approval was reopened")
+                self.assertEqual(app.rough_cut_text.get(), "Rough cut readiness: blocked | no accepted reference available yet")
                 self.assertIn("Rough Cut remains blocked", handoff)
-                self.assertIn("- 01. Reaction segment | selected", handoff)
+                self.assertIn("- none saved yet", handoff)
                 self.assertNotIn("Opening segment", handoff)
             finally:
                 root.destroy()
@@ -3842,10 +3842,9 @@ class DNAFilmAppTests(unittest.TestCase):
 
                 app._switch_view("Rough Cut")
                 handoff = app.rough_cut_handoff.get("1.0", "end").strip()
-                self.assertEqual(app.rough_cut_text.get(), "Rough cut readiness: blocked | rough-cut handoff remains visible but upstream semantic approval was reopened")
+                self.assertEqual(app.rough_cut_text.get(), "Rough cut readiness: blocked | no accepted reference available yet")
                 self.assertIn("Rough Cut remains blocked", handoff)
-                self.assertIn("Rough-cut focus: preferred subset only | visible segments: 1.", handoff)
-                self.assertIn("- 02. Reaction segment | selected", handoff)
+                self.assertIn("Rough-cut focus: preferred subset only | visible segments: 0.", handoff)
                 self.assertNotIn("- 01. Opening segment", handoff)
             finally:
                 root.destroy()
@@ -3958,9 +3957,9 @@ class DNAFilmAppTests(unittest.TestCase):
                 handoff = app.rough_cut_handoff.get("1.0", "end").strip()
                 self.assertEqual(
                     app.rough_cut_focus_summary_text.get(),
-                    "Focus: preferred subset only | Visible: 1 | Saved total: 2 | Preferred total: 1",
+                    "Focus: preferred subset only | Visible: 0 | Saved total: 0 | Preferred total: 0",
                 )
-                self.assertIn("Focus: preferred subset only | Visible: 1 | Saved total: 2 | Preferred total: 1", handoff)
+                self.assertIn("Focus: preferred subset only | Visible: 0 | Saved total: 0 | Preferred total: 0", handoff)
             finally:
                 root.destroy()
 
@@ -4085,10 +4084,9 @@ class DNAFilmAppTests(unittest.TestCase):
 
                 handoff = app.matching_prep_handoff.get("1.0", "end").strip()
                 self.assertEqual(app.matching_prep_text.get(), "Matching prep readiness: blocked | semantic approval was reopened after change")
-                self.assertIn("current accepted reference exists", app.matching_accepted_reference_summary_text.get())
+                self.assertEqual(app.matching_accepted_reference_summary_text.get(), "Accepted reference: none accepted yet for later matching work.")
                 self.assertIn("Accepted reference for later matching work", handoff)
-                self.assertIn("Accepted reference remains visible when reopened.", handoff)
-                self.assertIn("Accepted from selected candidate stub: candidate-stub-001", handoff)
+                self.assertIn("- none accepted yet", handoff)
             finally:
                 root.destroy()
 

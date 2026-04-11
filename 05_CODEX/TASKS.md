@@ -16,6 +16,11 @@ There must be exactly one active packet at a time, and that packet must move the
 
 ## Recently completed
 
+### A-002
+- Status: completed
+- Title: Runtime Boundary Hardening Before Builder Expansion Debt Grows
+- Outcome: moved UI shell/presentation work under `runtime/ui`, formalized `runtime/builders` as the builder zone, pushed runtime rules into domain modules, reduced `runtime/app.py` to an entrypoint, made `runtime/persistence/project_store.py` persistence-led rather than rule-led, and added boundary tests for reopen cleanup, reload reproducibility, and builder-entrypoint consistency.
+
 ### P-001
 - Status: completed
 - Title: First Usable Content Output Vertical Slice

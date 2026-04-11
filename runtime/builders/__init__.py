@@ -1,4 +1,4 @@
-"""Compatibility re-export for legacy service imports."""
+"""Builder subsystem entrypoints for output artifact generation."""
 
 from runtime.builders.packaging import build_packaging_script_bundle, packaging_bundle_source_segments
 

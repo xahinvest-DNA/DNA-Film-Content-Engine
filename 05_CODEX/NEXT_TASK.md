@@ -14,6 +14,8 @@ Expand the proven output path by adding the first shorts/reels-oriented builder 
 
 `P-001` is complete and the product now has one honest packaging-ready script bundle artifact.
 
+`A-002` is now also complete, so the next builder no longer has to land on top of the old hidden runtime monolith.
+
 The strongest next move is no longer another internal preparation layer. It is output expansion using the same proven chain and the same output surface.
 
 ## In scope
@@ -35,7 +37,8 @@ The strongest next move is no longer another internal preparation layer. It is o
 
 - verify one project can build a reproducible shorts/reels artifact from the current workflow;
 - run persistence, integration, and acceptance-style coverage for the new builder path;
-- confirm the existing packaging bundle path remains intact.
+- confirm the existing packaging bundle path remains intact;
+- confirm the new builder fits the `runtime/builders/` boundary without pushing business rules back into `runtime/persistence/project_store.py` or `runtime/app.py`.
 
 ## Required handoff format
 
