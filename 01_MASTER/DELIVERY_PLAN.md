@@ -65,7 +65,7 @@ Stop condition:
 
 Current stage: Stage C
 
-Current milestone: harden recovery truth and keep SSOT state ownership internally consistent
+Current milestone: raise release confidence across repeated local use, four-builder validation, and surface trust
 
 Current packet sequence:
 
@@ -77,4 +77,5 @@ Current packet sequence:
 6. `B-003 Carousel Script Builder Expansion and Strategic Watchlist Initialization` - completed
 7. `C-001 Multi-Builder Output Hardening Entry` - completed
 8. `C-002A Recovery Truth Hardening and SSOT Decision-State Alignment` - completed
-9. `C-002B Output Surface Density and Metadata Hardening` - active
+9. `C-002B Output Surface Density and Metadata Hardening` - completed
+10. `C-003 Release Confidence and Validation Hardening` - active

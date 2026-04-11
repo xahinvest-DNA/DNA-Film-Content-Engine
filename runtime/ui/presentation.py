@@ -11,6 +11,7 @@ from runtime.project_slice import (
 )
 from runtime.domain.workflow_rules import builder_gate, output_artifact_inventory
 from runtime.ui.constants import CANDIDATE_STATUS_FOCUS_OPTIONS, FOCUS_TO_SUITABILITY_KEY, ROUGH_CUT_FOCUS_OPTIONS
+from runtime.ui.output_slots import OUTPUT_SLOT_SPECS, OutputSlotSpec
 
 
 class DNAFilmAppPresentationMixin:
@@ -458,30 +459,78 @@ class DNAFilmAppPresentationMixin:
         return "Output trust: built artifacts remain current and reload-safe, while missing artifacts can be added without rebuilding the ones already present."
 
     def _output_paths_text(self, project: ProjectSlice) -> str:
-        entries = [
-            ("Packaging", project.packaging_script_bundle),
-            ("Shorts/Reels", project.shorts_reels_script),
-            ("Long Video", project.long_video_script),
-            ("Carousel", project.carousel_script),
-        ]
         built_paths = [
-            f"{label}: {artifact.get('artifact_relative_path', 'none')}"
-            for label, artifact in entries
+            f"{spec.label}: {artifact.get('artifact_relative_path', 'none')}"
+            for spec in OUTPUT_SLOT_SPECS
+            for artifact in [self._output_slot_artifact(project, spec)]
             if artifact is not None
         ]
         if not built_paths:
             return "Built artifact paths: none yet."
         return "Built artifact paths: " + " | ".join(built_paths)
 
-    def _builder_slot_status_lines(self, label: str, artifact: dict | None, empty_text: str) -> list[str]:
+    def _output_slot_artifact(self, project: ProjectSlice, spec: OutputSlotSpec) -> dict | None:
+        return getattr(project, spec.artifact_attr)
+
+    def _output_slot_summary(self, project: ProjectSlice, spec: OutputSlotSpec) -> str:
+        artifact = self._output_slot_artifact(project, spec)
         if artifact is None:
-            return [f"- {label}: not built yet", f"  State: {empty_text}", ""]
+            return f"{spec.summary_name}: none built yet."
+        identity_clause = ""
+        if spec.identity_field and spec.identity_label:
+            identity_value = artifact.get(spec.identity_field, "").strip() or "none"
+            identity_clause = f" with {spec.identity_label} '{identity_value}'."
+        return (
+            f"{spec.summary_name}: {artifact.get(spec.count_field, 0)} {spec.count_unit}(s) built from "
+            f"{artifact.get('source_focus_mode', 'all_saved_segments')}{identity_clause}"
+        )
+
+    def _output_slot_preview_lines(self, project: ProjectSlice, spec: OutputSlotSpec) -> list[str]:
+        artifact = self._output_slot_artifact(project, spec)
+        if artifact is None:
+            return [f"No {spec.summary_name.lower()} has been built yet."]
+        return [artifact.get("markdown_content", "").rstrip() or f"No {spec.summary_name.lower()} content available."]
+
+    def _output_slot_overview_line(self, project: ProjectSlice, spec: OutputSlotSpec) -> str:
+        artifact = self._output_slot_artifact(project, spec)
+        if artifact is None:
+            return f"- {spec.label}: missing | Next: {spec.empty_guidance}"
+        return (
+            f"- {spec.label}: built | Path: {artifact.get('artifact_relative_path', 'none')} | "
+            f"Source: {artifact.get('source_focus_mode', 'all_saved_segments')}"
+        )
+
+    def _output_slot_detail_lines(self, project: ProjectSlice, spec: OutputSlotSpec) -> list[str]:
+        artifact = self._output_slot_artifact(project, spec)
+        if artifact is None:
+            return []
         return [
-            f"- {label}: built and current",
-            f"  Path: {artifact.get('artifact_relative_path', 'none')}",
-            f"  Source focus: {artifact.get('source_focus_mode', 'all_saved_segments')}",
+            spec.summary_name,
+            self._output_slot_summary(project, spec),
+            f"Path: {artifact.get('artifact_relative_path', 'none')}",
+            "",
+            "Preview",
+            *self._output_slot_preview_lines(project, spec),
             "",
         ]
+
+    def _output_slot_pending_lines(self, project: ProjectSlice) -> list[str]:
+        lines = [
+            f"- {spec.label}: {spec.empty_guidance}"
+            for spec in OUTPUT_SLOT_SPECS
+            if self._output_slot_artifact(project, spec) is None
+        ]
+        if lines:
+            return lines
+        return ["- none; all four builder slots are currently built and valid."]
+
+    def _output_slot_detail_block(self, project: ProjectSlice) -> list[str]:
+        lines: list[str] = []
+        for spec in OUTPUT_SLOT_SPECS:
+            lines.extend(self._output_slot_detail_lines(project, spec))
+        if lines:
+            return lines
+        return ["No builder artifacts are current yet.", ""]
 
     def _refresh_rough_cut_controls(self, project: ProjectSlice | None) -> None:
         if project is None:
@@ -681,66 +730,6 @@ class DNAFilmAppPresentationMixin:
         if preferred_count:
             return f"Preferred current rough cut: {preferred_count} segment(s) currently selected for later assembly."
         return "Preferred current rough cut: none selected yet."
-
-    def _packaging_script_bundle_summary(self, project: ProjectSlice) -> str:
-        bundle = project.packaging_script_bundle
-        if bundle is None:
-            return "Packaging-ready script bundle: none built yet."
-        return (
-            f"Packaging-ready script bundle: {bundle.get('segment_count', 0)} segment(s) built from "
-            f"{bundle.get('source_focus_mode', 'all_saved_segments')}."
-        )
-
-    def _packaging_script_bundle_lines(self, project: ProjectSlice) -> list[str]:
-        bundle = project.packaging_script_bundle
-        if bundle is None:
-            return ["No packaging-ready script bundle has been built yet."]
-        return [bundle.get("markdown_content", "").rstrip() or "No packaging-ready script bundle content available."]
-
-    def _shorts_reels_script_summary(self, project: ProjectSlice) -> str:
-        script = project.shorts_reels_script
-        if script is None:
-            return "Shorts/Reels script: none built yet."
-        return (
-            f"Shorts/Reels script: {script.get('segment_count', 0)} beat(s) built from "
-            f"{script.get('source_focus_mode', 'all_saved_segments')} with hook '{script.get('hook_line', '').strip() or 'none'}'."
-        )
-
-    def _shorts_reels_script_lines(self, project: ProjectSlice) -> list[str]:
-        script = project.shorts_reels_script
-        if script is None:
-            return ["No Shorts/Reels script has been built yet."]
-        return [script.get("markdown_content", "").rstrip() or "No Shorts/Reels script content available."]
-
-    def _long_video_script_summary(self, project: ProjectSlice) -> str:
-        script = project.long_video_script
-        if script is None:
-            return "Long-video script: none built yet."
-        return (
-            f"Long-video script: {script.get('segment_count', 0)} beat(s) built from "
-            f"{script.get('source_focus_mode', 'all_saved_segments')} with working title '{script.get('working_title', '').strip() or 'none'}'."
-        )
-
-    def _long_video_script_lines(self, project: ProjectSlice) -> list[str]:
-        script = project.long_video_script
-        if script is None:
-            return ["No long-video script has been built yet."]
-        return [script.get("markdown_content", "").rstrip() or "No long-video script content available."]
-
-    def _carousel_script_summary(self, project: ProjectSlice) -> str:
-        script = project.carousel_script
-        if script is None:
-            return "Carousel script: none built yet."
-        return (
-            f"Carousel script: {script.get('slide_count', 0)} slide(s) built from "
-            f"{script.get('source_focus_mode', 'all_saved_segments')} with angle '{script.get('carousel_angle', '').strip() or 'none'}'."
-        )
-
-    def _carousel_script_lines(self, project: ProjectSlice) -> list[str]:
-        script = project.carousel_script
-        if script is None:
-            return ["No carousel script has been built yet."]
-        return [script.get("markdown_content", "").rstrip() or "No carousel script content available."]
 
     def _accepted_reference_lines(self, project: ProjectSlice) -> list[str]:
         accepted_reference = project.accepted_reference
@@ -1159,18 +1148,6 @@ class DNAFilmAppPresentationMixin:
         gate_state, gate_reason = self._output_builder_gate(project)
         inventory_text = self._output_inventory_text(project)
         recovery_text = self._output_recovery_text(project, gate_state, gate_reason)
-        bundle_summary = self._packaging_script_bundle_summary(project)
-        shorts_summary = self._shorts_reels_script_summary(project)
-        long_video_summary = self._long_video_script_summary(project)
-        carousel_summary = self._carousel_script_summary(project)
-        bundle = project.packaging_script_bundle
-        shorts_script = project.shorts_reels_script
-        long_video_script = project.long_video_script
-        carousel_script = project.carousel_script
-        packaging_path = bundle.get("artifact_relative_path", "none") if bundle else "none"
-        shorts_path = shorts_script.get("artifact_relative_path", "none") if shorts_script else "none"
-        long_video_path = long_video_script.get("artifact_relative_path", "none") if long_video_script else "none"
-        carousel_path = carousel_script.get("artifact_relative_path", "none") if carousel_script else "none"
         self.output_builder_inventory_text.set(inventory_text)
         self.output_builder_summary_text.set(recovery_text)
         self.output_builder_path_text.set(self._output_paths_text(project))
@@ -1185,39 +1162,14 @@ class DNAFilmAppPresentationMixin:
             self._rough_cut_segment_stub_summary(project),
             self._rough_cut_preferred_subset_summary(project),
             "",
-            "Current builder slots",
-            *self._builder_slot_status_lines("Packaging", bundle, "Build Packaging-Ready Script Bundle to create the first packaging artifact."),
-            *self._builder_slot_status_lines("Shorts/Reels", shorts_script, "Build Shorts/Reels Script to add the short-form output path."),
-            *self._builder_slot_status_lines("Long Video", long_video_script, "Build Long-Video Script to add the long-form output path."),
-            *self._builder_slot_status_lines("Carousel", carousel_script, "Build Carousel Script to add the slide-based output path."),
+            "Builder slot overview",
+            *[self._output_slot_overview_line(project, spec) for spec in OUTPUT_SLOT_SPECS],
             "",
-            "Packaging-ready script bundle builder",
-            bundle_summary,
-            f"Path: {packaging_path}",
+            "Current built artifacts",
+            *self._output_slot_detail_block(project),
             "",
-            "Shorts/Reels script builder",
-            shorts_summary,
-            f"Path: {shorts_path}",
-            "",
-            "Long-video script builder",
-            long_video_summary,
-            f"Path: {long_video_path}",
-            "",
-            "Carousel script builder",
-            carousel_summary,
-            f"Path: {carousel_path}",
-            "",
-            "Packaging-ready script bundle preview",
-            *self._packaging_script_bundle_lines(project),
-            "",
-            "Shorts/Reels script preview",
-            *self._shorts_reels_script_lines(project),
-            "",
-            "Long-video script preview",
-            *self._long_video_script_lines(project),
-            "",
-            "Carousel script preview",
-            *self._carousel_script_lines(project),
+            "Pending builder slots",
+            *self._output_slot_pending_lines(project),
         ]
         self.output_builder_handoff.configure(state="normal")
         self.output_builder_handoff.delete("1.0", "end")

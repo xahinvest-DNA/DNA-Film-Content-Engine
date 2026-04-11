@@ -1,7 +1,7 @@
 # Codex Tasks
 
 Last updated: 2026-04-11
-Current focus: Stage C delivery milestone - keep the four-builder local production runtime clear, honest, and maintainable under repeated use
+Current focus: Stage C delivery milestone - keep the four-builder local production runtime trustworthy enough for repeated use and stronger release-facing validation
 
 ## Working rule
 
@@ -9,12 +9,17 @@ There must be exactly one active packet at a time, and that packet must move the
 
 ## Active task
 
-### C-002B
+### C-003
 - Status: active
-- Title: Output Surface Density and Metadata Hardening
-- Goal: reduce output-surface density risk and thin repeated builder wiring after recovery-truth hardening is in place.
+- Title: Release Confidence and Validation Hardening
+- Goal: deepen repeated-use trust and validation depth now that recovery truth and output-surface density have already been hardened.
 
 ## Recently completed
+
+### C-002B
+- Status: completed
+- Title: Output Surface Density and Metadata Hardening
+- Outcome: reduced `Output Tracks` density by separating overview, built-artifact detail, and pending-slot guidance; introduced a bounded shared UI slot-metadata contract in `runtime/ui/output_slots.py`; preserved recovery guarantees; and added tests for compact four-builder state readability.
 
 ### C-002A
 - Status: completed

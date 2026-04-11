@@ -2,26 +2,26 @@
 
 Last updated: 2026-04-11
 Status: active
-Task ID: C-002B
+Task ID: C-003
 Task type: production_hardening
-Title: Output Surface Density and Metadata Hardening
+Title: Release Confidence and Validation Hardening
 
 ## Goal
 
-Reduce output-surface density risk and repeated builder-metadata wiring so the four-builder workstation stays clear and maintainable as Stage C continues.
+Push the four-builder workstation from clearer trust and recovery behavior toward broader release-confidence by strengthening validation depth, repeated local-use confidence, and final trust semantics.
 
 ## Why this is next
 
-`C-002A` is complete and the product now self-heals load-time truth across UI state, persisted status payload, and on-disk output artifacts while the decisions layer is back in SSOT alignment.
+`C-002B` is complete and the product now has a less dense `Output Tracks` surface plus thinner per-builder metadata wiring on top of the recovery-truth guarantees from `C-001` and `C-002A`.
 
-The strongest next move is now a bounded UI/metadata hardening pass: `Output Tracks` is still dense under four builders, and builder metadata wiring remains thin and repetitive even though recovery truth is stronger.
+The strongest next move is now a bounded release-confidence hardening pass: the runtime is clearer and more honest than before, but validation depth, repeated-use confidence, and release-facing trust still lag behind builder breadth.
 
 ## In scope
 
-- make `Output Tracks` easier to scan under four builders without broad redesign;
-- reduce repeated per-builder metadata wiring where it directly improves clarity and maintainability;
-- keep the current four-builder workstation coherent while preserving current recovery-truth guarantees;
-- keep `runtime/app.py`, `runtime/builders/`, and `runtime/persistence/project_store.py` within the current hardened boundary model.
+- strengthen validation around repeated open/reload/rebuild/invalidation cycles across the four-builder runtime;
+- harden release-facing trust semantics where the current workstation can still feel less than release-grade under repeated local use;
+- preserve the current boundary model while improving confidence rather than breadth;
+- keep the one-active-packet rule and avoid turning the watchlist into a backlog.
 
 ## Out of scope
 
@@ -34,9 +34,9 @@ The strongest next move is now a bounded UI/metadata hardening pass: `Output Tra
 
 ## Recommended validation
 
-- verify `Output Tracks` stays coherent and readable across none/partial/all built states;
-- reduce repeated builder wiring without breaking current recovery-truth guarantees;
-- confirm the four-builder surface remains honest after reload and rebuild transitions;
+- verify the four-builder runtime remains coherent across repeated build, reopen, reload, clear, and rebuild cycles;
+- strengthen tests where release-facing trust still depends on a narrow set of scenarios;
+- confirm the clearer `Output Tracks` surface still stays honest after harder repeated-use transitions;
 - confirm hardening work still does not re-centralize logic in `runtime/app.py` or `runtime/persistence/project_store.py`.
 
 ## Required handoff format
@@ -45,6 +45,6 @@ Use `05_CODEX/HANDOFF_TEMPLATE.md` exactly.
 
 Also include:
 
-- what output-surface and metadata areas were hardened next and why;
+- what release-confidence areas were hardened next and why;
 - what risks still remain before release-grade confidence;
 - which watchlist items moved and which still remain watching.

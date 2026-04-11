@@ -25,10 +25,10 @@ Title: Output Tracks UI density growth
 Area: ui
 
 What is observed now:
-- `Output Tracks` now carries Packaging, Shorts/Reels, Long Video, and Carousel in one compact surface, and C-001/C-002A improved trust and recovery wording for current states.
+- `Output Tracks` now carries Packaging, Shorts/Reels, Long Video, and Carousel through a clearer overview/detail split, and C-001/C-002A/C-002B together improved trust wording, recovery honesty, and slot readability for current states.
 
 Why it is not a blocker yet:
-- all four builders still fit in one readable local-first surface and the current interactions remain understandable after the first hardening pass.
+- all four builders still fit in one readable local-first surface and the current interactions remain understandable after the density hardening pass.
 
 Why it may become high-impact later:
 - more builder rows, summaries, and previews can quickly turn the output surface into a dense wall of controls that slows build-review work.
@@ -49,13 +49,13 @@ Title: Builder metadata layer remains thin
 Area: output_layer
 
 What is observed now:
-- `runtime/builders/` has a clean extension zone, but builder metadata still lives mostly as repeated per-builder fields rather than a stronger shared contract, and the output surface still depends on repeated per-builder wiring.
+- `runtime/builders/` has a clean extension zone, and `runtime/ui/output_slots.py` now removes the worst repeated per-builder surface wiring, but builder metadata still lives as thin repeated fields rather than a stronger cross-layer contract.
 
 Why it is not a blocker yet:
-- four builders still remain understandable without a heavier registry layer.
+- four builders still remain understandable without a heavier registry layer, and the UI now has a bounded shared slot pattern instead of fully manual wiring.
 
 Why it may become high-impact later:
-- adding more builders or export actions may increase naming drift, duplicated summaries, and inconsistent UI/path wiring.
+- adding more builders or export actions may still increase naming drift, duplicated summaries, and inconsistent cross-layer metadata even after the UI-side compaction.
 
 Suggested trigger:
 - the next builder requires duplicated metadata mapping in multiple modules.
@@ -145,7 +145,7 @@ Title: Release-quality gap remains large
 Area: release_readiness
 
 What is observed now:
-- Stage B breadth is now strong, and C-001/C-002A improved output trust, repeated-use coverage, and load-time recovery honesty, but validation depth and release polish still lag behind output breadth.
+- Stage B breadth is now strong, and C-001/C-002A/C-002B improved output trust, repeated-use coverage, load-time recovery honesty, and output-surface maintainability, but validation depth and release polish still lag behind output breadth.
 
 Why it is not a blocker yet:
 - the current focus was builder expansion, not production hardening.

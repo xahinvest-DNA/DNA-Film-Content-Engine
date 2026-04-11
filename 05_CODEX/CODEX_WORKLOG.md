@@ -1,5 +1,22 @@
 # Codex Worklog
 
+## 2026-04-11 - C-002B completed and Output Tracks became lighter while builder-slot metadata became less repetitive
+
+### Completed
+- reduced `Output Tracks` density by separating aggregate truth, builder-slot overview, current built artifacts, and pending builder slots instead of repeating four full builder blocks end to end;
+- introduced `runtime/ui/output_slots.py` as a bounded shared slot-metadata contract so the presentation layer no longer wires all four builder slots by hand;
+- preserved current recovery-truth guarantees from `C-001` and `C-002A` while improving readability under none-built, partial-built, all-built, and recovered-partial states;
+- added tests for compact slot overview readability and the all-built no-pending state;
+- verified the full suite through `python -m unittest tests\\test_mvp_slice.py tests\\test_runtime_integration_smoke.py tests\\test_output_builder_slice.py tests\\test_runtime_boundaries.py -q`.
+
+### Repository effect
+- the four-builder workstation is easier to scan in real use because summary-level truth is now separated from per-builder detail;
+- builder-slot presentation maintenance is cheaper because the repeated UI metadata pattern is now centralized in one bounded helper instead of repeated ad hoc blocks;
+- recovery truth remains intact while the surface is less noisy and less likely to turn into the next local monolith.
+
+### Recommended next step
+Execute `C-003 Release Confidence and Validation Hardening`.
+
 ## 2026-04-11 - C-002A completed and recovery truth now self-heals on open/load
 
 ### Completed

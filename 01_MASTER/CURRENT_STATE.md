@@ -4,8 +4,8 @@ Last updated: 2026-04-11
 Status: active
 Product goal: desktop-first content production software
 Active stage: Stage C - Production hardening
-Active delivery milestone: harden recovery truth and keep SSOT state ownership internally consistent
-Active Codex packet: C-002B Output Surface Density and Metadata Hardening
+Active delivery milestone: raise release confidence across repeated local use, four-builder validation, and surface trust
+Active Codex packet: C-003 Release Confidence and Validation Hardening
 
 ## What is true now
 
@@ -50,14 +50,21 @@ The next recovery-truth hardening pass is now also complete:
 - harder reopen/reload/rebuild scenarios now have stronger test coverage;
 - `DECISIONS.md` no longer conflicts with live stage state and now correctly delegates current-stage ownership to `CURRENT_STATE.md` and `DELIVERY_PLAN.md`.
 
+The next output-surface density and metadata hardening pass is now also complete:
+
+- `Output Tracks` now separates aggregate truth, builder-slot overview, current built artifacts, and pending builder slots instead of repeating the same per-builder blocks end to end;
+- per-builder slot metadata is now described through a bounded shared UI contract in `runtime/ui/output_slots.py` instead of repeated ad hoc wiring inside the presentation layer;
+- none-built, partial-built, all-built, cleared-after-reopen, and recovered-partial states are now easier to scan without weakening recovery truth;
+- tests now protect the compact slot overview and pending-slot behavior alongside the existing recovery self-heal scenarios.
+
 ## Main product gap
 
 The main gap has changed again:
 
 - the product now has four honest builders and Stage B breadth is materially real;
 - the main remaining gap is no longer output-family coverage, but production hardening;
-- recovery confidence and validation depth are now stronger than before C-002A, but they still need more hardening before release-grade trust;
-- output-surface scalability and broader release quality remain open.
+- recovery confidence, validation depth, and output-surface readability are now stronger than before C-002B, but they still need more hardening before release-grade trust;
+- broader release quality remains open even though density and metadata maintenance risk are lower.
 
 The software is now a real multi-format content path proof, but it still needs harder release quality.
 
@@ -70,11 +77,11 @@ The project is now governed through four levels:
 3. one active delivery milestone at a time;
 4. one active Codex packet at a time.
 
-The current active milestone belongs to Stage C and is aimed at making the now-broadened multi-builder runtime more durable, recoverable, release-facing, and SSOT-consistent under repeated local use.
+The current active milestone belongs to Stage C and is aimed at making the four-builder runtime more release-trustworthy under repeated local use, stronger validation, and clearer output-state behavior.
 
 ## What the next packet must do
 
-`C-002A` is now complete.
+`C-002B` is now complete.
 
 Four proven output builders are now real:
 
@@ -83,9 +90,9 @@ Four proven output builders are now real:
 - long-video script;
 - carousel script.
 
-All four artifacts now exist as saved markdown plus persisted output records behind the same hardened builder boundary, reload path, stale-cleanup model, clearer multi-builder trust surface, and stronger load-time truth recovery.
+All four artifacts now exist as saved markdown plus persisted output records behind the same hardened builder boundary, reload path, stale-cleanup model, stronger load-time truth recovery, and a less dense multi-builder output surface.
 
-The next active packet is `C-002B`, because the strongest next move is to reduce output-surface density risk and thin repeated builder metadata wiring without changing product direction.
+The next active packet is `C-003`, because the strongest next move is to push from clearer surface trust toward broader release-confidence and validation hardening without changing product direction.
 
 What is preserved:
 
@@ -96,6 +103,8 @@ What is preserved:
 - the strategic watchlist now exists, but it is not a backlog and must not compete with the one active packet rule.
 - Output Tracks is now clearer and less misleading in partial-build and cleared-after-reopen scenarios.
 - open/reload now also repairs stale on-disk output drift instead of only reconciling it in memory.
+- Output Tracks now uses a compact builder-slot overview plus pending-slot separation rather than repeating the same metadata wall for all four builders.
+- bounded UI slot metadata now reduces repeated builder wiring without introducing a heavy registry framework.
 
 ## Accepted boundaries right now
 
@@ -111,13 +120,13 @@ What is preserved:
 
 ## Open items
 
-- deepen recovery, validation, and release quality now that the first two hardening entries are complete;
-- keep the four-builder output surface coherent as Stage C continues;
+- deepen recovery, validation, and release quality now that the first three hardening entries are complete;
+- keep the four-builder output surface coherent as Stage C continues without turning UI metadata into a new abstraction sink;
 - use the watchlist to capture high-impact signals without converting everything into immediate packets.
 
 ## Next step
 
-Execute `C-002B Output Surface Density and Metadata Hardening`.
+Execute `C-003 Release Confidence and Validation Hardening`.
 
 ## What must not be lost in a new chat
 
@@ -134,4 +143,5 @@ Execute `C-002B Output Surface Density and Metadata Hardening`.
 - `STRATEGIC_WATCHLIST.md` exists as a strategic observation layer and is not a task backlog;
 - `C-001` improved multi-builder trust, inventory visibility, and repeated-use coverage;
 - `C-002A` hardened load-time recovery truth and repaired the decisions-layer SSOT conflict;
-- `C-002B` is now the one active packet because output-surface density and metadata thinness are the strongest next bounded hardening targets.
+- `C-002B` reduced output-surface density and repeated builder-slot wiring through a bounded shared UI metadata contract;
+- `C-003` is now the one active packet because broader release-confidence and validation depth are the strongest next bounded hardening targets.

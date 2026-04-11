@@ -399,6 +399,60 @@ class OutputBuilderTests(unittest.TestCase):
             finally:
                 root.destroy()
 
+    def test_output_tracks_uses_compact_slot_overview_and_pending_sections(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = self._build_rough_cut_ready_project(store, "Output Tracks Compact Slots")
+            project = store.build_packaging_script_bundle(project.project_dir)
+            project = store.build_shorts_reels_script(project.project_dir)
+
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = store
+                app._load_project_into_ui(project)
+                app._switch_view("Output Tracks")
+
+                handoff = app.output_builder_handoff.get("1.0", "end")
+                self.assertIn("Builder slot overview", handoff)
+                self.assertIn("- Packaging: built | Path: outputs/packaging/packaging_script_bundle.md | Source: all_saved_segments", handoff)
+                self.assertIn("- Shorts/Reels: built | Path: outputs/shorts_reels/shorts_reels_script.md | Source: all_saved_segments", handoff)
+                self.assertIn("- Long Video: missing | Next: Build Long-Video Script to add the long-form output path.", handoff)
+                self.assertIn("- Carousel: missing | Next: Build Carousel Script to add the slide-based output path.", handoff)
+                self.assertIn("Current built artifacts", handoff)
+                self.assertIn("Pending builder slots", handoff)
+                self.assertNotIn("Long-video script builder", handoff)
+                self.assertNotIn("Carousel script builder", handoff)
+            finally:
+                root.destroy()
+
+    def test_output_tracks_all_built_reports_no_pending_slots(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = self._build_rough_cut_ready_project(store, "Output Tracks All Built Compact")
+            project = store.build_packaging_script_bundle(project.project_dir)
+            project = store.build_shorts_reels_script(project.project_dir)
+            project = store.build_long_video_script(project.project_dir)
+            project = store.build_carousel_script(project.project_dir)
+
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = store
+                app._load_project_into_ui(project)
+                app._switch_view("Output Tracks")
+
+                handoff = app.output_builder_handoff.get("1.0", "end")
+                self.assertIn("all 4 artifacts built and currently available", app.output_builder_inventory_text.get())
+                self.assertIn("Pending builder slots", handoff)
+                self.assertIn("- none; all four builder slots are currently built and valid.", handoff)
+            finally:
+                root.destroy()
+
     def test_output_tracks_reports_cleared_state_after_upstream_reopen(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             store = ProjectSliceStore(Path(temp_dir))
