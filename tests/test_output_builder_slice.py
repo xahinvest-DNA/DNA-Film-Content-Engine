@@ -102,6 +102,43 @@ class OutputBuilderTests(unittest.TestCase):
             self.assertIn("Opening hook", bundle["markdown_content"])
             self.assertNotIn("Mechanism beat", bundle["markdown_content"])
 
+    def test_shorts_reels_script_persists_after_reload(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = self._build_rough_cut_ready_project(store, "Shorts Persistence")
+
+            built = store.build_shorts_reels_script(project.project_dir)
+
+            self.assertIsNotNone(built.shorts_reels_script)
+            self.assertEqual(built.shorts_reels_script["record_type"], "shorts_reels_script")
+            self.assertTrue((built.project_dir / "records" / "output" / "shorts_reels_script.json").exists())
+            self.assertTrue((built.project_dir / "outputs" / "shorts_reels" / "shorts_reels_script.md").exists())
+
+            reloaded = store.load_project(built.project_dir)
+            self.assertIsNotNone(reloaded.shorts_reels_script)
+            self.assertEqual(reloaded.shorts_reels_script["segment_count"], 2)
+            self.assertIn("Shorts Reels Script", reloaded.shorts_reels_script["title"])
+
+    def test_shorts_reels_script_uses_preferred_subset_when_present(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = self._build_rough_cut_ready_project(store, "Shorts Preferred Subset")
+            project = store.update_rough_cut_segment_subset_status(
+                project.project_dir,
+                project.rough_cut_segment_stubs[0]["record_id"],
+                "selected_for_current_rough_cut",
+            )
+
+            built = store.build_shorts_reels_script(project.project_dir)
+            script = built.shorts_reels_script
+
+            self.assertIsNotNone(script)
+            self.assertEqual(script["source_focus_mode"], "preferred_subset_only")
+            self.assertEqual(script["source_rough_cut_segment_ids"], [project.rough_cut_segment_stubs[0]["record_id"]])
+            self.assertIn("## Hook / Opening angle", script["markdown_content"])
+            self.assertIn("Lead with the inherited-fear framing as the opening packaging hook.", script["markdown_content"])
+            self.assertNotIn("Mechanism beat", script["markdown_content"])
+
     def test_app_can_build_and_show_packaging_script_bundle(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             store = ProjectSliceStore(Path(temp_dir))
@@ -121,8 +158,32 @@ class OutputBuilderTests(unittest.TestCase):
 
                 self.assertIsNotNone(app.project.packaging_script_bundle)
                 self.assertIn("Packaging-ready script bundle:", app.output_builder_summary_text.get())
-                self.assertIn("outputs/packaging/packaging_script_bundle.md", app.output_builder_path_text.get())
+                self.assertIn("Packaging path: outputs/packaging/packaging_script_bundle.md", app.output_builder_path_text.get())
                 self.assertIn("Packaging Script Bundle", app.output_builder_handoff.get("1.0", "end"))
+            finally:
+                root.destroy()
+
+    def test_app_can_build_and_show_shorts_reels_script(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = self._build_rough_cut_ready_project(store, "Shorts UI Flow")
+
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = store
+                app._load_project_into_ui(project)
+                app._switch_view("Output Tracks")
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.build_shorts_reels_script()
+
+                self.assertIsNotNone(app.project.shorts_reels_script)
+                self.assertIn("Shorts/Reels script:", app.output_builder_summary_text.get())
+                self.assertIn("Shorts/Reels path: outputs/shorts_reels/shorts_reels_script.md", app.output_builder_path_text.get())
+                self.assertIn("Shorts Reels Script", app.output_builder_handoff.get("1.0", "end"))
             finally:
                 root.destroy()
 

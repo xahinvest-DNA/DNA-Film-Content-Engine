@@ -1,7 +1,7 @@
 # Codex Tasks
 
 Last updated: 2026-04-11
-Current focus: Stage B delivery milestone - output expansion beyond the first proven builder
+Current focus: Stage B delivery milestone - output expansion beyond the first two proven builders
 
 ## Working rule
 
@@ -9,12 +9,17 @@ There must be exactly one active packet at a time, and that packet must move the
 
 ## Active task
 
-### B-001
+### B-002
 - Status: active
-- Title: First Shorts/Reels Builder Expansion
-- Goal: turn the proven analysis-to-rough-cut chain into a first shorts/reels-oriented builder path using the now-established output-builder surface and persistence pattern.
+- Title: Long Video Script Builder Expansion
+- Goal: turn the proven analysis-to-rough-cut chain into a first long-video-oriented builder path using the now-established multi-builder surface and persistence pattern.
 
 ## Recently completed
+
+### B-001
+- Status: completed
+- Title: First Shorts/Reels Builder Expansion
+- Outcome: added a second real builder in `runtime/builders`, persisted a Shorts/Reels markdown artifact plus output record, integrated the new builder into `Output Tracks`, preserved packaging-builder compatibility, and added coexistence/reload/invalidation coverage across both builders.
 
 ### A-002
 - Status: completed

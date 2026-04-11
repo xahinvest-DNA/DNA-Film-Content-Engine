@@ -396,7 +396,7 @@ class DNAFilmAppLayoutMixin:
         ttk.Label(frame, text="Output Tracks", font=("Segoe UI", 14, "bold")).grid(row=0, column=0, sticky="w")
         ttk.Label(
             frame,
-            text="This is the first real output-builder surface. It builds a packaging-ready script bundle from the current rough-cut handoff and saves the artifact into the project package.",
+            text="This output-builder surface now builds both the packaging-ready script bundle and a Shorts/Reels-oriented short-form script from the current rough-cut handoff.",
             wraplength=760,
         ).grid(row=1, column=0, sticky="w", pady=(8, 6))
         ttk.Label(frame, textvariable=self.output_builder_status_text, wraplength=760).grid(row=2, column=0, sticky="w", pady=(0, 4))
@@ -409,6 +409,12 @@ class DNAFilmAppLayoutMixin:
             command=self.build_packaging_script_bundle,
         )
         self.build_packaging_bundle_button.pack(side="left")
+        self.build_shorts_reels_button = ttk.Button(
+            action_frame,
+            text="Build Shorts/Reels Script",
+            command=self.build_shorts_reels_script,
+        )
+        self.build_shorts_reels_button.pack(side="left", padx=(8, 0))
         ttk.Label(action_frame, textvariable=self.output_builder_path_text, wraplength=520).pack(side="left", padx=(12, 0))
         self.output_builder_handoff = tk.Text(frame, height=20, wrap="word")
         self.output_builder_handoff.grid(row=5, column=0, sticky="nsew")

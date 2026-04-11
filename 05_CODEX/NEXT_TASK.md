@@ -2,26 +2,24 @@
 
 Last updated: 2026-04-11
 Status: active
-Task ID: B-001
+Task ID: B-002
 Task type: builder_expansion
-Title: First Shorts/Reels Builder Expansion
+Title: Long Video Script Builder Expansion
 
 ## Goal
 
-Expand the proven output path by adding the first shorts/reels-oriented builder on top of the current analysis-to-rough-cut chain.
+Expand the proven output path by adding the first long-video-oriented builder on top of the current analysis-to-rough-cut chain.
 
 ## Why this is next
 
-`P-001` is complete and the product now has one honest packaging-ready script bundle artifact.
+`B-001` is complete and the product now has two honest builders: the packaging-ready script bundle and the Shorts/Reels script.
 
-`A-002` is now also complete, so the next builder no longer has to land on top of the old hidden runtime monolith.
-
-The strongest next move is no longer another internal preparation layer. It is output expansion using the same proven chain and the same output surface.
+The strongest next move is to broaden Stage B output coverage with the first long-video builder while reusing the same hardened builder boundary and local-first output surface.
 
 ## In scope
 
-- choose the first shorts/reels builder contract that can reuse the current rough-cut and packaging-bundle context;
-- define the shorts/reels artifact format and where it lives in the project package;
+- choose the first long-video builder contract that can reuse the current rough-cut, packaging, and short-form context;
+- define the long-video artifact format and where it lives in the project package;
 - expose build and review flow in the current output surface;
 - add persistence, integration, and acceptance-style coverage for the new builder path.
 
@@ -35,9 +33,9 @@ The strongest next move is no longer another internal preparation layer. It is o
 
 ## Recommended validation
 
-- verify one project can build a reproducible shorts/reels artifact from the current workflow;
+- verify one project can build a reproducible long-video artifact from the current workflow;
 - run persistence, integration, and acceptance-style coverage for the new builder path;
-- confirm the existing packaging bundle path remains intact;
+- confirm the existing packaging bundle path and Shorts/Reels path remain intact;
 - confirm the new builder fits the `runtime/builders/` boundary without pushing business rules back into `runtime/persistence/project_store.py` or `runtime/app.py`.
 
 ## Required handoff format
@@ -46,6 +44,6 @@ Use `05_CODEX/HANDOFF_TEMPLATE.md` exactly.
 
 Also include:
 
-- what shorts/reels contract was chosen and why;
-- what new practical output value now exists beyond the packaging bundle;
+- what long-video contract was chosen and why;
+- what new practical output value now exists beyond packaging + Shorts/Reels;
 - which next builder or export step is naturally unlocked.

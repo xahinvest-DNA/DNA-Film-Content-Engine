@@ -1,5 +1,23 @@
 # Codex Worklog
 
+## 2026-04-11 - B-001 completed and the product gained its second real builder
+
+### Completed
+- added a Shorts/Reels script builder under `runtime/builders` beside the existing packaging builder;
+- persisted the new builder as both `records/output/shorts_reels_script.json` and `outputs/shorts_reels/shorts_reels_script.md`;
+- integrated the new builder into `Output Tracks` so the user can build, inspect, and keep both artifacts in one surface;
+- kept the packaging builder working without regressing the existing compatibility path;
+- added tests for builder availability, reload reproducibility, stale invalidation, UI build flow, preferred-subset sourcing, and coexistence with the packaging builder;
+- verified the full suite through `python -m unittest tests\\test_mvp_slice.py tests\\test_runtime_integration_smoke.py tests\\test_output_builder_slice.py tests\\test_runtime_boundaries.py -q`.
+
+### Repository effect
+- Stage B now has two honest local-first output builders instead of one;
+- the output layer can build both a packaging-oriented script bundle and a short-form Shorts/Reels script from the same truth chain;
+- builder expansion is now materially real, not just architecturally prepared.
+
+### Recommended next step
+Execute `B-002 Long Video Script Builder Expansion`.
+
 ## 2026-04-11 - A-002 completed and runtime boundaries were hardened before Stage B expansion
 
 ### Completed

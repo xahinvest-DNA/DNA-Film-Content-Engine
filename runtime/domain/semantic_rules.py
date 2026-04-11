@@ -227,6 +227,25 @@ def normalize_packaging_script_bundle(packaging_script_bundle: dict | None) -> d
     return current
 
 
+def normalize_shorts_reels_script(shorts_reels_script: dict | None) -> dict | None:
+    if not shorts_reels_script:
+        return None
+    current = dict(shorts_reels_script)
+    current["title"] = current.get("title", "").strip()
+    current["builder_id"] = current.get("builder_id", "shorts_reels_script_v1").strip() or "shorts_reels_script_v1"
+    current["source_focus_mode"] = current.get("source_focus_mode", "all_saved_segments").strip() or "all_saved_segments"
+    current["source_candidate_stub_id"] = current.get("source_candidate_stub_id", "").strip()
+    current["artifact_relative_path"] = current.get("artifact_relative_path", "outputs/shorts_reels/shorts_reels_script.md").strip() or "outputs/shorts_reels/shorts_reels_script.md"
+    current["markdown_content"] = current.get("markdown_content", "")
+    current["hook_line"] = current.get("hook_line", "").strip()
+    current["closure_line"] = current.get("closure_line", "").strip()
+    current["source_rough_cut_segment_ids"] = list(current.get("source_rough_cut_segment_ids", []))
+    current["segments"] = list(current.get("segments", []))
+    current["segment_count"] = len(current["segments"])
+    current["progression_count"] = current.get("progression_count", current["segment_count"])
+    return current
+
+
 def semantic_completeness(intake_record: dict, semantic_blocks: list[dict]) -> tuple[str, int, int]:
     if intake_record.get("intake_readiness") != "ready" or not semantic_blocks:
         return ("Incomplete", 0, 0)

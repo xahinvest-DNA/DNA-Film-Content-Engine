@@ -291,6 +291,7 @@ class DNAFilmAppPresentationMixin:
 
     def _set_output_builder_enabled(self, enabled: bool) -> None:
         self.build_packaging_bundle_button.configure(state="normal" if enabled else "disabled")
+        self.build_shorts_reels_button.configure(state="normal" if enabled else "disabled")
 
     def _set_editor_enabled(self, enabled: bool) -> None:
         entry_state = "normal" if enabled else "disabled"
@@ -633,6 +634,21 @@ class DNAFilmAppPresentationMixin:
         if bundle is None:
             return ["No packaging-ready script bundle has been built yet."]
         return [bundle.get("markdown_content", "").rstrip() or "No packaging-ready script bundle content available."]
+
+    def _shorts_reels_script_summary(self, project: ProjectSlice) -> str:
+        script = project.shorts_reels_script
+        if script is None:
+            return "Shorts/Reels script: none built yet."
+        return (
+            f"Shorts/Reels script: {script.get('segment_count', 0)} beat(s) built from "
+            f"{script.get('source_focus_mode', 'all_saved_segments')} with hook '{script.get('hook_line', '').strip() or 'none'}'."
+        )
+
+    def _shorts_reels_script_lines(self, project: ProjectSlice) -> list[str]:
+        script = project.shorts_reels_script
+        if script is None:
+            return ["No Shorts/Reels script has been built yet."]
+        return [script.get("markdown_content", "").rstrip() or "No Shorts/Reels script content available."]
 
     def _accepted_reference_lines(self, project: ProjectSlice) -> list[str]:
         accepted_reference = project.accepted_reference
@@ -1050,20 +1066,32 @@ class DNAFilmAppPresentationMixin:
     def _update_output_tracks_surface(self, project: ProjectSlice) -> None:
         gate_state, gate_reason = self._output_builder_gate(project)
         bundle_summary = self._packaging_script_bundle_summary(project)
+        shorts_summary = self._shorts_reels_script_summary(project)
         bundle = project.packaging_script_bundle
-        artifact_path = bundle.get("artifact_relative_path", "none") if bundle else "none"
-        self.output_builder_summary_text.set(bundle_summary)
-        self.output_builder_path_text.set(f"Artifact path: {artifact_path}")
+        shorts_script = project.shorts_reels_script
+        packaging_path = bundle.get("artifact_relative_path", "none") if bundle else "none"
+        shorts_path = shorts_script.get("artifact_relative_path", "none") if shorts_script else "none"
+        self.output_builder_summary_text.set(f"{bundle_summary} {shorts_summary}")
+        self.output_builder_path_text.set(f"Packaging path: {packaging_path} | Shorts/Reels path: {shorts_path}")
         self._set_output_builder_enabled(gate_state == "ready")
         lines = [
-            "Packaging-ready script bundle builder",
+            "Output builders",
             "",
             f"Readiness: {gate_state} | {gate_reason}.",
+            "",
+            "Packaging-ready script bundle builder",
             bundle_summary,
+            "",
+            "Shorts/Reels script builder",
+            shorts_summary,
             self._rough_cut_segment_stub_summary(project),
             self._rough_cut_preferred_subset_summary(project),
             "",
+            "Packaging-ready script bundle preview",
             *self._packaging_script_bundle_lines(project),
+            "",
+            "Shorts/Reels script preview",
+            *self._shorts_reels_script_lines(project),
         ]
         self.output_builder_handoff.configure(state="normal")
         self.output_builder_handoff.delete("1.0", "end")
@@ -1106,9 +1134,11 @@ class DNAFilmAppPresentationMixin:
         readiness = self._approval_readiness(project)
         rough_cut_state, _ = self._rough_cut_gate(project)
         output_builder_state, _ = self._output_builder_gate(project)
+        if output_builder_state == "ready" and project.shorts_reels_script is None:
+            return "Next action: Build Shorts/Reels script"
         if output_builder_state == "ready" and project.packaging_script_bundle is None:
             return "Next action: Build packaging-ready script bundle"
-        if project.packaging_script_bundle is not None:
+        if project.packaging_script_bundle is not None or project.shorts_reels_script is not None:
             return "Next action: Open Output Tracks"
         if rough_cut_state == "ready":
             return "Next action: Open Rough Cut"

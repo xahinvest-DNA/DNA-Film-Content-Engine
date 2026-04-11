@@ -5,9 +5,11 @@ import unittest
 from pathlib import Path
 
 from runtime.builders import build_packaging_script_bundle as builder_build_packaging_script_bundle
+from runtime.builders import build_shorts_reels_script as builder_build_shorts_reels_script
 from runtime.builders import packaging_bundle_source_segments as builder_packaging_bundle_source_segments
 from runtime.project_slice import ProjectSliceStore
 from runtime.services.output_builder import build_packaging_script_bundle as service_build_packaging_script_bundle
+from runtime.services.output_builder import build_shorts_reels_script as service_build_shorts_reels_script
 from runtime.services.output_builder import packaging_bundle_source_segments as service_packaging_bundle_source_segments
 
 
@@ -69,6 +71,7 @@ class RuntimeBoundaryTests(unittest.TestCase):
 
     def test_builder_boundary_reexports_single_packaging_builder(self) -> None:
         self.assertIs(builder_build_packaging_script_bundle, service_build_packaging_script_bundle)
+        self.assertIs(builder_build_shorts_reels_script, service_build_shorts_reels_script)
         self.assertIs(builder_packaging_bundle_source_segments, service_packaging_bundle_source_segments)
 
     def test_reopen_after_semantic_change_clears_downstream_chain(self) -> None:
@@ -90,8 +93,11 @@ class RuntimeBoundaryTests(unittest.TestCase):
             self.assertIsNone(updated.timecode_range_stub)
             self.assertEqual(updated.rough_cut_segment_stubs, [])
             self.assertIsNone(updated.packaging_script_bundle)
+            self.assertIsNone(updated.shorts_reels_script)
             self.assertFalse((updated.project_dir / "records" / "output" / "packaging_script_bundle.json").exists())
             self.assertFalse((updated.project_dir / "outputs" / "packaging" / "packaging_script_bundle.md").exists())
+            self.assertFalse((updated.project_dir / "records" / "output" / "shorts_reels_script.json").exists())
+            self.assertFalse((updated.project_dir / "outputs" / "shorts_reels" / "shorts_reels_script.md").exists())
 
     def test_demoting_selected_candidate_clears_stale_output_after_reload(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -109,11 +115,13 @@ class RuntimeBoundaryTests(unittest.TestCase):
             self.assertIsNone(updated.timecode_range_stub)
             self.assertEqual(updated.rough_cut_segment_stubs, [])
             self.assertIsNone(updated.packaging_script_bundle)
+            self.assertIsNone(updated.shorts_reels_script)
 
             reloaded = store.load_project(updated.project_dir)
             self.assertIsNone(reloaded.accepted_reference)
             self.assertEqual(reloaded.rough_cut_segment_stubs, [])
             self.assertIsNone(reloaded.packaging_script_bundle)
+            self.assertIsNone(reloaded.shorts_reels_script)
 
     def test_builder_rebuild_is_reproducible_after_reload(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -132,6 +140,36 @@ class RuntimeBoundaryTests(unittest.TestCase):
             self.assertEqual(first_bundle["source_rough_cut_segment_ids"], second_bundle["source_rough_cut_segment_ids"])
             self.assertEqual(first_bundle["segment_count"], second_bundle["segment_count"])
             self.assertEqual(first_bundle["segments"], second_bundle["segments"])
+
+    def test_shorts_builder_rebuild_is_reproducible_after_reload(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            built = self._build_output_ready_project(store, "Boundary Shorts Rebuild")
+            built = store.build_shorts_reels_script(built.project_dir)
+            first_script = built.shorts_reels_script
+
+            reloaded = store.load_project(built.project_dir)
+            rebuilt = store.build_shorts_reels_script(reloaded.project_dir)
+            second_script = rebuilt.shorts_reels_script
+
+            self.assertIsNotNone(first_script)
+            self.assertIsNotNone(second_script)
+            self.assertEqual(first_script["builder_id"], second_script["builder_id"])
+            self.assertEqual(first_script["source_focus_mode"], second_script["source_focus_mode"])
+            self.assertEqual(first_script["source_rough_cut_segment_ids"], second_script["source_rough_cut_segment_ids"])
+            self.assertEqual(first_script["segment_count"], second_script["segment_count"])
+            self.assertEqual(first_script["segments"], second_script["segments"])
+
+    def test_packaging_and_shorts_can_coexist_without_regression(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            built = self._build_output_ready_project(store, "Boundary Coexistence")
+            built = store.build_shorts_reels_script(built.project_dir)
+
+            self.assertIsNotNone(built.packaging_script_bundle)
+            self.assertIsNotNone(built.shorts_reels_script)
+            self.assertTrue((built.project_dir / "records" / "output" / "packaging_script_bundle.json").exists())
+            self.assertTrue((built.project_dir / "records" / "output" / "shorts_reels_script.json").exists())
 
 
 if __name__ == "__main__":

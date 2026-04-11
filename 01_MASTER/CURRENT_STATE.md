@@ -4,8 +4,8 @@ Last updated: 2026-04-11
 Status: active
 Product goal: desktop-first content production software
 Active stage: Stage B - Builder outputs
-Active delivery milestone: expand beyond the first proven output builder
-Active Codex packet: B-001 First Shorts/Reels Builder Expansion
+Active delivery milestone: expand the output layer beyond the first two proven builders
+Active Codex packet: B-002 Long Video Script Builder Expansion
 
 ## What is true now
 
@@ -20,8 +20,9 @@ The current runtime now proves a real local-first path through:
 - scene-reference and timecode stub fixation;
 - rough-cut segment set assembly and preferred-subset review;
 - one real packaging-ready script bundle output artifact saved inside the project package.
+- one real Shorts/Reels script artifact saved inside the project package.
 
-The current runtime therefore no longer stops at preparation. It now reaches a reproducible exportable content artifact through the first honest builder path.
+The current runtime therefore no longer stops at preparation. It now reaches reproducible exportable content artifacts through two honest builder paths.
 
 The runtime boundary hardening pass is now also complete:
 
@@ -33,10 +34,10 @@ The runtime boundary hardening pass is now also complete:
 
 ## Main product gap
 
-The main gap has changed:
+The main gap has changed again:
 
-- the product now has one honest builder, but only one;
-- output breadth is still missing;
+- the product now has two honest builders, but output breadth is still incomplete;
+- long-video and further builder families are still missing;
 - production hardening is still missing.
 
 The software is now a real content-creation path proof, but it still needs more builders and harder release quality.
@@ -50,20 +51,22 @@ The project is now governed through four levels:
 3. one active delivery milestone at a time;
 4. one active Codex packet at a time.
 
-The current active milestone belongs to Stage B and is aimed at expanding output coverage beyond the first proven packaging bundle.
+The current active milestone belongs to Stage B and is aimed at expanding output coverage beyond the now-proven packaging and short-form builder pair.
 
 ## What the next packet must do
 
-`P-001` is now complete.
+`B-001` is now complete.
 
-The first proven output builder is now real:
+Two proven output builders are now real:
 
 - builder chosen: packaging-ready script bundle;
 - artifact type: saved markdown + persisted output record;
 - output surface: `Output Tracks`;
-- acceptance proof: analysis text to saved artifact is now test-covered.
+- second builder added: Shorts/Reels script;
+- second artifact type: saved markdown + persisted output record;
+- acceptance proof: analysis text to both saved artifacts is now test-covered.
 
-The next active packet is `B-001`, because the strongest next move is to expand from the first proven builder into the next practical output family.
+The next active packet is `B-002`, because the strongest next move is to add the first long-video-oriented builder on top of the same hardened output layer.
 
 What A-002 changed before that move:
 
@@ -74,6 +77,7 @@ What A-002 changed before that move:
 What is preserved:
 
 - the first end-to-end usable output path exists;
+- the second output path now exists beside it;
 - the product remains local-first and desktop-first;
 - the export center is still intentionally narrow and not yet a full publishing system.
 
@@ -90,13 +94,13 @@ What is preserved:
 
 ## Open items
 
-- implement the next builder after the packaging bundle;
-- expand the product toward shorts/reels, then further Stage B outputs;
+- implement the next builder after packaging + Shorts/Reels;
+- expand the product toward long-video and then further Stage B outputs;
 - harden recovery, validation, and release quality later in Stage C.
 
 ## Next step
 
-Execute `B-001 First Shorts/Reels Builder Expansion`.
+Execute `B-002 Long Video Script Builder Expansion`.
 
 ## What must not be lost in a new chat
 
@@ -105,5 +109,6 @@ Execute `B-001 First Shorts/Reels Builder Expansion`.
 - Stage A has been proven by the first real output path;
 - Stage B is now the current program stage;
 - the first proven builder is the packaging-ready script bundle;
+- the second proven builder is the Shorts/Reels script artifact;
 - A-002 boundary hardening is complete and Stage B can expand on a cleaner runtime boundary;
-- `B-001` is now the one active packet because output expansion is the strongest next move.
+- `B-002` is now the one active packet because long-video expansion is the strongest next move.
