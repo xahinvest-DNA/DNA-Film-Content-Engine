@@ -19,4 +19,4 @@ class ProjectSlice:
     accepted_scene_reference_stub: dict | None
     timecode_range_stub: dict | None
     rough_cut_segment_stubs: list[dict]
-
+    packaging_script_bundle: dict | None

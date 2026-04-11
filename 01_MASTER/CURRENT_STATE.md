@@ -3,34 +3,35 @@
 Last updated: 2026-04-11
 Status: active
 Product goal: desktop-first content production software
-Active stage: Stage A - Usable end-to-end engine
-Active delivery milestone: first usable output vertical slice from analysis to export-ready package
-Active Codex packet: P-001 First Usable Content Output Vertical Slice
+Active stage: Stage B - Builder outputs
+Active delivery milestone: expand beyond the first proven output builder
+Active Codex packet: B-001 First Shorts/Reels Builder Expansion
 
 ## What is true now
 
 The repository has completed the governance reset from bounded-slice growth to delivery-oriented software execution.
 
-The current runtime already proves a real local-first path through:
+The current runtime now proves a real local-first path through:
 
 - project creation;
 - analysis-text intake;
 - semantic-map generation and editing;
 - matching-prep registration and accepted-reference fixation;
 - scene-reference and timecode stub fixation;
-- rough-cut segment set assembly and preferred-subset review.
+- rough-cut segment set assembly and preferred-subset review;
+- one real packaging-ready script bundle output artifact saved inside the project package.
 
-The current runtime therefore covers the working chain from project creation through rough-cut preparation, but it does not yet produce a real content output artifact.
+The current runtime therefore no longer stops at preparation. It now reaches a reproducible exportable content artifact through the first honest builder path.
 
 ## Main product gap
 
-The critical missing capability is still the same:
+The main gap has changed:
 
-- there is no honest output builder;
-- there is no export-ready content package;
-- there is no acceptance-proof path from analysis text to usable content artifact.
+- the product now has one honest builder, but only one;
+- output breadth is still missing;
+- production hardening is still missing.
 
-Until that gap is closed, the software remains a strong preparation engine rather than a completed content-production workstation.
+The software is now a real content-creation path proof, but it still needs more builders and harder release quality.
 
 ## Delivery framing
 
@@ -41,22 +42,26 @@ The project is now governed through four levels:
 3. one active delivery milestone at a time;
 4. one active Codex packet at a time.
 
-The current active milestone belongs to Stage A and is aimed at proving one usable end-to-end output path.
+The current active milestone belongs to Stage B and is aimed at expanding output coverage beyond the first proven packaging bundle.
 
 ## What the next packet must do
 
-`A-001` is now complete.
+`P-001` is now complete.
 
-The runtime is no longer concentrated only in `runtime/app.py` and `runtime/project_slice.py`.
+The first proven output builder is now real:
 
-The next active packet is `P-001`, because the codebase is structurally better prepared for the first real builder/output path.
+- builder chosen: packaging-ready script bundle;
+- artifact type: saved markdown + persisted output record;
+- output surface: `Output Tracks`;
+- acceptance proof: analysis text to saved artifact is now test-covered.
 
-The completed refactor:
+The next active packet is `B-001`, because the strongest next move is to expand from the first proven builder into the next practical output family.
 
-- separate UI, domain, services, and persistence concerns;
-- preserved current runtime behavior;
-- kept the existing flow working while reducing the cost of the first real builder path;
-- added smoke-level protection for the analysis-to-rough-cut flow.
+What is preserved:
+
+- the first end-to-end usable output path exists;
+- the product remains local-first and desktop-first;
+- the export center is still intentionally narrow and not yet a full publishing system.
 
 ## Accepted boundaries right now
 
@@ -71,18 +76,19 @@ The completed refactor:
 
 ## Open items
 
-- select and implement the first honest builder/output contract after `A-001`;
-- prove one exportable content result from a real project package.
+- implement the next builder after the packaging bundle;
+- expand the product toward shorts/reels, then further Stage B outputs;
+- harden recovery, validation, and release quality later in Stage C.
 
 ## Next step
 
-Execute `P-001 First Usable Content Output Vertical Slice`.
+Execute `B-001 First Shorts/Reels Builder Expansion`.
 
 ## What must not be lost in a new chat
 
 - the project is judged by usable output, not by more intermediate stubs;
 - the MVP path is `analysis -> semantic map -> matching -> scene/timecode chain -> rough cut -> output builder -> export package`;
-- Stage A is the current program stage;
-- the active milestone is the first usable output vertical slice;
-- `A-001` is complete and preserved prior behavior;
-- `P-001` is now the one active packet because the first real builder path is the strongest remaining Stage A move.
+- Stage A has been proven by the first real output path;
+- Stage B is now the current program stage;
+- the first proven builder is the packaging-ready script bundle;
+- `B-001` is now the one active packet because output expansion is the strongest next move.

@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from runtime.domain.project_types import ProjectSlice
+from runtime.services.output_builder import build_packaging_script_bundle, packaging_bundle_source_segments
 
 
 PROJECT_FORMAT_VERSION = "0.5"
@@ -18,6 +19,7 @@ ACCEPTED_REFERENCE_FILENAME = "accepted_reference.json"
 ACCEPTED_SCENE_REFERENCE_STUB_FILENAME = "accepted_scene_reference_stub.json"
 TIMECODE_RANGE_STUB_FILENAME = "timecode_range_stub.json"
 ROUGH_CUT_SEGMENTS_FILENAME = "rough_cut_segments.json"
+PACKAGING_SCRIPT_BUNDLE_FILENAME = "packaging_script_bundle.json"
 ALLOWED_SEMANTIC_ROLES = (
     "claim",
     "insight",
@@ -235,6 +237,22 @@ def normalize_rough_cut_segment_stubs(rough_cut_segment_stubs: list[dict]) -> li
     return normalized
 
 
+def normalize_packaging_script_bundle(packaging_script_bundle: dict | None) -> dict | None:
+    if not packaging_script_bundle:
+        return None
+    current = dict(packaging_script_bundle)
+    current["title"] = current.get("title", "").strip()
+    current["builder_id"] = current.get("builder_id", "packaging_script_bundle_v1").strip() or "packaging_script_bundle_v1"
+    current["source_focus_mode"] = current.get("source_focus_mode", "all_saved_segments").strip() or "all_saved_segments"
+    current["source_candidate_stub_id"] = current.get("source_candidate_stub_id", "").strip()
+    current["artifact_relative_path"] = current.get("artifact_relative_path", "outputs/packaging/packaging_script_bundle.md").strip() or "outputs/packaging/packaging_script_bundle.md"
+    current["markdown_content"] = current.get("markdown_content", "")
+    current["source_rough_cut_segment_ids"] = list(current.get("source_rough_cut_segment_ids", []))
+    current["segments"] = list(current.get("segments", []))
+    current["segment_count"] = len(current["segments"])
+    return current
+
+
 def semantic_completeness(intake_record: dict, semantic_blocks: list[dict]) -> tuple[str, int, int]:
     if intake_record.get("intake_readiness") != "ready" or not semantic_blocks:
         return ("Incomplete", 0, 0)
@@ -357,6 +375,7 @@ class ProjectSliceStore:
         accepted_scene_reference_stub_path = project_dir / "records" / "scene_matching" / ACCEPTED_SCENE_REFERENCE_STUB_FILENAME
         timecode_range_stub_path = project_dir / "records" / "scene_matching" / TIMECODE_RANGE_STUB_FILENAME
         rough_cut_segments_path = project_dir / "records" / "rough_cut" / ROUGH_CUT_SEGMENTS_FILENAME
+        packaging_script_bundle_path = project_dir / "records" / "output" / PACKAGING_SCRIPT_BUNDLE_FILENAME
 
         if analysis_record_path.exists():
             analysis_source_record = read_json(analysis_record_path)
@@ -384,6 +403,14 @@ class ProjectSliceStore:
         rough_cut_segment_stubs = read_json(rough_cut_segments_path)["entries"] if rough_cut_segments_path.exists() else []
         rough_cut_segment_stubs = normalize_rough_cut_segment_stubs(rough_cut_segment_stubs)
         rough_cut_segment_stubs = self._reconcile_rough_cut_segment_stubs(rough_cut_segment_stubs, accepted_reference, accepted_scene_reference_stub, timecode_range_stub)
+        packaging_script_bundle = normalize_packaging_script_bundle(read_json(packaging_script_bundle_path) if packaging_script_bundle_path.exists() else None)
+        packaging_script_bundle = self._reconcile_packaging_script_bundle(
+            packaging_script_bundle,
+            rough_cut_segment_stubs,
+            accepted_reference,
+            accepted_scene_reference_stub,
+            timecode_range_stub,
+        )
         return ProjectSlice(
             project_dir=project_dir,
             manifest=manifest,
@@ -398,6 +425,7 @@ class ProjectSliceStore:
             accepted_scene_reference_stub=accepted_scene_reference_stub,
             timecode_range_stub=timecode_range_stub,
             rough_cut_segment_stubs=rough_cut_segment_stubs,
+            packaging_script_bundle=packaging_script_bundle,
         )
 
     def save_analysis_text(
@@ -1264,6 +1292,51 @@ class ProjectSliceStore:
         )
         return self.load_project(project_dir)
 
+    def build_packaging_script_bundle(self, project_dir: Path) -> ProjectSlice:
+        project = self.load_project(project_dir)
+        if project.accepted_reference is None or project.accepted_scene_reference_stub is None or project.timecode_range_stub is None:
+            raise ValueError("Packaging bundle build is blocked until the current accepted downstream chain exists.")
+        _, source_segments = packaging_bundle_source_segments(project)
+        if not source_segments:
+            raise ValueError("Packaging bundle build is blocked until at least one rough-cut segment exists.")
+        if project.semantic_review_record.get("reopened_after_change"):
+            raise ValueError("Packaging bundle build is only available while the current downstream chain remains open.")
+
+        now = utc_now()
+        packaging_script_bundle = build_packaging_script_bundle(project, now)
+        manifest = dict(project.manifest)
+        manifest["updated_at"] = now
+        project_record = dict(project.project_record)
+        project_record["updated_at"] = now
+        project_record["project_status"] = "packaging_script_bundle_ready"
+        project_record["current_readiness_summary"] = (
+            f"Packaging-ready script bundle built from {packaging_script_bundle['segment_count']} rough-cut segment(s) "
+            f"using {packaging_script_bundle['source_focus_mode']}."
+        )
+        intake_record = dict(project.intake_record)
+        intake_record["updated_at"] = now
+        analysis_source_record = self._copy_analysis_record(project.analysis_source_record, now)
+        semantic_review_record = dict(project.semantic_review_record)
+        semantic_review_record["updated_at"] = now
+
+        self._write_project_state(
+            project_dir,
+            manifest,
+            project_record,
+            intake_record,
+            analysis_source_record,
+            semantic_review_record,
+            project.semantic_blocks,
+            project.matching_prep_assets,
+            project.matching_candidate_stubs,
+            project.accepted_reference,
+            project.accepted_scene_reference_stub,
+            project.timecode_range_stub,
+            project.rough_cut_segment_stubs,
+            packaging_script_bundle,
+        )
+        return self.load_project(project_dir)
+
     def update_matching_candidate_stub_rationale(
         self,
         project_dir: Path,
@@ -1518,6 +1591,47 @@ class ProjectSliceStore:
             reconciled.append(updated_entry)
         return normalize_rough_cut_segment_stubs(reconciled)
 
+    def _reconcile_packaging_script_bundle(
+        self,
+        packaging_script_bundle: dict | None,
+        rough_cut_segment_stubs: list[dict],
+        accepted_reference: dict | None,
+        accepted_scene_reference_stub: dict | None,
+        timecode_range_stub: dict | None,
+    ) -> dict | None:
+        normalized_bundle = normalize_packaging_script_bundle(packaging_script_bundle)
+        if normalized_bundle is None:
+            return None
+        if accepted_reference is None or accepted_scene_reference_stub is None or timecode_range_stub is None:
+            return None
+        if normalized_bundle.get("source_candidate_stub_id", "").strip() != accepted_reference.get("source_candidate_stub_id", "").strip():
+            return None
+
+        current_project = ProjectSlice(
+            project_dir=Path(),
+            manifest={},
+            project_record={},
+            intake_record={},
+            analysis_source_record=None,
+            semantic_review_record={},
+            semantic_blocks=[],
+            matching_prep_assets=[],
+            matching_candidate_stubs=[],
+            accepted_reference=accepted_reference,
+            accepted_scene_reference_stub=accepted_scene_reference_stub,
+            timecode_range_stub=timecode_range_stub,
+            rough_cut_segment_stubs=rough_cut_segment_stubs,
+            packaging_script_bundle=None,
+        )
+        current_focus_mode, current_segments = packaging_bundle_source_segments(current_project)
+        current_segment_ids = [entry["record_id"] for entry in current_segments]
+        if normalized_bundle.get("source_focus_mode", "") != current_focus_mode:
+            return None
+        if normalized_bundle.get("source_rough_cut_segment_ids", []) != current_segment_ids:
+            return None
+        normalized_bundle["segment_count"] = len(normalized_bundle.get("segments", []))
+        return normalized_bundle
+
     def _persist_semantic_update(
         self,
         project_dir: Path,
@@ -1585,12 +1699,15 @@ class ProjectSliceStore:
         accepted_scene_reference_stub: dict | None | object = KEEP_EXISTING,
         timecode_range_stub: dict | None | object = KEEP_EXISTING,
         rough_cut_segment_stubs: list[dict] | object = KEEP_EXISTING,
+        packaging_script_bundle: dict | None | object = KEEP_EXISTING,
     ) -> None:
         semantic_blocks = normalize_semantic_blocks(semantic_blocks)
         accepted_reference_path = project_dir / "records" / "matching_prep" / ACCEPTED_REFERENCE_FILENAME
         accepted_scene_reference_stub_path = project_dir / "records" / "scene_matching" / ACCEPTED_SCENE_REFERENCE_STUB_FILENAME
         timecode_range_stub_path = project_dir / "records" / "scene_matching" / TIMECODE_RANGE_STUB_FILENAME
         rough_cut_segments_path = project_dir / "records" / "rough_cut" / ROUGH_CUT_SEGMENTS_FILENAME
+        packaging_script_bundle_path = project_dir / "records" / "output" / PACKAGING_SCRIPT_BUNDLE_FILENAME
+        packaging_script_markdown_path = project_dir / "outputs" / "packaging" / "packaging_script_bundle.md"
         if accepted_reference is KEEP_EXISTING:
             accepted_reference_payload = normalize_accepted_reference(read_json(accepted_reference_path) if accepted_reference_path.exists() else None)
         else:
@@ -1610,8 +1727,19 @@ class ProjectSliceStore:
         else:
             rough_cut_segment_entries = list(rough_cut_segment_stubs) if isinstance(rough_cut_segment_stubs, list) else []
         rough_cut_segment_entries = self._reconcile_rough_cut_segment_stubs(rough_cut_segment_entries, accepted_reference_payload, accepted_scene_reference_stub_payload, timecode_range_stub_payload)
+        if packaging_script_bundle is KEEP_EXISTING:
+            packaging_script_bundle_payload = normalize_packaging_script_bundle(read_json(packaging_script_bundle_path) if packaging_script_bundle_path.exists() else None)
+        else:
+            packaging_script_bundle_payload = normalize_packaging_script_bundle(packaging_script_bundle if isinstance(packaging_script_bundle, dict) else None)
+        packaging_script_bundle_payload = self._reconcile_packaging_script_bundle(
+            packaging_script_bundle_payload,
+            rough_cut_segment_entries,
+            accepted_reference_payload,
+            accepted_scene_reference_stub_payload,
+            timecode_range_stub_payload,
+        )
         write_json(project_dir / "project.manifest", manifest)
-        write_json(project_dir / "project.meta" / "status.json", self._status_payload(project_record, intake_record, semantic_review_record, semantic_blocks))
+        write_json(project_dir / "project.meta" / "status.json", self._status_payload(project_record, intake_record, semantic_review_record, semantic_blocks, packaging_script_bundle_payload))
         write_json(project_dir / "records" / "project" / "project.json", project_record)
         write_json(project_dir / "records" / "intake" / "intake.json", intake_record)
         if analysis_source_record is not None:
@@ -1636,6 +1764,14 @@ class ProjectSliceStore:
             write_json(rough_cut_segments_path, {"entries": rough_cut_segment_entries})
         elif rough_cut_segments_path.exists():
             rough_cut_segments_path.unlink()
+        if packaging_script_bundle_payload is not None:
+            write_json(packaging_script_bundle_path, packaging_script_bundle_payload)
+            packaging_script_markdown_path.parent.mkdir(parents=True, exist_ok=True)
+            packaging_script_markdown_path.write_text(packaging_script_bundle_payload.get("markdown_content", ""), encoding="utf-8")
+        elif packaging_script_bundle_path.exists():
+            packaging_script_bundle_path.unlink()
+            if packaging_script_markdown_path.exists():
+                packaging_script_markdown_path.unlink()
 
     def _status_payload(
         self,
@@ -1643,6 +1779,7 @@ class ProjectSliceStore:
         intake_record: dict,
         semantic_review_record: dict,
         semantic_blocks: list[dict],
+        packaging_script_bundle: dict | None = None,
     ) -> dict:
         completeness_label, issue_count, blocks_with_issues = semantic_completeness(intake_record, semantic_blocks)
         return {
@@ -1660,6 +1797,7 @@ class ProjectSliceStore:
             "approval_transition_message": semantic_review_record.get("approval_transition_message", ""),
             "reopened_after_change": semantic_review_record.get("reopened_after_change", False),
             "reopen_reason": semantic_review_record.get("reopen_reason", ""),
+            "packaging_script_bundle_ready": packaging_script_bundle is not None,
             "updated_at": project_record["updated_at"],
         }
 

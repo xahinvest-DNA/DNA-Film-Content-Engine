@@ -1,5 +1,22 @@
 # Codex Worklog
 
+## 2026-04-11 - P-001 completed and the product gained its first honest output artifact
+
+### Completed
+- chose the packaging-ready script bundle as the first MVP builder because it was the fastest path to a usable artifact while still proving real product value;
+- added persisted output record plus saved markdown artifact inside the project package;
+- exposed the builder in the `Output Tracks` UI surface so the user can build, inspect, and keep the artifact in-project;
+- added persistence, integration, and UI-path coverage for the first output path;
+- verified the full suite through `python -m unittest tests\\test_mvp_slice.py tests\\test_runtime_integration_smoke.py tests\\test_output_builder_slice.py -q`.
+
+### Repository effect
+- the product no longer stops at workflow records and rough-cut preparation;
+- one real content artifact now exists and is reproducibly built from the current workflow chain;
+- Stage A proof is complete and Stage B output expansion is now the strongest next move.
+
+### Recommended next step
+Execute `B-001 First Shorts/Reels Builder Expansion`.
+
 ## 2026-04-11 - A-001 completed and the runtime was decomposed for growth without changing behavior
 
 ### Completed

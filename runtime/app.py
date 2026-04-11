@@ -59,6 +59,9 @@ class DNAFilmApp(DNAFilmAppLayoutMixin):
         self.matching_prep_text = tk.StringVar(value="Matching prep readiness: blocked | semantic map not established yet")
         self.scene_matching_text = tk.StringVar(value="Scene matching readiness: blocked | no accepted reference available yet")
         self.rough_cut_text = tk.StringVar(value="Rough cut readiness: blocked | no accepted reference available yet")
+        self.output_builder_status_text = tk.StringVar(value="Output builder readiness: blocked | no rough-cut output path available yet")
+        self.output_builder_summary_text = tk.StringVar(value="Packaging-ready script bundle: none built yet.")
+        self.output_builder_path_text = tk.StringVar(value="Artifact path: none")
         self.scene_matching_reference_summary_text = tk.StringVar(value="Accepted scene reference stub: none created yet.")
         self.scene_matching_timecode_summary_text = tk.StringVar(value="Timecode range stub: none saved yet.")
         self.rough_cut_focus_summary_text = tk.StringVar(value="Focus: all saved segments | Visible: 0 | Saved total: 0 | Preferred total: 0")
@@ -112,6 +115,7 @@ class DNAFilmApp(DNAFilmAppLayoutMixin):
         self._set_matching_candidate_enabled(False, False, False)
         self._set_scene_matching_enabled(False)
         self._set_rough_cut_enabled(False)
+        self._set_output_builder_enabled(False)
 
     def create_project(self) -> None:
         title = self.project_name_var.get().strip()
@@ -492,6 +496,21 @@ class DNAFilmApp(DNAFilmAppLayoutMixin):
         self.rough_cut_segment_label_var.set("")
         messagebox.showinfo("Rough Cut", "Rough-cut segment stub was added to the local rough-cut set.")
 
+    def build_packaging_script_bundle(self) -> None:
+        if self.project is None:
+            messagebox.showerror("Output Tracks", "Create or open a project first.")
+            return
+        try:
+            project = self.store.build_packaging_script_bundle(self.project.project_dir)
+        except ValueError as exc:
+            messagebox.showerror("Output Tracks", str(exc))
+            return
+
+        current_block_id = self.selected_block_id
+        self._load_project_into_ui(project, select_block_id=current_block_id)
+        self._switch_view("Output Tracks")
+        messagebox.showinfo("Output Tracks", "Packaging-ready script bundle was built and saved in the project package.")
+
     def on_rough_cut_segment_selected(self, _event: object | None = None) -> None:
         if self.project is None:
             self.rough_cut_segment_var.set("")
@@ -638,9 +657,12 @@ class DNAFilmApp(DNAFilmAppLayoutMixin):
         self.scene_matching_text.set(scene_matching_gate)
         rough_cut_gate = self._rough_cut_gate_text(project)
         self.rough_cut_text.set(rough_cut_gate)
+        output_builder_gate = self._output_builder_gate_text(project)
+        self.output_builder_status_text.set(output_builder_gate)
         self._update_matching_prep_surface(project)
         self._update_scene_matching_surface(project)
         self._update_rough_cut_surface(project)
+        self._update_output_tracks_surface(project)
         self._refresh_matching_candidate_controls(project)
         self._refresh_rough_cut_controls(project)
         self.scene_reference_label_var.set((project.accepted_scene_reference_stub or {}).get("scene_reference_label", ""))
@@ -650,7 +672,7 @@ class DNAFilmApp(DNAFilmAppLayoutMixin):
         warning_text = f"Warnings: {', '.join(warnings)}" if warnings else "Warnings: none"
         suitability_summary = self._project_suitability_summary(project)
         self.summary_text.set(
-            f"Project status: {project.project_record['project_status']} | Intake: {project.intake_record['intake_readiness']} | Semantic blocks: {len(project.semantic_blocks)} | Review: {project.semantic_review_record['review_status']} | Completeness: {completeness_label} | Readiness: {readiness} | {matching_prep_gate} | {scene_matching_gate} | {rough_cut_gate} | Suitability: {suitability_summary} | {warning_text}"
+            f"Project status: {project.project_record['project_status']} | Intake: {project.intake_record['intake_readiness']} | Semantic blocks: {len(project.semantic_blocks)} | Review: {project.semantic_review_record['review_status']} | Completeness: {completeness_label} | Readiness: {readiness} | {matching_prep_gate} | {scene_matching_gate} | {rough_cut_gate} | {output_builder_gate} | Suitability: {suitability_summary} | {warning_text}"
         )
 
         self.analysis_text.delete("1.0", "end")
@@ -884,6 +906,9 @@ class DNAFilmApp(DNAFilmAppLayoutMixin):
             self.remove_rough_cut_subset_button.configure(state="disabled")
             self.remove_rough_cut_segment_button.configure(state="disabled")
 
+    def _set_output_builder_enabled(self, enabled: bool) -> None:
+        self.build_packaging_bundle_button.configure(state="normal" if enabled else "disabled")
+
     def _set_editor_enabled(self, enabled: bool) -> None:
         entry_state = "normal" if enabled else "disabled"
         combo_state = "readonly" if enabled else "disabled"
@@ -1000,6 +1025,18 @@ class DNAFilmApp(DNAFilmAppLayoutMixin):
     def _rough_cut_gate_text(self, project: ProjectSlice) -> str:
         state, reason = self._rough_cut_gate(project)
         return f"Rough cut readiness: {state} | {reason}"
+
+    def _output_builder_gate(self, project: ProjectSlice) -> tuple[str, str]:
+        rough_cut_state, rough_cut_reason = self._rough_cut_gate(project)
+        if rough_cut_state != "ready":
+            return ("blocked", f"rough cut is not ready yet ({rough_cut_reason})")
+        if not project.rough_cut_segment_stubs:
+            return ("blocked", "no rough-cut segment exists yet")
+        return ("ready", "packaging-ready script bundle can be built from the current rough-cut handoff")
+
+    def _output_builder_gate_text(self, project: ProjectSlice) -> str:
+        state, reason = self._output_builder_gate(project)
+        return f"Output builder readiness: {state} | {reason}"
 
     def _refresh_rough_cut_controls(self, project: ProjectSlice | None) -> None:
         if project is None:
@@ -1199,6 +1236,21 @@ class DNAFilmApp(DNAFilmAppLayoutMixin):
         if preferred_count:
             return f"Preferred current rough cut: {preferred_count} segment(s) currently selected for later assembly."
         return "Preferred current rough cut: none selected yet."
+
+    def _packaging_script_bundle_summary(self, project: ProjectSlice) -> str:
+        bundle = project.packaging_script_bundle
+        if bundle is None:
+            return "Packaging-ready script bundle: none built yet."
+        return (
+            f"Packaging-ready script bundle: {bundle.get('segment_count', 0)} segment(s) built from "
+            f"{bundle.get('source_focus_mode', 'all_saved_segments')}."
+        )
+
+    def _packaging_script_bundle_lines(self, project: ProjectSlice) -> list[str]:
+        bundle = project.packaging_script_bundle
+        if bundle is None:
+            return ["No packaging-ready script bundle has been built yet."]
+        return [bundle.get("markdown_content", "").rstrip() or "No packaging-ready script bundle content available."]
 
     def _accepted_reference_lines(self, project: ProjectSlice) -> list[str]:
         accepted_reference = project.accepted_reference
@@ -1613,6 +1665,29 @@ class DNAFilmApp(DNAFilmAppLayoutMixin):
         self.rough_cut_handoff.insert("1.0", handoff_text)
         self.rough_cut_handoff.configure(state="disabled")
 
+    def _update_output_tracks_surface(self, project: ProjectSlice) -> None:
+        gate_state, gate_reason = self._output_builder_gate(project)
+        bundle_summary = self._packaging_script_bundle_summary(project)
+        bundle = project.packaging_script_bundle
+        artifact_path = bundle.get("artifact_relative_path", "none") if bundle else "none"
+        self.output_builder_summary_text.set(bundle_summary)
+        self.output_builder_path_text.set(f"Artifact path: {artifact_path}")
+        self._set_output_builder_enabled(gate_state == "ready")
+        lines = [
+            "Packaging-ready script bundle builder",
+            "",
+            f"Readiness: {gate_state} | {gate_reason}.",
+            bundle_summary,
+            self._rough_cut_segment_stub_summary(project),
+            self._rough_cut_preferred_subset_summary(project),
+            "",
+            *self._packaging_script_bundle_lines(project),
+        ]
+        self.output_builder_handoff.configure(state="normal")
+        self.output_builder_handoff.delete("1.0", "end")
+        self.output_builder_handoff.insert("1.0", "\n".join(lines).rstrip())
+        self.output_builder_handoff.configure(state="disabled")
+
     def _suitability_summary(self, block: dict) -> str:
         short = {
             "long_video": "LV",
@@ -1648,6 +1723,11 @@ class DNAFilmApp(DNAFilmAppLayoutMixin):
         review_status = project.semantic_review_record["review_status"]
         readiness = self._approval_readiness(project)
         rough_cut_state, _ = self._rough_cut_gate(project)
+        output_builder_state, _ = self._output_builder_gate(project)
+        if output_builder_state == "ready" and project.packaging_script_bundle is None:
+            return "Next action: Build packaging-ready script bundle"
+        if project.packaging_script_bundle is not None:
+            return "Next action: Open Output Tracks"
         if rough_cut_state == "ready":
             return "Next action: Open Rough Cut"
         if project.accepted_reference is not None and not project.semantic_review_record.get("reopened_after_change"):

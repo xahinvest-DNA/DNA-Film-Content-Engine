@@ -1,7 +1,7 @@
 # Codex Tasks
 
 Last updated: 2026-04-11
-Current focus: Stage A delivery milestone - first usable output vertical slice
+Current focus: Stage B delivery milestone - output expansion beyond the first proven builder
 
 ## Working rule
 
@@ -9,12 +9,17 @@ There must be exactly one active packet at a time, and that packet must move the
 
 ## Active task
 
-### P-001
+### B-001
 - Status: active
-- Title: First Usable Content Output Vertical Slice
-- Goal: implement the first real builder and export artifact from the existing analysis-to-rough-cut chain.
+- Title: First Shorts/Reels Builder Expansion
+- Goal: turn the proven analysis-to-rough-cut chain into a first shorts/reels-oriented builder path using the now-established output-builder surface and persistence pattern.
 
 ## Recently completed
+
+### P-001
+- Status: completed
+- Title: First Usable Content Output Vertical Slice
+- Outcome: chose the packaging-ready script bundle as the first honest builder, added persisted output-record plus markdown artifact storage, exposed build/view flow in `Output Tracks`, and added persistence, integration, and UI acceptance coverage from analysis text to saved artifact.
 
 ### A-001
 - Status: completed

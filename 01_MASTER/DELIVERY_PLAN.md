@@ -63,12 +63,13 @@ Stop condition:
 
 ## Active program position
 
-Current stage: Stage A
+Current stage: Stage B
 
-Current milestone: first usable output vertical slice
+Current milestone: expand beyond the first proven output builder
 
 Current packet sequence:
 
 1. `M-001 Project Governance Reset for Delivery` - completed
-2. `A-001 Runtime Structural Refactor for Growth` - active
-3. `P-001 First Usable Content Output Vertical Slice` - next
+2. `A-001 Runtime Structural Refactor for Growth` - completed
+3. `P-001 First Usable Content Output Vertical Slice` - completed
+4. `B-001 First Shorts/Reels Builder Expansion` - active

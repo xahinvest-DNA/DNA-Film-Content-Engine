@@ -38,9 +38,9 @@ class DNAFilmAppLayoutMixin:
 
         nav = ttk.Frame(self.root, padding=(12, 8))
         nav.grid(row=1, column=0, sticky="nsw")
-        for name in ("Project Home", "Source Intake", "Semantic Map", "Matching Prep", "Scene Matching", "Rough Cut"):
+        for name in ("Project Home", "Source Intake", "Semantic Map", "Matching Prep", "Scene Matching", "Rough Cut", "Output Tracks"):
             ttk.Button(nav, text=name, width=22, command=lambda item=name: self._switch_view(item)).pack(anchor="w", pady=4)
-        for name in ("Output Tracks", "Export Center"):
+        for name in ("Export Center",):
             ttk.Button(nav, text=name, width=22, state="disabled").pack(anchor="w", pady=4)
 
         main = ttk.Frame(self.root, padding=12)
@@ -123,6 +123,7 @@ class DNAFilmAppLayoutMixin:
         self.views["Matching Prep"] = self._build_matching_prep_view(main)
         self.views["Scene Matching"] = self._build_scene_matching_view(main)
         self.views["Rough Cut"] = self._build_rough_cut_view(main)
+        self.views["Output Tracks"] = self._build_output_tracks_view(main)
 
         self.placeholder_view = ttk.Frame(main, padding=12)
         self.placeholder_view.grid(row=0, column=0, sticky="nsew")
@@ -384,6 +385,34 @@ class DNAFilmAppLayoutMixin:
         self.rough_cut_handoff = tk.Text(frame, height=18, wrap="word")
         self.rough_cut_handoff.grid(row=7, column=0, sticky="nsew")
         self.rough_cut_handoff.configure(state="disabled")
+        return frame
+
+    def _build_output_tracks_view(self, parent: ttk.Frame) -> ttk.Frame:
+        frame = ttk.Frame(parent, padding=12)
+        frame.grid(row=0, column=0, sticky="nsew")
+        frame.columnconfigure(0, weight=1)
+        frame.rowconfigure(5, weight=1)
+
+        ttk.Label(frame, text="Output Tracks", font=("Segoe UI", 14, "bold")).grid(row=0, column=0, sticky="w")
+        ttk.Label(
+            frame,
+            text="This is the first real output-builder surface. It builds a packaging-ready script bundle from the current rough-cut handoff and saves the artifact into the project package.",
+            wraplength=760,
+        ).grid(row=1, column=0, sticky="w", pady=(8, 6))
+        ttk.Label(frame, textvariable=self.output_builder_status_text, wraplength=760).grid(row=2, column=0, sticky="w", pady=(0, 4))
+        ttk.Label(frame, textvariable=self.output_builder_summary_text, wraplength=760).grid(row=3, column=0, sticky="w", pady=(0, 8))
+        action_frame = ttk.Frame(frame)
+        action_frame.grid(row=4, column=0, sticky="w", pady=(0, 8))
+        self.build_packaging_bundle_button = ttk.Button(
+            action_frame,
+            text="Build Packaging-Ready Script Bundle",
+            command=self.build_packaging_script_bundle,
+        )
+        self.build_packaging_bundle_button.pack(side="left")
+        ttk.Label(action_frame, textvariable=self.output_builder_path_text, wraplength=520).pack(side="left", padx=(12, 0))
+        self.output_builder_handoff = tk.Text(frame, height=20, wrap="word")
+        self.output_builder_handoff.grid(row=5, column=0, sticky="nsew")
+        self.output_builder_handoff.configure(state="disabled")
         return frame
 
 
