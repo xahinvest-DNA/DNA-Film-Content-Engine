@@ -2,43 +2,43 @@
 
 Last updated: 2026-04-11
 Status: active
-Task ID: A-001
-Task type: structural_refactor
-Title: Runtime Structural Refactor for Growth
+Task ID: P-001
+Task type: vertical_slice
+Title: First Usable Content Output Vertical Slice
 
 ## Goal
 
-Prepare the runtime for product growth by separating UI, domain, persistence, and service responsibilities without changing current behavior.
+Build the first end-to-end vertical slice that produces a real content output artifact rather than only intermediate workflow records.
 
 ## Why this is next
 
-The governance reset is complete.
+The governance reset is complete and `A-001` has already reduced the structural concentration in the runtime.
 
-The current runtime already proves a meaningful analysis-to-rough-cut path, but too much responsibility is concentrated in `runtime/app.py` and `runtime/project_slice.py`.
+The current runtime now reaches rough-cut preparation through a better-separated codebase, but it still does not produce a real output artifact.
 
-The next strongest move is to lower the cost of the first real builder/output path without opening new behavior prematurely.
+The strongest next move is to prove the product's value with the first honest builder/output path.
 
 ## In scope
 
-- create `runtime/ui/`, `runtime/domain/`, `runtime/services/`, and `runtime/persistence/`;
-- move responsibilities out of `runtime/app.py` and `runtime/project_slice.py`;
-- preserve current runtime behavior and entrypoint behavior;
-- update imports and wiring so the application still runs;
-- keep existing tests passing;
-- add minimal integration smoke coverage for the current flow if needed.
+- choose the first MVP builder with the strongest value-to-effort ratio;
+- define the output contract and storage location in the project package;
+- build the artifact from existing semantic/matching/scene/timecode/rough-cut records;
+- expose a UI path to trigger and inspect the result;
+- add persistence, integration, and acceptance-style coverage for the new path.
 
 ## Out of scope
 
-- new builder or export functionality;
-- new UI/UX direction;
+- full export center;
+- all builders at once;
 - backend/cloud work;
-- media playback, rendering, or timeline editing.
+- heavy media rendering;
+- platform publishing automation.
 
 ## Recommended validation
 
-- run the current test suite;
-- verify the app entrypoint still launches;
-- verify project create/open, semantic flow, matching prep flow, scene matching flow, and rough cut flow remain intact.
+- verify one project can move from analysis text to a real saved output artifact;
+- run persistence, integration, and acceptance-style coverage for the new builder path;
+- confirm the existing analysis-to-rough-cut flow still remains intact.
 
 ## Required handoff format
 
@@ -46,6 +46,6 @@ Use `05_CODEX/HANDOFF_TEMPLATE.md` exactly.
 
 Also include:
 
-- what was moved;
-- what behavior was intentionally preserved;
-- what remains a candidate for the next refactor pass.
+- which builder was chosen and why;
+- what practical output value now exists;
+- which next builder or export step is naturally unlocked.

@@ -5,7 +5,7 @@ Status: active
 Product goal: desktop-first content production software
 Active stage: Stage A - Usable end-to-end engine
 Active delivery milestone: first usable output vertical slice from analysis to export-ready package
-Active Codex packet: A-001 Runtime Structural Refactor for Growth
+Active Codex packet: P-001 First Usable Content Output Vertical Slice
 
 ## What is true now
 
@@ -45,14 +45,18 @@ The current active milestone belongs to Stage A and is aimed at proving one usab
 
 ## What the next packet must do
 
-`A-001` is the active packet because the runtime has outgrown its current file structure.
+`A-001` is now complete.
 
-It must:
+The runtime is no longer concentrated only in `runtime/app.py` and `runtime/project_slice.py`.
+
+The next active packet is `P-001`, because the codebase is structurally better prepared for the first real builder/output path.
+
+The completed refactor:
 
 - separate UI, domain, services, and persistence concerns;
-- preserve current runtime behavior;
-- keep the existing flow working while reducing the cost of the first real builder path;
-- add smoke-level protection for the existing analysis-to-rough-cut path if needed.
+- preserved current runtime behavior;
+- kept the existing flow working while reducing the cost of the first real builder path;
+- added smoke-level protection for the analysis-to-rough-cut flow.
 
 ## Accepted boundaries right now
 
@@ -67,14 +71,12 @@ It must:
 
 ## Open items
 
-- complete runtime structural decomposition without changing behavior;
-- protect the current flow with integration-level smoke coverage where existing tests are too narrow;
 - select and implement the first honest builder/output contract after `A-001`;
 - prove one exportable content result from a real project package.
 
 ## Next step
 
-Execute `A-001 Runtime Structural Refactor for Growth`.
+Execute `P-001 First Usable Content Output Vertical Slice`.
 
 ## What must not be lost in a new chat
 
@@ -82,4 +84,5 @@ Execute `A-001 Runtime Structural Refactor for Growth`.
 - the MVP path is `analysis -> semantic map -> matching -> scene/timecode chain -> rough cut -> output builder -> export package`;
 - Stage A is the current program stage;
 - the active milestone is the first usable output vertical slice;
-- `A-001` is the one active packet because structural decomposition now unlocks the first real builder path safely.
+- `A-001` is complete and preserved prior behavior;
+- `P-001` is now the one active packet because the first real builder path is the strongest remaining Stage A move.

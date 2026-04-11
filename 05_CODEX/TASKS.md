@@ -9,19 +9,17 @@ There must be exactly one active packet at a time, and that packet must move the
 
 ## Active task
 
-### A-001
-- Status: active
-- Title: Runtime Structural Refactor for Growth
-- Goal: decompose the runtime into `ui`, `domain`, `services`, and `persistence` responsibilities without changing current behavior.
-
-## Next task
-
 ### P-001
-- Status: queued
+- Status: active
 - Title: First Usable Content Output Vertical Slice
 - Goal: implement the first real builder and export artifact from the existing analysis-to-rough-cut chain.
 
 ## Recently completed
+
+### A-001
+- Status: completed
+- Title: Runtime Structural Refactor for Growth
+- Outcome: introduced `runtime/ui`, `runtime/domain`, and `runtime/persistence`, turned `runtime/project_slice.py` into a thin compatibility facade over the persistence store, moved layout/navigation construction into `runtime/ui/layout.py`, kept the current runtime behavior intact, and added an integration smoke test covering analysis-to-rough-cut flow.
 
 ### M-001
 - Status: completed

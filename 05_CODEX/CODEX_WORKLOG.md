@@ -1,5 +1,23 @@
 # Codex Worklog
 
+## 2026-04-11 - A-001 completed and the runtime was decomposed for growth without changing behavior
+
+### Completed
+- introduced `runtime/ui`, `runtime/domain`, and `runtime/persistence` as the first structural split of the runtime;
+- moved the local project store implementation into `runtime/persistence/project_store.py` and kept `runtime/project_slice.py` as a compatibility facade;
+- moved UI layout and navigation construction into `runtime/ui/layout.py` and kept `runtime/app.py` focused on shell wiring and behavior;
+- extracted `ProjectSlice` into `runtime/domain/project_types.py`;
+- added `tests/test_runtime_integration_smoke.py` to protect the existing analysis-to-rough-cut path;
+- verified the refactor by running `python -m unittest tests\\test_mvp_slice.py tests\\test_runtime_integration_smoke.py -q`.
+
+### Repository effect
+- `runtime/app.py` and `runtime/project_slice.py` are no longer the only monolithic centers of the runtime;
+- the existing runtime behavior remains intact while the codebase is better prepared for the first real builder/output path;
+- Stage A can now move from structural preparation to usable output proof.
+
+### Recommended next step
+Execute `P-001 First Usable Content Output Vertical Slice`.
+
 ## 2026-04-11 - M-001 completed and the repository switched to delivery-oriented governance
 
 ### Completed
