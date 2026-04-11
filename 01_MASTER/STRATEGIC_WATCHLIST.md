@@ -25,7 +25,7 @@ Title: Output Tracks UI density growth
 Area: ui
 
 What is observed now:
-- `Output Tracks` now carries Packaging, Shorts/Reels, Long Video, and Carousel in one compact surface, and C-001 already improved inventory/trust wording for current states.
+- `Output Tracks` now carries Packaging, Shorts/Reels, Long Video, and Carousel in one compact surface, and C-001/C-002A improved trust and recovery wording for current states.
 
 Why it is not a blocker yet:
 - all four builders still fit in one readable local-first surface and the current interactions remain understandable after the first hardening pass.
@@ -49,7 +49,7 @@ Title: Builder metadata layer remains thin
 Area: output_layer
 
 What is observed now:
-- `runtime/builders/` has a clean extension zone, but builder metadata still lives mostly as repeated per-builder fields rather than a stronger shared contract.
+- `runtime/builders/` has a clean extension zone, but builder metadata still lives mostly as repeated per-builder fields rather than a stronger shared contract, and the output surface still depends on repeated per-builder wiring.
 
 Why it is not a blocker yet:
 - four builders still remain understandable without a heavier registry layer.
@@ -145,7 +145,7 @@ Title: Release-quality gap remains large
 Area: release_readiness
 
 What is observed now:
-- Stage B breadth is now strong, and C-001 improved output trust/readiness visibility plus repeated-use coverage, but recovery confidence, validation depth, and release polish still lag behind output breadth.
+- Stage B breadth is now strong, and C-001/C-002A improved output trust, repeated-use coverage, and load-time recovery honesty, but validation depth and release polish still lag behind output breadth.
 
 Why it is not a blocker yet:
 - the current focus was builder expansion, not production hardening.

@@ -80,11 +80,11 @@ The current runtime boundary remains local-first, file-based, and desktop-first.
 - project state persists as a real local project package on disk;
 - backend, cloud, heavy rendering, and platform publishing remain deferred until the first usable output path exists.
 
-## D-009 Current stage logic
+## D-009 Stage-state ownership rule
 
-The repository is currently in `Stage A - Usable end-to-end engine`.
+Live stage truth does not belong in `DECISIONS.md`.
 
 ### Consequences
-- the main gap is the absence of a real builder and export-ready artifact;
-- structural refactoring is justified only because it reduces the cost of that first output path;
-- success is defined by one usable end-to-end content workflow.
+- `01_MASTER/CURRENT_STATE.md` owns what stage and milestone are true now;
+- `01_MASTER/DELIVERY_PLAN.md` owns stage sequencing and active program position;
+- `01_MASTER/DECISIONS.md` may record durable stage-transition rules or historical program decisions, but must not hold live assertions such as `current stage = Stage A`.

@@ -268,6 +268,136 @@ class RuntimeBoundaryTests(unittest.TestCase):
             self.assertEqual("all_output_tracks_ready", rebuilt.project_record["project_status"])
             self.assertIn("All 4 output artifacts are currently built", rebuilt.project_record["current_readiness_summary"])
 
+    def test_load_project_self_heals_tampered_status_payload(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            built = self._build_output_ready_project(store, "Boundary Status Self Heal")
+
+            status_path = built.project_dir / "project.meta" / "status.json"
+            tampered = json.loads(status_path.read_text(encoding="utf-8"))
+            tampered["output_artifacts_built_count"] = 4
+            tampered["output_runtime_state"] = "all_built"
+            tampered["built_output_families"] = ["packaging", "shorts_reels", "long_video", "carousel"]
+            tampered["missing_output_families"] = []
+            status_path.write_text(json.dumps(tampered, indent=2) + "\n", encoding="utf-8")
+
+            reloaded = store.load_project(built.project_dir)
+            healed = json.loads(status_path.read_text(encoding="utf-8"))
+
+            self.assertIsNotNone(reloaded.packaging_script_bundle)
+            self.assertIsNone(reloaded.shorts_reels_script)
+            self.assertEqual(1, healed["output_artifacts_built_count"])
+            self.assertEqual("partially_built", healed["output_runtime_state"])
+            self.assertEqual(["packaging"], healed["built_output_families"])
+            self.assertEqual(["shorts_reels", "long_video", "carousel"], healed["missing_output_families"])
+
+    def test_load_project_removes_resurrected_stale_output_files_after_reopen(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = self._build_output_ready_project(store, "Boundary Stale File Heal")
+            project = store.build_shorts_reels_script(project.project_dir)
+            project = store.build_long_video_script(project.project_dir)
+            project = store.build_carousel_script(project.project_dir)
+
+            stale_packaging = project.packaging_script_bundle
+            stale_shorts = project.shorts_reels_script
+            stale_long = project.long_video_script
+            stale_carousel = project.carousel_script
+
+            reopened = store.update_semantic_block(
+                project.project_dir,
+                project.semantic_blocks[0]["record_id"],
+                project.semantic_blocks[0]["title"],
+                project.semantic_blocks[0]["semantic_role"],
+                "Reopen should invalidate all stale output files on disk.",
+            )
+            self.assertTrue(reopened.semantic_review_record["reopened_after_change"])
+
+            resurrected_payloads = [
+                ("records/output/packaging_script_bundle.json", stale_packaging),
+                ("records/output/shorts_reels_script.json", stale_shorts),
+                ("records/output/long_video_script.json", stale_long),
+                ("records/output/carousel_script.json", stale_carousel),
+            ]
+            resurrected_markdowns = [
+                ("outputs/packaging/packaging_script_bundle.md", stale_packaging["markdown_content"]),
+                ("outputs/shorts_reels/shorts_reels_script.md", stale_shorts["markdown_content"]),
+                ("outputs/long_video/long_video_script.md", stale_long["markdown_content"]),
+                ("outputs/carousel/carousel_script.md", stale_carousel["markdown_content"]),
+            ]
+            for relative_path, payload in resurrected_payloads:
+                target = reopened.project_dir / relative_path
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+            for relative_path, content in resurrected_markdowns:
+                target = reopened.project_dir / relative_path
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(content, encoding="utf-8")
+
+            status_path = reopened.project_dir / "project.meta" / "status.json"
+            tampered = json.loads(status_path.read_text(encoding="utf-8"))
+            tampered["output_artifacts_built_count"] = 4
+            tampered["output_runtime_state"] = "all_built"
+            tampered["built_output_families"] = ["packaging", "shorts_reels", "long_video", "carousel"]
+            tampered["missing_output_families"] = []
+            status_path.write_text(json.dumps(tampered, indent=2) + "\n", encoding="utf-8")
+
+            healed = store.load_project(reopened.project_dir)
+            healed_status = json.loads(status_path.read_text(encoding="utf-8"))
+
+            self.assertIsNone(healed.packaging_script_bundle)
+            self.assertIsNone(healed.shorts_reels_script)
+            self.assertIsNone(healed.long_video_script)
+            self.assertIsNone(healed.carousel_script)
+            self.assertFalse((healed.project_dir / "records" / "output" / "packaging_script_bundle.json").exists())
+            self.assertFalse((healed.project_dir / "records" / "output" / "shorts_reels_script.json").exists())
+            self.assertFalse((healed.project_dir / "records" / "output" / "long_video_script.json").exists())
+            self.assertFalse((healed.project_dir / "records" / "output" / "carousel_script.json").exists())
+            self.assertEqual(0, healed_status["output_artifacts_built_count"])
+            self.assertEqual("none_built", healed_status["output_runtime_state"])
+
+    def test_partial_rebuild_after_reopen_restores_coherent_truth(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = self._build_output_ready_project(store, "Boundary Partial Rebuild")
+            project = store.build_shorts_reels_script(project.project_dir)
+            project = store.build_long_video_script(project.project_dir)
+            project = store.build_carousel_script(project.project_dir)
+
+            project = store.update_semantic_block(
+                project.project_dir,
+                project.semantic_blocks[0]["record_id"],
+                project.semantic_blocks[0]["title"],
+                project.semantic_blocks[0]["semantic_role"],
+                "Reset upstream truth before partial downstream reconstruction.",
+            )
+            project = store.update_semantic_review_status(project.project_dir, "ready_for_review")
+            project = store.update_semantic_review_status(project.project_dir, "approved")
+            project = store.update_matching_candidate_stub_status(
+                project.project_dir,
+                project.matching_candidate_stubs[0]["record_id"],
+                "selected",
+            )
+            project = store.promote_matching_candidate_stub_to_accepted_reference(
+                project.project_dir,
+                project.matching_candidate_stubs[0]["record_id"],
+            )
+            project = store.save_accepted_scene_reference_stub(project.project_dir, "Opening courtroom exchange rebuilt")
+            project = store.save_timecode_range_stub(project.project_dir, "00:00:10", "00:00:18")
+            project = store.save_rough_cut_segment_stub(project.project_dir, "Recovered opening hook")
+            project = store.build_packaging_script_bundle(project.project_dir)
+            project = store.build_shorts_reels_script(project.project_dir)
+            reloaded = store.load_project(project.project_dir)
+            status = json.loads((project.project_dir / "project.meta" / "status.json").read_text(encoding="utf-8"))
+
+            self.assertIsNotNone(reloaded.packaging_script_bundle)
+            self.assertIsNotNone(reloaded.shorts_reels_script)
+            self.assertIsNone(reloaded.long_video_script)
+            self.assertIsNone(reloaded.carousel_script)
+            self.assertEqual(2, status["output_artifacts_built_count"])
+            self.assertEqual("partially_built", status["output_runtime_state"])
+            self.assertEqual(["packaging", "shorts_reels"], status["built_output_families"])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -16,7 +16,7 @@ Purpose: keep the repository resumable with a minimal delivery-oriented document
 
 ### Accepted decisions
 - Primary SSOT: `01_MASTER/DECISIONS.md`
-- Scope: durable operating rules and strategic decisions.
+- Scope: durable operating rules and strategic decisions only, not live stage-state assertions.
 
 ### Strategic watchlist
 - Primary SSOT: `01_MASTER/STRATEGIC_WATCHLIST.md`

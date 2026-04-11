@@ -1,5 +1,21 @@
 # Codex Worklog
 
+## 2026-04-11 - C-002A completed and recovery truth now self-heals on open/load
+
+### Completed
+- hardened `load_project()` so stale output files and tampered `project.meta/status.json` are corrected back to currently valid downstream truth during open/reload;
+- added harder recovery tests for resurrected stale files, tampered status payloads, partial downstream reconstruction after reopen, and next-action correctness after recovery transitions;
+- updated `DECISIONS.md` so it no longer holds a stale live-stage assertion and instead correctly delegates live stage ownership to `CURRENT_STATE.md` and `DELIVERY_PLAN.md`;
+- verified the full suite through `python -m unittest tests\\test_mvp_slice.py tests\\test_runtime_integration_smoke.py tests\\test_output_builder_slice.py tests\\test_runtime_boundaries.py -q`.
+
+### Repository effect
+- UI truth, persisted truth, and on-disk truth are now better aligned under damaging reopen/reload/rebuild transitions;
+- opening an inconsistent project package is now less likely to preserve false-ready output signals;
+- the SSOT control layer is internally cleaner because `DECISIONS.md` no longer conflicts with live program state.
+
+### Recommended next step
+Execute `C-002B Output Surface Density and Metadata Hardening`.
+
 ## 2026-04-11 - C-001 completed and multi-builder trust became clearer under repeated local use
 
 ### Completed

@@ -65,7 +65,7 @@ Stop condition:
 
 Current stage: Stage C
 
-Current milestone: deepen recovery, validation, and repeated-use trust around the four-builder runtime
+Current milestone: harden recovery truth and keep SSOT state ownership internally consistent
 
 Current packet sequence:
 
@@ -76,4 +76,5 @@ Current packet sequence:
 5. `B-002 Long Video Script Builder Expansion` - completed
 6. `B-003 Carousel Script Builder Expansion and Strategic Watchlist Initialization` - completed
 7. `C-001 Multi-Builder Output Hardening Entry` - completed
-8. `C-002 Recovery and Validation Hardening Follow-up` - active
+8. `C-002A Recovery Truth Hardening and SSOT Decision-State Alignment` - completed
+9. `C-002B Output Surface Density and Metadata Hardening` - active

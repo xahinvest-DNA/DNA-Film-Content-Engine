@@ -2,25 +2,25 @@
 
 Last updated: 2026-04-11
 Status: active
-Task ID: C-002
+Task ID: C-002B
 Task type: production_hardening
-Title: Recovery and Validation Hardening Follow-up
+Title: Output Surface Density and Metadata Hardening
 
 ## Goal
 
-Deepen recovery and validation trust around the four-builder runtime so repeated local use feels dependable beyond the first Stage C hardening entry.
+Reduce output-surface density risk and repeated builder-metadata wiring so the four-builder workstation stays clear and maintainable as Stage C continues.
 
 ## Why this is next
 
-`C-001` is complete and the product now has clearer multi-builder inventory, trust summaries, and stronger repeated-use coverage across the existing four outputs.
+`C-002A` is complete and the product now self-heals load-time truth across UI state, persisted status payload, and on-disk output artifacts while the decisions layer is back in SSOT alignment.
 
-The strongest next move remains production hardening, but now with a narrower focus: deepen recovery confidence, rebuild/open behavior, and validation honesty rather than broadening the output family set.
+The strongest next move is now a bounded UI/metadata hardening pass: `Output Tracks` is still dense under four builders, and builder metadata wiring remains thin and repetitive even though recovery truth is stronger.
 
 ## In scope
 
-- deepen recovery confidence around open, reload, rebuild, and stale-cleared project packages;
-- strengthen validation honesty around multi-builder repeated use and edge-state transitions;
-- make the current four-builder workstation safer to trust without changing product direction;
+- make `Output Tracks` easier to scan under four builders without broad redesign;
+- reduce repeated per-builder metadata wiring where it directly improves clarity and maintainability;
+- keep the current four-builder workstation coherent while preserving current recovery-truth guarantees;
 - keep `runtime/app.py`, `runtime/builders/`, and `runtime/persistence/project_store.py` within the current hardened boundary model.
 
 ## Out of scope
@@ -34,9 +34,9 @@ The strongest next move remains production hardening, but now with a narrower fo
 
 ## Recommended validation
 
-- verify one project can survive more demanding open/reload/rebuild cycles without misleading output state;
-- expand test protection around recovery behavior, status persistence, and rebuild-after-clear flows;
-- confirm the four-builder output surface stays coherent while deeper recovery hardening lands;
+- verify `Output Tracks` stays coherent and readable across none/partial/all built states;
+- reduce repeated builder wiring without breaking current recovery-truth guarantees;
+- confirm the four-builder surface remains honest after reload and rebuild transitions;
 - confirm hardening work still does not re-centralize logic in `runtime/app.py` or `runtime/persistence/project_store.py`.
 
 ## Required handoff format
@@ -45,6 +45,6 @@ Use `05_CODEX/HANDOFF_TEMPLATE.md` exactly.
 
 Also include:
 
-- what recovery and validation areas were hardened next and why;
+- what output-surface and metadata areas were hardened next and why;
 - what risks still remain before release-grade confidence;
 - which watchlist items moved and which still remain watching.

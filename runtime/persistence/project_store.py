@@ -220,6 +220,40 @@ class ProjectSliceStore:
             accepted_scene_reference_stub,
             timecode_range_stub,
         )
+        if self._loaded_state_requires_sync(
+            project_dir,
+            project_record,
+            intake_record,
+            semantic_review_record,
+            semantic_blocks,
+            accepted_reference,
+            accepted_scene_reference_stub,
+            timecode_range_stub,
+            rough_cut_segment_stubs,
+            packaging_script_bundle,
+            shorts_reels_script,
+            long_video_script,
+            carousel_script,
+        ):
+            self._write_project_state(
+                project_dir,
+                manifest,
+                project_record,
+                intake_record,
+                analysis_source_record,
+                semantic_review_record,
+                semantic_blocks,
+                matching_prep_assets,
+                matching_candidate_stubs,
+                accepted_reference,
+                accepted_scene_reference_stub,
+                timecode_range_stub,
+                rough_cut_segment_stubs,
+                packaging_script_bundle,
+                shorts_reels_script,
+                long_video_script,
+                carousel_script,
+            )
         return ProjectSlice(
             project_dir=project_dir,
             manifest=manifest,
@@ -239,6 +273,53 @@ class ProjectSliceStore:
             long_video_script=long_video_script,
             carousel_script=carousel_script,
         )
+
+    def _loaded_state_requires_sync(
+        self,
+        project_dir: Path,
+        project_record: dict,
+        intake_record: dict,
+        semantic_review_record: dict,
+        semantic_blocks: list[dict],
+        accepted_reference: dict | None,
+        accepted_scene_reference_stub: dict | None,
+        timecode_range_stub: dict | None,
+        rough_cut_segment_stubs: list[dict],
+        packaging_script_bundle: dict | None,
+        shorts_reels_script: dict | None,
+        long_video_script: dict | None,
+        carousel_script: dict | None,
+    ) -> bool:
+        expected_status = status_payload(
+            project_record,
+            intake_record,
+            semantic_review_record,
+            semantic_blocks,
+            packaging_script_bundle,
+            shorts_reels_script,
+            long_video_script,
+            carousel_script,
+        )
+        status_path = project_dir / "project.meta" / "status.json"
+        current_status = read_json(status_path) if status_path.exists() else None
+        if current_status != expected_status:
+            return True
+
+        expected_presence = {
+            project_dir / "records" / "matching_prep" / ACCEPTED_REFERENCE_FILENAME: accepted_reference is not None,
+            project_dir / "records" / "scene_matching" / ACCEPTED_SCENE_REFERENCE_STUB_FILENAME: accepted_scene_reference_stub is not None,
+            project_dir / "records" / "scene_matching" / TIMECODE_RANGE_STUB_FILENAME: timecode_range_stub is not None,
+            project_dir / "records" / "rough_cut" / ROUGH_CUT_SEGMENTS_FILENAME: bool(rough_cut_segment_stubs),
+            project_dir / "records" / "output" / PACKAGING_SCRIPT_BUNDLE_FILENAME: packaging_script_bundle is not None,
+            project_dir / "outputs" / "packaging" / "packaging_script_bundle.md": packaging_script_bundle is not None,
+            project_dir / "records" / "output" / SHORTS_REELS_SCRIPT_FILENAME: shorts_reels_script is not None,
+            project_dir / "outputs" / "shorts_reels" / "shorts_reels_script.md": shorts_reels_script is not None,
+            project_dir / "records" / "output" / LONG_VIDEO_SCRIPT_FILENAME: long_video_script is not None,
+            project_dir / "outputs" / "long_video" / "long_video_script.md": long_video_script is not None,
+            project_dir / "records" / "output" / CAROUSEL_SCRIPT_FILENAME: carousel_script is not None,
+            project_dir / "outputs" / "carousel" / "carousel_script.md": carousel_script is not None,
+        }
+        return any(path.exists() != should_exist for path, should_exist in expected_presence.items())
 
     def save_analysis_text(
         self,

@@ -1,7 +1,7 @@
 # Codex Tasks
 
 Last updated: 2026-04-11
-Current focus: Stage C delivery milestone - deepen recovery and validation trust around the four-builder local production runtime
+Current focus: Stage C delivery milestone - keep the four-builder local production runtime clear, honest, and maintainable under repeated use
 
 ## Working rule
 
@@ -9,12 +9,17 @@ There must be exactly one active packet at a time, and that packet must move the
 
 ## Active task
 
-### C-002
+### C-002B
 - Status: active
-- Title: Recovery and Validation Hardening Follow-up
-- Goal: deepen reload/open/rebuild confidence and validation honesty after the first multi-builder trust pass.
+- Title: Output Surface Density and Metadata Hardening
+- Goal: reduce output-surface density risk and thin repeated builder wiring after recovery-truth hardening is in place.
 
 ## Recently completed
+
+### C-002A
+- Status: completed
+- Title: Recovery Truth Hardening and SSOT Decision-State Alignment
+- Outcome: made `load_project()` self-heal stale output files and tampered status payloads back to currently valid truth, added harder recovery-edge tests, and removed the stale live-stage conflict from `DECISIONS.md`.
 
 ### C-001
 - Status: completed
