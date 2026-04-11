@@ -1,16 +1,22 @@
 # Codex Tasks
 
 Last updated: 2026-04-11
-Current focus: manager review and next bounded packet selection after F-039
+Current focus: manager review and next bounded packet selection after F-040
 
 ## Working rule
 Tasks should be bounded, product-visible, and small enough to preserve continuity without turning the repository into micro-slice overload.
 
 ## Active task
 
-- No new implementation packet is active until ChatGPT selects the next bounded step after reviewing the completed `F-039` handoff.
+- No new implementation packet is active until ChatGPT selects the next bounded step after reviewing the completed `F-040` handoff.
 
 ## Completed tasks
+
+### F-040
+- Status: completed
+- Module: rough cut focus summary cue slice
+- Goal: add one bounded summary-cue layer inside the `Rough Cut` lane so the runtime surfaces the active rough-cut focus mode and the current visible-vs-total structure more explicitly, without changing persistence semantics, subset membership semantics, or drifting into playback, trimming, timeline, render/export, backend, or workflow buildout.
+- Outcome: added one explicit rough-cut focus summary cue near the top of the real `Rough Cut` lane, surfaced active focus mode plus visible, saved-total, and preferred-total counts, kept the cue honest in all-saved, preferred-only, preferred-only-empty, and blocked-but-readable reopen states, verified the new cue through local app-level tests, and kept the packet intentionally narrow.
 
 ### F-039
 - Status: completed

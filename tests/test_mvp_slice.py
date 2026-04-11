@@ -3850,6 +3850,120 @@ class DNAFilmAppTests(unittest.TestCase):
             finally:
                 root.destroy()
 
+    def test_app_rough_cut_focus_summary_cue_updates_in_all_saved_focus(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    self._build_timecode_ready_app_project(app, "UI Rough Cut Focus Summary All Saved Map")
+                    app._switch_view("Rough Cut")
+                    app.rough_cut_segment_label_var.set("Opening segment")
+                    app.save_rough_cut_segment_stub()
+                    app.rough_cut_segment_label_var.set("Reaction segment")
+                    app.save_rough_cut_segment_stub()
+                    app._select_rough_cut_segment_by_id(app.project.rough_cut_segment_stubs[1]["record_id"])
+                    app.include_selected_rough_cut_segment()
+
+                self.assertEqual(
+                    app.rough_cut_focus_summary_text.get(),
+                    "Focus: all saved segments | Visible: 2 | Saved total: 2 | Preferred total: 1",
+                )
+            finally:
+                root.destroy()
+
+    def test_app_rough_cut_focus_summary_cue_updates_in_preferred_only_focus(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    self._build_timecode_ready_app_project(app, "UI Rough Cut Focus Summary Preferred Map")
+                    app._switch_view("Rough Cut")
+                    app.rough_cut_segment_label_var.set("Opening segment")
+                    app.save_rough_cut_segment_stub()
+                    app.rough_cut_segment_label_var.set("Reaction segment")
+                    app.save_rough_cut_segment_stub()
+                    app._select_rough_cut_segment_by_id(app.project.rough_cut_segment_stubs[1]["record_id"])
+                    app.include_selected_rough_cut_segment()
+                    app.rough_cut_focus_var.set("show_preferred_subset_only")
+                    app.on_rough_cut_focus_changed()
+
+                self.assertEqual(
+                    app.rough_cut_focus_summary_text.get(),
+                    "Focus: preferred subset only | Visible: 1 | Saved total: 2 | Preferred total: 1",
+                )
+            finally:
+                root.destroy()
+
+    def test_app_rough_cut_focus_summary_cue_is_honest_in_preferred_only_empty_state(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    self._build_timecode_ready_app_project(app, "UI Rough Cut Focus Summary Empty Preferred Map")
+                    app._switch_view("Rough Cut")
+                    app.rough_cut_segment_label_var.set("Opening segment")
+                    app.save_rough_cut_segment_stub()
+                    app.rough_cut_segment_label_var.set("Reaction segment")
+                    app.save_rough_cut_segment_stub()
+                    app.rough_cut_focus_var.set("show_preferred_subset_only")
+                    app.on_rough_cut_focus_changed()
+
+                self.assertEqual(
+                    app.rough_cut_focus_summary_text.get(),
+                    "Focus: preferred subset only | Visible: 0 | Saved total: 2 | Preferred total: 0",
+                )
+            finally:
+                root.destroy()
+
+    def test_app_rough_cut_focus_summary_cue_remains_honest_when_reopened(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    self._build_timecode_ready_app_project(app, "UI Rough Cut Focus Summary Reopen Map")
+                    app._switch_view("Rough Cut")
+                    app.rough_cut_segment_label_var.set("Opening segment")
+                    app.save_rough_cut_segment_stub()
+                    app.rough_cut_segment_label_var.set("Reaction segment")
+                    app.save_rough_cut_segment_stub()
+                    app._select_rough_cut_segment_by_id(app.project.rough_cut_segment_stubs[1]["record_id"])
+                    app.include_selected_rough_cut_segment()
+                    app.rough_cut_focus_var.set("show_preferred_subset_only")
+                    app.on_rough_cut_focus_changed()
+                    target_block_id = app.project.semantic_blocks[1]["record_id"]
+                    app._select_block_by_id(target_block_id)
+                    app.reorder_selected_block("up")
+
+                app._switch_view("Rough Cut")
+                handoff = app.rough_cut_handoff.get("1.0", "end").strip()
+                self.assertEqual(
+                    app.rough_cut_focus_summary_text.get(),
+                    "Focus: preferred subset only | Visible: 1 | Saved total: 2 | Preferred total: 1",
+                )
+                self.assertIn("Focus: preferred subset only | Visible: 1 | Saved total: 2 | Preferred total: 1", handoff)
+            finally:
+                root.destroy()
+
     def test_app_matching_prep_shows_accepted_reference_after_selected_promotion(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = tk.Tk()

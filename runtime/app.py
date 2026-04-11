@@ -74,6 +74,7 @@ class DNAFilmApp:
         self.rough_cut_text = tk.StringVar(value="Rough cut readiness: blocked | no accepted reference available yet")
         self.scene_matching_reference_summary_text = tk.StringVar(value="Accepted scene reference stub: none created yet.")
         self.scene_matching_timecode_summary_text = tk.StringVar(value="Timecode range stub: none saved yet.")
+        self.rough_cut_focus_summary_text = tk.StringVar(value="Focus: all saved segments | Visible: 0 | Saved total: 0 | Preferred total: 0")
         self.rough_cut_segment_summary_text = tk.StringVar(value="Rough-cut segment set: none saved yet.")
         self.matching_prep_status_text = tk.StringVar(value="Matching Prep is blocked until the semantic map is approved.")
         self.matching_prep_summary_text = tk.StringVar(value="Prep handoff: 0 approved semantic blocks available.")
@@ -444,10 +445,11 @@ class DNAFilmApp:
         ttk.Label(frame, text="Rough Cut", font=("Segoe UI", 14, "bold")).grid(row=0, column=0, sticky="w")
         ttk.Label(frame, text="This is the first assembly-facing downstream lane. It opens only when one current accepted reference, accepted scene reference stub, and timecode range stub exist and stays explicitly provisional, local-first, pre-render, and pre-final-cut.", wraplength=760).grid(row=1, column=0, sticky="w", pady=(8, 6))
         ttk.Label(frame, textvariable=self.rough_cut_text, wraplength=760).grid(row=2, column=0, sticky="w", pady=(0, 4))
-        ttk.Label(frame, textvariable=self.rough_cut_segment_summary_text, wraplength=760).grid(row=3, column=0, sticky="w", pady=(0, 8))
+        ttk.Label(frame, textvariable=self.rough_cut_focus_summary_text, wraplength=760).grid(row=3, column=0, sticky="w", pady=(0, 4))
+        ttk.Label(frame, textvariable=self.rough_cut_segment_summary_text, wraplength=760).grid(row=4, column=0, sticky="w", pady=(0, 8))
 
         segment_frame = ttk.LabelFrame(frame, text="Rough-cut segment stub", padding=8)
-        segment_frame.grid(row=4, column=0, sticky="ew", pady=(0, 8))
+        segment_frame.grid(row=5, column=0, sticky="ew", pady=(0, 8))
         segment_frame.columnconfigure(1, weight=1)
         ttk.Label(segment_frame, text="Segment label").grid(row=0, column=0, sticky="w")
         self.rough_cut_segment_label_entry = ttk.Entry(segment_frame, textvariable=self.rough_cut_segment_label_var, width=48)
@@ -457,7 +459,7 @@ class DNAFilmApp:
         ttk.Label(segment_frame, text="Assembly-facing stub only | not a real cut or render-ready output", wraplength=760).grid(row=1, column=0, columnspan=3, sticky="w", pady=(6, 0))
 
         list_frame = ttk.LabelFrame(frame, text="Saved rough-cut segment set", padding=8)
-        list_frame.grid(row=5, column=0, sticky="ew", pady=(0, 8))
+        list_frame.grid(row=6, column=0, sticky="ew", pady=(0, 8))
         list_frame.columnconfigure(0, weight=1)
         focus_controls = ttk.Frame(list_frame)
         focus_controls.grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 8))
@@ -492,7 +494,7 @@ class DNAFilmApp:
         self.remove_rough_cut_segment_button.pack(side="left", padx=(8, 0))
 
         self.rough_cut_handoff = tk.Text(frame, height=18, wrap="word")
-        self.rough_cut_handoff.grid(row=6, column=0, sticky="nsew")
+        self.rough_cut_handoff.grid(row=7, column=0, sticky="nsew")
         self.rough_cut_handoff.configure(state="disabled")
         return frame
 
@@ -1453,6 +1455,12 @@ class DNAFilmApp:
             return "Reorder is available only in all-saved focus because saved order belongs to the full rough-cut set."
         return "Reorder applies to the full saved rough-cut order."
 
+    def _rough_cut_focus_summary(self, project: ProjectSlice) -> str:
+        visible_count = len(self._visible_rough_cut_segments(project))
+        saved_total = len(project.rough_cut_segment_stubs)
+        preferred_total = len(self._preferred_rough_cut_segments(project))
+        return f"Focus: {self._rough_cut_focus_label()} | Visible: {visible_count} | Saved total: {saved_total} | Preferred total: {preferred_total}"
+
     def _rough_cut_segment_option_label(self, entry: dict) -> str:
         return f"{entry.get('sequence', 0):02d}. {entry.get('segment_label', 'Untitled segment')} [{entry.get('record_id', 'unknown')}]"
 
@@ -1936,6 +1944,8 @@ class DNAFilmApp:
         rough_cut_focus_label = self._rough_cut_focus_label()
         rough_cut_reorder_guidance = self._rough_cut_reorder_guidance()
         visible_segment_count = len(self._visible_rough_cut_segments(project))
+        rough_cut_focus_summary = self._rough_cut_focus_summary(project)
+        self.rough_cut_focus_summary_text.set(rough_cut_focus_summary)
         self.rough_cut_segment_summary_text.set(rough_cut_segment_stub_summary)
         self._set_rough_cut_enabled(gate_state == "ready")
         if gate_state != "ready":
@@ -1948,6 +1958,7 @@ class DNAFilmApp:
                 timecode_range_stub_summary,
                 rough_cut_segment_stub_summary,
                 rough_cut_preferred_subset_summary,
+                rough_cut_focus_summary,
                 f"Rough-cut focus: {rough_cut_focus_label} | visible segments: {visible_segment_count}.",
                 rough_cut_reorder_guidance,
                 "",
@@ -1971,6 +1982,7 @@ class DNAFilmApp:
                 timecode_range_stub_summary,
                 rough_cut_segment_stub_summary,
                 rough_cut_preferred_subset_summary,
+                rough_cut_focus_summary,
                 f"Rough-cut focus: {rough_cut_focus_label} | visible segments: {visible_segment_count}.",
                 rough_cut_reorder_guidance,
                 "",

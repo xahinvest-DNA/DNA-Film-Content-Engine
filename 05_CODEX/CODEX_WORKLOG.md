@@ -1,3 +1,21 @@
+## 2026-04-11 - F-040 completed and Rough Cut gained explicit focus summary readability
+
+### Completed
+- completed the rough cut focus summary cue slice as one bounded follow-up to preferred-only focus and reorder-honesty inside the real `Rough Cut` lane;
+- added one explicit summary cue near the top of the lane that shows active focus mode plus visible, saved-total, and preferred-total rough-cut counts;
+- kept the cue honest across all-saved focus, preferred-only focus, preferred-only empty state, and blocked-but-readable reopen visibility;
+- preserved current persistence, preferred-subset, reorder, and removal semantics while improving at-a-glance editorial readability only;
+- verified the new cue through local app-level tests alongside prior regressions;
+- synchronized the repository state layer after real implementation progress.
+
+### Repository effect
+- the runtime now makes the current rough-cut working mode legible at a glance rather than forcing the editor to infer focus context from the visible list alone;
+- the repository gained one narrower readability layer without opening playback, trimming, timeline, render/export, backend, or workflow-engine semantics;
+- the next bounded packet should now be selected by manager review against current repository capability rather than assumed by inertia.
+
+### Recommended next step
+ChatGPT should select the next strongest bounded packet after `F-040`, based on the fact that the runtime now surfaces rough-cut focus mode and visible-vs-total structure explicitly.
+
 ## 2026-04-11 - F-039 completed and Rough Cut gained reorder honesty in preferred-only focus
 
 ### Completed
