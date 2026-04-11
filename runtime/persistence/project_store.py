@@ -4,7 +4,7 @@ import re
 import uuid
 from pathlib import Path
 
-from runtime.builders import build_long_video_script, build_packaging_script_bundle, build_shorts_reels_script, packaging_bundle_source_segments
+from runtime.builders import build_carousel_script, build_long_video_script, build_packaging_script_bundle, build_shorts_reels_script, packaging_bundle_source_segments
 from runtime.domain.project_types import ProjectSlice
 from runtime.domain.semantic_rules import (
     ALLOWED_CANDIDATE_REVIEW_STATUSES,
@@ -31,6 +31,7 @@ from runtime.domain.semantic_rules import (
     next_block_id,
     normalize_accepted_reference,
     normalize_accepted_scene_reference_stub,
+    normalize_carousel_script,
     normalize_long_video_script,
     normalize_matching_candidate_stubs,
     normalize_output_suitability,
@@ -55,6 +56,7 @@ from runtime.domain.workflow_rules import (
     mark_reopened_if_needed,
     reconcile_accepted_reference,
     reconcile_accepted_scene_reference_stub,
+    reconcile_carousel_script,
     reconcile_long_video_script,
     reconcile_packaging_script_bundle,
     reconcile_rough_cut_segment_stubs,
@@ -77,6 +79,7 @@ ROUGH_CUT_SEGMENTS_FILENAME = "rough_cut_segments.json"
 PACKAGING_SCRIPT_BUNDLE_FILENAME = "packaging_script_bundle.json"
 SHORTS_REELS_SCRIPT_FILENAME = "shorts_reels_script.json"
 LONG_VIDEO_SCRIPT_FILENAME = "long_video_script.json"
+CAROUSEL_SCRIPT_FILENAME = "carousel_script.json"
 KEEP_EXISTING = object()
 
 
@@ -155,6 +158,7 @@ class ProjectSliceStore:
         packaging_script_bundle_path = project_dir / "records" / "output" / PACKAGING_SCRIPT_BUNDLE_FILENAME
         shorts_reels_script_path = project_dir / "records" / "output" / SHORTS_REELS_SCRIPT_FILENAME
         long_video_script_path = project_dir / "records" / "output" / LONG_VIDEO_SCRIPT_FILENAME
+        carousel_script_path = project_dir / "records" / "output" / CAROUSEL_SCRIPT_FILENAME
 
         if analysis_record_path.exists():
             analysis_source_record = read_json(analysis_record_path)
@@ -207,6 +211,14 @@ class ProjectSliceStore:
             accepted_scene_reference_stub,
             timecode_range_stub,
         )
+        carousel_script = normalize_carousel_script(read_json(carousel_script_path) if carousel_script_path.exists() else None)
+        carousel_script = reconcile_carousel_script(
+            carousel_script,
+            rough_cut_segment_stubs,
+            accepted_reference,
+            accepted_scene_reference_stub,
+            timecode_range_stub,
+        )
         return ProjectSlice(
             project_dir=project_dir,
             manifest=manifest,
@@ -224,6 +236,7 @@ class ProjectSliceStore:
             packaging_script_bundle=packaging_script_bundle,
             shorts_reels_script=shorts_reels_script,
             long_video_script=long_video_script,
+            carousel_script=carousel_script,
         )
 
     def save_analysis_text(
@@ -1228,6 +1241,55 @@ class ProjectSliceStore:
             project.packaging_script_bundle,
             project.shorts_reels_script,
             long_video_script,
+            project.carousel_script,
+        )
+        return self.load_project(project_dir)
+
+    def build_carousel_script(self, project_dir: Path) -> ProjectSlice:
+        project = self.load_project(project_dir)
+        if project.accepted_reference is None or project.accepted_scene_reference_stub is None or project.timecode_range_stub is None:
+            raise ValueError("Carousel build is blocked until the current accepted downstream chain exists.")
+        _, source_segments = packaging_bundle_source_segments(project)
+        if not source_segments:
+            raise ValueError("Carousel build is blocked until at least one rough-cut segment exists.")
+        if project.semantic_review_record.get("reopened_after_change"):
+            raise ValueError("Carousel build is only available while the current downstream chain remains open.")
+
+        now = utc_now()
+        carousel_script = build_carousel_script(project, now)
+        manifest = dict(project.manifest)
+        manifest["updated_at"] = now
+        project_record = dict(project.project_record)
+        project_record["updated_at"] = now
+        project_record["project_status"] = "carousel_script_ready"
+        project_record["current_readiness_summary"] = (
+            f"Carousel script built from {carousel_script['segment_count']} rough-cut segment(s) "
+            f"using {carousel_script['source_focus_mode']}."
+        )
+        intake_record = dict(project.intake_record)
+        intake_record["updated_at"] = now
+        analysis_source_record = copy_analysis_record(project.analysis_source_record, now)
+        semantic_review_record = dict(project.semantic_review_record)
+        semantic_review_record["updated_at"] = now
+
+        self._write_project_state(
+            project_dir,
+            manifest,
+            project_record,
+            intake_record,
+            analysis_source_record,
+            semantic_review_record,
+            project.semantic_blocks,
+            project.matching_prep_assets,
+            project.matching_candidate_stubs,
+            project.accepted_reference,
+            project.accepted_scene_reference_stub,
+            project.timecode_range_stub,
+            project.rough_cut_segment_stubs,
+            project.packaging_script_bundle,
+            project.shorts_reels_script,
+            project.long_video_script,
+            carousel_script,
         )
         return self.load_project(project_dir)
 
@@ -1461,6 +1523,7 @@ class ProjectSliceStore:
         packaging_script_bundle: dict | None | object = KEEP_EXISTING,
         shorts_reels_script: dict | None | object = KEEP_EXISTING,
         long_video_script: dict | None | object = KEEP_EXISTING,
+        carousel_script: dict | None | object = KEEP_EXISTING,
     ) -> None:
         semantic_blocks = normalize_semantic_blocks(semantic_blocks)
         accepted_reference_path = project_dir / "records" / "matching_prep" / ACCEPTED_REFERENCE_FILENAME
@@ -1473,6 +1536,8 @@ class ProjectSliceStore:
         shorts_reels_markdown_path = project_dir / "outputs" / "shorts_reels" / "shorts_reels_script.md"
         long_video_script_path = project_dir / "records" / "output" / LONG_VIDEO_SCRIPT_FILENAME
         long_video_markdown_path = project_dir / "outputs" / "long_video" / "long_video_script.md"
+        carousel_script_path = project_dir / "records" / "output" / CAROUSEL_SCRIPT_FILENAME
+        carousel_markdown_path = project_dir / "outputs" / "carousel" / "carousel_script.md"
         if accepted_reference is KEEP_EXISTING:
             accepted_reference_payload = normalize_accepted_reference(read_json(accepted_reference_path) if accepted_reference_path.exists() else None)
         else:
@@ -1526,6 +1591,17 @@ class ProjectSliceStore:
             accepted_scene_reference_stub_payload,
             timecode_range_stub_payload,
         )
+        if carousel_script is KEEP_EXISTING:
+            carousel_script_payload = normalize_carousel_script(read_json(carousel_script_path) if carousel_script_path.exists() else None)
+        else:
+            carousel_script_payload = normalize_carousel_script(carousel_script if isinstance(carousel_script, dict) else None)
+        carousel_script_payload = reconcile_carousel_script(
+            carousel_script_payload,
+            rough_cut_segment_entries,
+            accepted_reference_payload,
+            accepted_scene_reference_stub_payload,
+            timecode_range_stub_payload,
+        )
         write_json(project_dir / "project.manifest", manifest)
         write_json(
             project_dir / "project.meta" / "status.json",
@@ -1537,6 +1613,7 @@ class ProjectSliceStore:
                 packaging_script_bundle_payload,
                 shorts_reels_script_payload,
                 long_video_script_payload,
+                carousel_script_payload,
             ),
         )
         write_json(project_dir / "records" / "project" / "project.json", project_record)
@@ -1587,3 +1664,11 @@ class ProjectSliceStore:
             long_video_script_path.unlink()
             if long_video_markdown_path.exists():
                 long_video_markdown_path.unlink()
+        if carousel_script_payload is not None:
+            write_json(carousel_script_path, carousel_script_payload)
+            carousel_markdown_path.parent.mkdir(parents=True, exist_ok=True)
+            carousel_markdown_path.write_text(carousel_script_payload.get("markdown_content", ""), encoding="utf-8")
+        elif carousel_script_path.exists():
+            carousel_script_path.unlink()
+            if carousel_markdown_path.exists():
+                carousel_markdown_path.unlink()

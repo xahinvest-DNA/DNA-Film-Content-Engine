@@ -63,13 +63,16 @@ Stop condition:
 
 ## Active program position
 
-Current stage: Stage B
+Current stage: Stage C
 
-Current milestone: expand beyond the first proven output builder
+Current milestone: harden the four-builder runtime into repeatable local production software
 
 Current packet sequence:
 
 1. `M-001 Project Governance Reset for Delivery` - completed
 2. `A-001 Runtime Structural Refactor for Growth` - completed
 3. `P-001 First Usable Content Output Vertical Slice` - completed
-4. `B-001 First Shorts/Reels Builder Expansion` - active
+4. `B-001 First Shorts/Reels Builder Expansion` - completed
+5. `B-002 Long Video Script Builder Expansion` - completed
+6. `B-003 Carousel Script Builder Expansion and Strategic Watchlist Initialization` - completed
+7. `C-001 Multi-Builder Output Hardening Entry` - active

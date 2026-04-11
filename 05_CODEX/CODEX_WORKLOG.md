@@ -1,5 +1,24 @@
 # Codex Worklog
 
+## 2026-04-11 - B-003 completed and the product gained its fourth real builder plus a strategic watchlist layer
+
+### Completed
+- added a carousel script builder under `runtime/builders` beside packaging, Shorts/Reels, and long-video;
+- persisted the new builder as both `records/output/carousel_script.json` and `outputs/carousel/carousel_script.md`;
+- integrated the new builder into `Output Tracks` so the user can build, inspect, and keep all four artifacts in one surface;
+- kept packaging, Shorts/Reels, and long-video builders working without regression;
+- created `01_MASTER/STRATEGIC_WATCHLIST.md` as a permanent non-backlog strategic observation file and seeded it with the first high-impact watch items;
+- updated `CURRENT_STATE.md` and `SSOT_MAP.md` so the watchlist is explicitly part of project control without breaking the one-active-packet rule;
+- verified the full suite through `python -m unittest tests\\test_mvp_slice.py tests\\test_runtime_integration_smoke.py tests\\test_output_builder_slice.py tests\\test_runtime_boundaries.py -q`.
+
+### Repository effect
+- Stage B now has four honest local-first output builders instead of three;
+- the output layer now covers packaging, short-form, long-form, and carousel handoffs from the same truth chain;
+- the repository now preserves high-impact non-blocking signals in a dedicated strategic watchlist instead of letting them disappear or bloat the active task queue.
+
+### Recommended next step
+Execute `C-001 Multi-Builder Output Hardening Entry`.
+
 ## 2026-04-11 - B-002 completed and the product gained its third real builder
 
 ### Completed

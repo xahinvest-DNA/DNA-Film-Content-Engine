@@ -1,7 +1,7 @@
 # Codex Tasks
 
 Last updated: 2026-04-11
-Current focus: Stage B delivery milestone - output expansion beyond the first three proven builders
+Current focus: Stage C delivery milestone - harden the now-proven four-builder runtime for repeatable local production use
 
 ## Working rule
 
@@ -9,12 +9,17 @@ There must be exactly one active packet at a time, and that packet must move the
 
 ## Active task
 
-### B-003
+### C-001
 - Status: active
-- Title: Carousel Script Builder Expansion
-- Goal: turn the proven analysis-to-rough-cut chain into a first carousel-oriented builder path using the now-established multi-builder surface and persistence pattern.
+- Title: Multi-Builder Output Hardening Entry
+- Goal: turn the now-proven four-builder runtime into a more recoverable, validation-led, production-facing local workstation.
 
 ## Recently completed
+
+### B-003
+- Status: completed
+- Title: Carousel Script Builder Expansion and Strategic Watchlist Initialization
+- Outcome: added a fourth real builder in `runtime/builders`, persisted a carousel markdown artifact plus output record, integrated the new builder into `Output Tracks`, preserved coexistence with packaging + Shorts/Reels + long-video, created `01_MASTER/STRATEGIC_WATCHLIST.md`, and opened the first Stage C hardening packet.
 
 ### B-002
 - Status: completed

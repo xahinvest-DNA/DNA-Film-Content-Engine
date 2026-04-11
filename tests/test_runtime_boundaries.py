@@ -4,11 +4,13 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from runtime.builders import build_carousel_script as builder_build_carousel_script
 from runtime.builders import build_packaging_script_bundle as builder_build_packaging_script_bundle
 from runtime.builders import build_long_video_script as builder_build_long_video_script
 from runtime.builders import build_shorts_reels_script as builder_build_shorts_reels_script
 from runtime.builders import packaging_bundle_source_segments as builder_packaging_bundle_source_segments
 from runtime.project_slice import ProjectSliceStore
+from runtime.services.output_builder import build_carousel_script as service_build_carousel_script
 from runtime.services.output_builder import build_packaging_script_bundle as service_build_packaging_script_bundle
 from runtime.services.output_builder import build_long_video_script as service_build_long_video_script
 from runtime.services.output_builder import build_shorts_reels_script as service_build_shorts_reels_script
@@ -72,6 +74,7 @@ class RuntimeBoundaryTests(unittest.TestCase):
         return store.build_packaging_script_bundle(project.project_dir)
 
     def test_builder_boundary_reexports_single_packaging_builder(self) -> None:
+        self.assertIs(builder_build_carousel_script, service_build_carousel_script)
         self.assertIs(builder_build_packaging_script_bundle, service_build_packaging_script_bundle)
         self.assertIs(builder_build_long_video_script, service_build_long_video_script)
         self.assertIs(builder_build_shorts_reels_script, service_build_shorts_reels_script)
@@ -98,12 +101,15 @@ class RuntimeBoundaryTests(unittest.TestCase):
             self.assertIsNone(updated.packaging_script_bundle)
             self.assertIsNone(updated.shorts_reels_script)
             self.assertIsNone(updated.long_video_script)
+            self.assertIsNone(updated.carousel_script)
             self.assertFalse((updated.project_dir / "records" / "output" / "packaging_script_bundle.json").exists())
             self.assertFalse((updated.project_dir / "outputs" / "packaging" / "packaging_script_bundle.md").exists())
             self.assertFalse((updated.project_dir / "records" / "output" / "shorts_reels_script.json").exists())
             self.assertFalse((updated.project_dir / "outputs" / "shorts_reels" / "shorts_reels_script.md").exists())
             self.assertFalse((updated.project_dir / "records" / "output" / "long_video_script.json").exists())
             self.assertFalse((updated.project_dir / "outputs" / "long_video" / "long_video_script.md").exists())
+            self.assertFalse((updated.project_dir / "records" / "output" / "carousel_script.json").exists())
+            self.assertFalse((updated.project_dir / "outputs" / "carousel" / "carousel_script.md").exists())
 
     def test_demoting_selected_candidate_clears_stale_output_after_reload(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -130,6 +136,7 @@ class RuntimeBoundaryTests(unittest.TestCase):
             self.assertIsNone(reloaded.packaging_script_bundle)
             self.assertIsNone(reloaded.shorts_reels_script)
             self.assertIsNone(reloaded.long_video_script)
+            self.assertIsNone(reloaded.carousel_script)
 
     def test_builder_rebuild_is_reproducible_after_reload(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -187,19 +194,41 @@ class RuntimeBoundaryTests(unittest.TestCase):
             self.assertEqual(first_script["segment_count"], second_script["segment_count"])
             self.assertEqual(first_script["segments"], second_script["segments"])
 
-    def test_packaging_shorts_and_long_video_can_coexist_without_regression(self) -> None:
+    def test_carousel_builder_rebuild_is_reproducible_after_reload(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            built = self._build_output_ready_project(store, "Boundary Carousel Rebuild")
+            built = store.build_carousel_script(built.project_dir)
+            first_script = built.carousel_script
+
+            reloaded = store.load_project(built.project_dir)
+            rebuilt = store.build_carousel_script(reloaded.project_dir)
+            second_script = rebuilt.carousel_script
+
+            self.assertIsNotNone(first_script)
+            self.assertIsNotNone(second_script)
+            self.assertEqual(first_script["builder_id"], second_script["builder_id"])
+            self.assertEqual(first_script["source_focus_mode"], second_script["source_focus_mode"])
+            self.assertEqual(first_script["source_rough_cut_segment_ids"], second_script["source_rough_cut_segment_ids"])
+            self.assertEqual(first_script["segment_count"], second_script["segment_count"])
+            self.assertEqual(first_script["segments"], second_script["segments"])
+
+    def test_all_four_builders_can_coexist_without_regression(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             store = ProjectSliceStore(Path(temp_dir))
             built = self._build_output_ready_project(store, "Boundary Coexistence")
             built = store.build_shorts_reels_script(built.project_dir)
             built = store.build_long_video_script(built.project_dir)
+            built = store.build_carousel_script(built.project_dir)
 
             self.assertIsNotNone(built.packaging_script_bundle)
             self.assertIsNotNone(built.shorts_reels_script)
             self.assertIsNotNone(built.long_video_script)
+            self.assertIsNotNone(built.carousel_script)
             self.assertTrue((built.project_dir / "records" / "output" / "packaging_script_bundle.json").exists())
             self.assertTrue((built.project_dir / "records" / "output" / "shorts_reels_script.json").exists())
             self.assertTrue((built.project_dir / "records" / "output" / "long_video_script.json").exists())
+            self.assertTrue((built.project_dir / "records" / "output" / "carousel_script.json").exists())
 
 
 if __name__ == "__main__":

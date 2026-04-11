@@ -18,6 +18,10 @@ Purpose: keep the repository resumable with a minimal delivery-oriented document
 - Primary SSOT: `01_MASTER/DECISIONS.md`
 - Scope: durable operating rules and strategic decisions.
 
+### Strategic watchlist
+- Primary SSOT: `01_MASTER/STRATEGIC_WATCHLIST.md`
+- Scope: non-blocking but potentially high-impact observations only; not a task backlog.
+
 ### Finished-product definition
 - Primary SSOT: `01_MASTER/TARGET_STATE.md`
 - Scope: what counts as finished usable software.

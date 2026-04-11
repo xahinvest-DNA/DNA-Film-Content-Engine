@@ -293,6 +293,7 @@ class DNAFilmAppPresentationMixin:
         self.build_packaging_bundle_button.configure(state="normal" if enabled else "disabled")
         self.build_shorts_reels_button.configure(state="normal" if enabled else "disabled")
         self.build_long_video_button.configure(state="normal" if enabled else "disabled")
+        self.build_carousel_button.configure(state="normal" if enabled else "disabled")
 
     def _set_editor_enabled(self, enabled: bool) -> None:
         entry_state = "normal" if enabled else "disabled"
@@ -665,6 +666,21 @@ class DNAFilmAppPresentationMixin:
         if script is None:
             return ["No long-video script has been built yet."]
         return [script.get("markdown_content", "").rstrip() or "No long-video script content available."]
+
+    def _carousel_script_summary(self, project: ProjectSlice) -> str:
+        script = project.carousel_script
+        if script is None:
+            return "Carousel script: none built yet."
+        return (
+            f"Carousel script: {script.get('slide_count', 0)} slide(s) built from "
+            f"{script.get('source_focus_mode', 'all_saved_segments')} with angle '{script.get('carousel_angle', '').strip() or 'none'}'."
+        )
+
+    def _carousel_script_lines(self, project: ProjectSlice) -> list[str]:
+        script = project.carousel_script
+        if script is None:
+            return ["No carousel script has been built yet."]
+        return [script.get("markdown_content", "").rstrip() or "No carousel script content available."]
 
     def _accepted_reference_lines(self, project: ProjectSlice) -> list[str]:
         accepted_reference = project.accepted_reference
@@ -1084,15 +1100,18 @@ class DNAFilmAppPresentationMixin:
         bundle_summary = self._packaging_script_bundle_summary(project)
         shorts_summary = self._shorts_reels_script_summary(project)
         long_video_summary = self._long_video_script_summary(project)
+        carousel_summary = self._carousel_script_summary(project)
         bundle = project.packaging_script_bundle
         shorts_script = project.shorts_reels_script
         long_video_script = project.long_video_script
+        carousel_script = project.carousel_script
         packaging_path = bundle.get("artifact_relative_path", "none") if bundle else "none"
         shorts_path = shorts_script.get("artifact_relative_path", "none") if shorts_script else "none"
         long_video_path = long_video_script.get("artifact_relative_path", "none") if long_video_script else "none"
-        self.output_builder_summary_text.set(f"{bundle_summary} {shorts_summary} {long_video_summary}")
+        carousel_path = carousel_script.get("artifact_relative_path", "none") if carousel_script else "none"
+        self.output_builder_summary_text.set(f"{bundle_summary} {shorts_summary} {long_video_summary} {carousel_summary}")
         self.output_builder_path_text.set(
-            f"Packaging path: {packaging_path} | Shorts/Reels path: {shorts_path} | Long-video path: {long_video_path}"
+            f"Packaging path: {packaging_path} | Shorts/Reels path: {shorts_path} | Long-video path: {long_video_path} | Carousel path: {carousel_path}"
         )
         self._set_output_builder_enabled(gate_state == "ready")
         lines = [
@@ -1108,6 +1127,9 @@ class DNAFilmAppPresentationMixin:
             "",
             "Long-video script builder",
             long_video_summary,
+            "",
+            "Carousel script builder",
+            carousel_summary,
             self._rough_cut_segment_stub_summary(project),
             self._rough_cut_preferred_subset_summary(project),
             "",
@@ -1119,6 +1141,9 @@ class DNAFilmAppPresentationMixin:
             "",
             "Long-video script preview",
             *self._long_video_script_lines(project),
+            "",
+            "Carousel script preview",
+            *self._carousel_script_lines(project),
         ]
         self.output_builder_handoff.configure(state="normal")
         self.output_builder_handoff.delete("1.0", "end")
@@ -1161,13 +1186,20 @@ class DNAFilmAppPresentationMixin:
         readiness = self._approval_readiness(project)
         rough_cut_state, _ = self._rough_cut_gate(project)
         output_builder_state, _ = self._output_builder_gate(project)
+        if output_builder_state == "ready" and project.carousel_script is None:
+            return "Next action: Build carousel script"
         if output_builder_state == "ready" and project.long_video_script is None:
             return "Next action: Build long-video script"
         if output_builder_state == "ready" and project.shorts_reels_script is None:
             return "Next action: Build Shorts/Reels script"
         if output_builder_state == "ready" and project.packaging_script_bundle is None:
             return "Next action: Build packaging-ready script bundle"
-        if project.packaging_script_bundle is not None or project.shorts_reels_script is not None or project.long_video_script is not None:
+        if (
+            project.packaging_script_bundle is not None
+            or project.shorts_reels_script is not None
+            or project.long_video_script is not None
+            or project.carousel_script is not None
+        ):
             return "Next action: Open Output Tracks"
         if rough_cut_state == "ready":
             return "Next action: Open Rough Cut"

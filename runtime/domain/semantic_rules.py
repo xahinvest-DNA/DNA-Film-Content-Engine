@@ -265,6 +265,26 @@ def normalize_long_video_script(long_video_script: dict | None) -> dict | None:
     return current
 
 
+def normalize_carousel_script(carousel_script: dict | None) -> dict | None:
+    if not carousel_script:
+        return None
+    current = dict(carousel_script)
+    current["title"] = current.get("title", "").strip()
+    current["carousel_angle"] = current.get("carousel_angle", "").strip()
+    current["builder_id"] = current.get("builder_id", "carousel_script_v1").strip() or "carousel_script_v1"
+    current["source_focus_mode"] = current.get("source_focus_mode", "all_saved_segments").strip() or "all_saved_segments"
+    current["source_candidate_stub_id"] = current.get("source_candidate_stub_id", "").strip()
+    current["artifact_relative_path"] = current.get("artifact_relative_path", "outputs/carousel/carousel_script.md").strip() or "outputs/carousel/carousel_script.md"
+    current["markdown_content"] = current.get("markdown_content", "")
+    current["cover_slide"] = current.get("cover_slide", "").strip()
+    current["closing_slide"] = current.get("closing_slide", "").strip()
+    current["source_rough_cut_segment_ids"] = list(current.get("source_rough_cut_segment_ids", []))
+    current["segments"] = list(current.get("segments", []))
+    current["segment_count"] = len(current["segments"])
+    current["slide_count"] = current.get("slide_count", current["segment_count"] + 2 if current["segment_count"] else 0)
+    return current
+
+
 def semantic_completeness(intake_record: dict, semantic_blocks: list[dict]) -> tuple[str, int, int]:
     if intake_record.get("intake_readiness") != "ready" or not semantic_blocks:
         return ("Incomplete", 0, 0)

@@ -3,9 +3,9 @@
 Last updated: 2026-04-11
 Status: active
 Product goal: desktop-first content production software
-Active stage: Stage B - Builder outputs
-Active delivery milestone: expand the output layer beyond the first three proven builders
-Active Codex packet: B-003 Carousel Script Builder Expansion
+Active stage: Stage C - Production hardening
+Active delivery milestone: harden the four-builder runtime into repeatable local production software
+Active Codex packet: C-001 Multi-Builder Output Hardening Entry
 
 ## What is true now
 
@@ -19,11 +19,12 @@ The current runtime now proves a real local-first path through:
 - matching-prep registration and accepted-reference fixation;
 - scene-reference and timecode stub fixation;
 - rough-cut segment set assembly and preferred-subset review;
-- one real packaging-ready script bundle output artifact saved inside the project package.
-- one real Shorts/Reels script artifact saved inside the project package.
-- one real long-video script artifact saved inside the project package.
+- one real packaging-ready script bundle output artifact saved inside the project package;
+- one real Shorts/Reels script artifact saved inside the project package;
+- one real long-video script artifact saved inside the project package;
+- one real carousel script artifact saved inside the project package.
 
-The current runtime therefore no longer stops at preparation. It now reaches reproducible exportable content artifacts through three honest builder paths.
+The current runtime therefore no longer stops at preparation. It now reaches reproducible exportable content artifacts through four honest builder paths.
 
 The runtime boundary hardening pass is now also complete:
 
@@ -32,16 +33,17 @@ The runtime boundary hardening pass is now also complete:
 - builder logic now has an explicit `runtime/builders/` zone;
 - `runtime/persistence/project_store.py` now coordinates persistence while domain rules own reopen, reconciliation, and downstream invalidation semantics;
 - boundary tests now protect reopen cleanup, reload reproducibility, and builder-entrypoint consistency.
+- `01_MASTER/STRATEGIC_WATCHLIST.md` now exists as a separate strategic-observation layer for non-blocking but potentially high-impact concerns.
 
 ## Main product gap
 
 The main gap has changed again:
 
-- the product now has three honest builders, but output breadth is still incomplete;
-- carousel and further builder families are still missing;
-- production hardening is still missing.
+- the product now has four honest builders and Stage B breadth is materially real;
+- the main remaining gap is no longer output-family coverage, but production hardening;
+- recovery confidence, validation depth, output-surface scalability, and release quality still need a deliberate Stage C pass.
 
-The software is now a real content-creation path proof, but it still needs more builders and harder release quality.
+The software is now a real multi-format content path proof, but it still needs harder release quality.
 
 ## Delivery framing
 
@@ -52,38 +54,30 @@ The project is now governed through four levels:
 3. one active delivery milestone at a time;
 4. one active Codex packet at a time.
 
-The current active milestone belongs to Stage B and is aimed at expanding output coverage beyond the now-proven packaging, short-form, and long-form builder set.
+The current active milestone belongs to Stage C and is aimed at making the now-broadened multi-builder runtime more durable, recoverable, and release-facing.
 
 ## What the next packet must do
 
-`B-002` is now complete.
+`B-003` is now complete.
 
-Three proven output builders are now real:
+Four proven output builders are now real:
 
-- builder chosen: packaging-ready script bundle;
-- artifact type: saved markdown + persisted output record;
-- output surface: `Output Tracks`;
-- second builder added: Shorts/Reels script;
-- second artifact type: saved markdown + persisted output record;
-- third builder added: long-video script;
-- third artifact type: saved markdown + persisted output record;
-- acceptance proof: analysis text to all three saved artifacts is now test-covered.
+- packaging-ready script bundle;
+- Shorts/Reels script;
+- long-video script;
+- carousel script.
 
-The next active packet is `B-003`, because the strongest next move is to add the first carousel-oriented builder on top of the same hardened output layer.
+All four artifacts now exist as saved markdown plus persisted output records behind the same hardened builder boundary, reload path, and stale-cleanup model.
 
-What A-002 changed before that move:
-
-- Stage B no longer has to expand builders on top of a hidden persistence-heavy core;
-- stale downstream chain state is now honestly cleared when upstream approval is reopened;
-- builder invocation now has a clearer extension contour for the next output family.
+The next active packet is `C-001`, because the strongest next move is to harden recovery, validation, and multi-builder usability rather than continue format expansion by inertia.
 
 What is preserved:
 
 - the first end-to-end usable output path exists;
-- the second output path now exists beside it;
-- the third long-form output path now exists beside them;
+- short-form, long-form, and carousel output paths now exist beside it;
 - the product remains local-first and desktop-first;
 - the export center is still intentionally narrow and not yet a full publishing system.
+- the strategic watchlist now exists, but it is not a backlog and must not compete with the one active packet rule.
 
 ## Accepted boundaries right now
 
@@ -92,28 +86,32 @@ What is preserved:
 - `TARGET_STATE.md` owns the definition of finished software.
 - `DELIVERY_PLAN.md` owns stage logic and milestone sequencing.
 - `RELEASE_CRITERIA.md` owns MVP readiness gates.
+- `STRATEGIC_WATCHLIST.md` owns non-blocking but potentially high-impact watch items only.
 - `NEXT_TASK.md` owns the one active Codex packet.
 - the product remains desktop-first, local-first, and file-based for the current program stage.
 - the next implementation work must not drift into backend/cloud, media playback, heavy rendering, or platform publishing automation.
 
 ## Open items
 
-- implement the next builder after packaging + Shorts/Reels + long-video;
-- expand the product toward carousel and then further Stage B outputs;
-- harden recovery, validation, and release quality later in Stage C.
+- harden recovery, validation, and release quality now that Stage B breadth exists;
+- keep the four-builder output surface coherent as production hardening begins;
+- use the watchlist to capture high-impact signals without converting everything into immediate packets.
 
 ## Next step
 
-Execute `B-003 Carousel Script Builder Expansion`.
+Execute `C-001 Multi-Builder Output Hardening Entry`.
 
 ## What must not be lost in a new chat
 
 - the project is judged by usable output, not by more intermediate stubs;
 - the MVP path is `analysis -> semantic map -> matching -> scene/timecode chain -> rough cut -> output builder -> export package`;
 - Stage A has been proven by the first real output path;
-- Stage B is now the current program stage;
+- Stage B output breadth is now materially proven through four builders;
+- Stage C is now the current program stage;
 - the first proven builder is the packaging-ready script bundle;
 - the second proven builder is the Shorts/Reels script artifact;
 - the third proven builder is the long-video script artifact;
+- the fourth proven builder is the carousel script artifact;
 - A-002 boundary hardening is complete and Stage B can expand on a cleaner runtime boundary;
-- `B-003` is now the one active packet because carousel expansion is the strongest next move.
+- `STRATEGIC_WATCHLIST.md` exists as a strategic observation layer and is not a task backlog;
+- `C-001` is now the one active packet because production hardening is the strongest next move after Stage B breadth is proven.

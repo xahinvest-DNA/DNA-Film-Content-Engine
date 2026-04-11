@@ -13,6 +13,7 @@ It owns navigation only and must not restate live state as separate truth.
 - for finished-product definition, read `01_MASTER/TARGET_STATE.md`;
 - for delivery sequencing, read `01_MASTER/DELIVERY_PLAN.md`;
 - for release readiness, read `01_MASTER/RELEASE_CRITERIA.md`;
+- for strategic non-blocking observations, read `01_MASTER/STRATEGIC_WATCHLIST.md`;
 - for reading authority, read `01_MASTER/SSOT_MAP.md`;
 - for the active Codex packet, read `05_CODEX/NEXT_TASK.md`.
 
@@ -23,9 +24,10 @@ It owns navigation only and must not restate live state as separate truth.
 3. `01_MASTER/TARGET_STATE.md`
 4. `01_MASTER/DELIVERY_PLAN.md`
 5. `01_MASTER/RELEASE_CRITERIA.md`
-6. `01_MASTER/SSOT_MAP.md`
-7. `05_CODEX/NEXT_TASK.md` when the purpose is implementation
-8. relevant product/module/tech documents for the active packet
+6. `01_MASTER/STRATEGIC_WATCHLIST.md`
+7. `01_MASTER/SSOT_MAP.md`
+8. `05_CODEX/NEXT_TASK.md` when the purpose is implementation
+9. relevant product/module/tech documents for the active packet
 
 ## Current core documents
 
@@ -35,6 +37,7 @@ It owns navigation only and must not restate live state as separate truth.
 - `01_MASTER/TARGET_STATE.md`
 - `01_MASTER/DELIVERY_PLAN.md`
 - `01_MASTER/RELEASE_CRITERIA.md`
+- `01_MASTER/STRATEGIC_WATCHLIST.md`
 - `01_MASTER/ROADMAP.md`
 - `01_MASTER/SSOT_MAP.md`
 

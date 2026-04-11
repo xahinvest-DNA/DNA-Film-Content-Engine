@@ -194,6 +194,65 @@ class OutputBuilderTests(unittest.TestCase):
             self.assertNotEqual(long_video.long_video_script["markdown_content"], packaging.packaging_script_bundle["markdown_content"])
             self.assertNotEqual(long_video.long_video_script["markdown_content"], shorts.shorts_reels_script["markdown_content"])
 
+    def test_carousel_script_persists_after_reload(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = self._build_rough_cut_ready_project(store, "Carousel Persistence")
+
+            built = store.build_carousel_script(project.project_dir)
+
+            self.assertIsNotNone(built.carousel_script)
+            self.assertEqual(built.carousel_script["record_type"], "carousel_script")
+            self.assertTrue((built.project_dir / "records" / "output" / "carousel_script.json").exists())
+            self.assertTrue((built.project_dir / "outputs" / "carousel" / "carousel_script.md").exists())
+
+            reloaded = store.load_project(built.project_dir)
+            self.assertIsNotNone(reloaded.carousel_script)
+            self.assertEqual(reloaded.carousel_script["segment_count"], 2)
+            self.assertEqual(reloaded.carousel_script["slide_count"], 4)
+            self.assertIn("Carousel Script", reloaded.carousel_script["title"])
+
+    def test_carousel_script_uses_preferred_subset_when_present(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = self._build_rough_cut_ready_project(store, "Carousel Preferred Subset")
+            project = store.update_rough_cut_segment_subset_status(
+                project.project_dir,
+                project.rough_cut_segment_stubs[0]["record_id"],
+                "selected_for_current_rough_cut",
+            )
+
+            built = store.build_carousel_script(project.project_dir)
+            script = built.carousel_script
+
+            self.assertIsNotNone(script)
+            self.assertEqual(script["source_focus_mode"], "preferred_subset_only")
+            self.assertEqual(script["source_rough_cut_segment_ids"], [project.rough_cut_segment_stubs[0]["record_id"]])
+            self.assertIn("## Cover slide / first-slide hook", script["markdown_content"])
+            self.assertIn("### Slide 02", script["markdown_content"])
+            self.assertNotIn("Mechanism beat", script["markdown_content"])
+
+    def test_carousel_script_has_distinct_slide_structure(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = self._build_rough_cut_ready_project(store, "Carousel Identity")
+
+            packaging = store.build_packaging_script_bundle(project.project_dir)
+            shorts = store.build_shorts_reels_script(project.project_dir)
+            long_video = store.build_long_video_script(project.project_dir)
+            carousel = store.build_carousel_script(project.project_dir)
+
+            self.assertIn("## Editorial summary", packaging.packaging_script_bundle["markdown_content"])
+            self.assertIn("## Hook / Opening angle", shorts.shorts_reels_script["markdown_content"])
+            self.assertIn("## Opening setup", long_video.long_video_script["markdown_content"])
+            self.assertIn("## Cover slide / first-slide hook", carousel.carousel_script["markdown_content"])
+            self.assertIn("## Slide-by-slide progression", carousel.carousel_script["markdown_content"])
+            self.assertIn("## Reading continuity", carousel.carousel_script["markdown_content"])
+            self.assertIn("## Final slide / CTA", carousel.carousel_script["markdown_content"])
+            self.assertNotEqual(carousel.carousel_script["markdown_content"], packaging.packaging_script_bundle["markdown_content"])
+            self.assertNotEqual(carousel.carousel_script["markdown_content"], shorts.shorts_reels_script["markdown_content"])
+            self.assertNotEqual(carousel.carousel_script["markdown_content"], long_video.long_video_script["markdown_content"])
+
     def test_app_can_build_and_show_packaging_script_bundle(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             store = ProjectSliceStore(Path(temp_dir))
@@ -263,6 +322,30 @@ class OutputBuilderTests(unittest.TestCase):
                 self.assertIn("Long-video script:", app.output_builder_summary_text.get())
                 self.assertIn("Long-video path: outputs/long_video/long_video_script.md", app.output_builder_path_text.get())
                 self.assertIn("Long Video Script", app.output_builder_handoff.get("1.0", "end"))
+            finally:
+                root.destroy()
+
+    def test_app_can_build_and_show_carousel_script(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = self._build_rough_cut_ready_project(store, "Carousel UI Flow")
+
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = store
+                app._load_project_into_ui(project)
+                app._switch_view("Output Tracks")
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    app.build_carousel_script()
+
+                self.assertIsNotNone(app.project.carousel_script)
+                self.assertIn("Carousel script:", app.output_builder_summary_text.get())
+                self.assertIn("Carousel path: outputs/carousel/carousel_script.md", app.output_builder_path_text.get())
+                self.assertIn("Carousel Script", app.output_builder_handoff.get("1.0", "end"))
             finally:
                 root.destroy()
 

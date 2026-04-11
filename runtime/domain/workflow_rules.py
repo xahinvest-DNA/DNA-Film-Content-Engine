@@ -10,6 +10,7 @@ from runtime.domain.semantic_rules import (
     completeness_readiness_hint,
     normalize_accepted_reference,
     normalize_accepted_scene_reference_stub,
+    normalize_carousel_script,
     normalize_long_video_script,
     normalize_packaging_script_bundle,
     normalize_rough_cut_segment_stubs,
@@ -158,6 +159,7 @@ def reconcile_packaging_script_bundle(
         packaging_script_bundle=None,
         shorts_reels_script=None,
         long_video_script=None,
+        carousel_script=None,
     )
     current_focus_mode, current_segments = current_output_source_segments(current_project)
     current_segment_ids = [entry["record_id"] for entry in current_segments]
@@ -201,6 +203,7 @@ def reconcile_shorts_reels_script(
         packaging_script_bundle=None,
         shorts_reels_script=None,
         long_video_script=None,
+        carousel_script=None,
     )
     current_focus_mode, current_segments = current_output_source_segments(current_project)
     current_segment_ids = [entry["record_id"] for entry in current_segments]
@@ -245,6 +248,7 @@ def reconcile_long_video_script(
         packaging_script_bundle=None,
         shorts_reels_script=None,
         long_video_script=None,
+        carousel_script=None,
     )
     current_focus_mode, current_segments = current_output_source_segments(current_project)
     current_segment_ids = [entry["record_id"] for entry in current_segments]
@@ -256,6 +260,51 @@ def reconcile_long_video_script(
     return normalized_script
 
 
+def reconcile_carousel_script(
+    carousel_script: dict | None,
+    rough_cut_segment_stubs: list[dict],
+    accepted_reference: dict | None,
+    accepted_scene_reference_stub: dict | None,
+    timecode_range_stub: dict | None,
+) -> dict | None:
+    normalized_script = normalize_carousel_script(carousel_script)
+    if normalized_script is None:
+        return None
+    if accepted_reference is None or accepted_scene_reference_stub is None or timecode_range_stub is None:
+        return None
+    if normalized_script.get("source_candidate_stub_id", "").strip() != accepted_reference.get("source_candidate_stub_id", "").strip():
+        return None
+
+    current_project = ProjectSlice(
+        project_dir=Path(),
+        manifest={},
+        project_record={},
+        intake_record={},
+        analysis_source_record=None,
+        semantic_review_record={},
+        semantic_blocks=[],
+        matching_prep_assets=[],
+        matching_candidate_stubs=[],
+        accepted_reference=accepted_reference,
+        accepted_scene_reference_stub=accepted_scene_reference_stub,
+        timecode_range_stub=timecode_range_stub,
+        rough_cut_segment_stubs=rough_cut_segment_stubs,
+        packaging_script_bundle=None,
+        shorts_reels_script=None,
+        long_video_script=None,
+        carousel_script=None,
+    )
+    current_focus_mode, current_segments = current_output_source_segments(current_project)
+    current_segment_ids = [entry["record_id"] for entry in current_segments]
+    if normalized_script.get("source_focus_mode", "") != current_focus_mode:
+        return None
+    if normalized_script.get("source_rough_cut_segment_ids", []) != current_segment_ids:
+        return None
+    normalized_script["segment_count"] = len(normalized_script.get("segments", []))
+    normalized_script["slide_count"] = normalized_script.get("slide_count", normalized_script["segment_count"] + 2)
+    return normalized_script
+
+
 def status_payload(
     project_record: dict,
     intake_record: dict,
@@ -264,6 +313,7 @@ def status_payload(
     packaging_script_bundle: dict | None = None,
     shorts_reels_script: dict | None = None,
     long_video_script: dict | None = None,
+    carousel_script: dict | None = None,
 ) -> dict:
     completeness_label, issue_count, blocks_with_issues = semantic_completeness(intake_record, semantic_blocks)
     return {
@@ -284,6 +334,7 @@ def status_payload(
         "packaging_script_bundle_ready": packaging_script_bundle is not None,
         "shorts_reels_script_ready": shorts_reels_script is not None,
         "long_video_script_ready": long_video_script is not None,
+        "carousel_script_ready": carousel_script is not None,
         "updated_at": project_record["updated_at"],
     }
 

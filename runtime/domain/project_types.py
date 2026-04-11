@@ -22,3 +22,4 @@ class ProjectSlice:
     packaging_script_bundle: dict | None
     shorts_reels_script: dict | None
     long_video_script: dict | None
+    carousel_script: dict | None
