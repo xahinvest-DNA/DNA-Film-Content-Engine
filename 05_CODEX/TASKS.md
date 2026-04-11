@@ -1,16 +1,22 @@
 # Codex Tasks
 
 Last updated: 2026-04-10
-Current focus: manager review and next bounded packet selection after F-037
+Current focus: manager review and next bounded packet selection after F-038
 
 ## Working rule
 Tasks should be bounded, product-visible, and small enough to preserve continuity without turning the repository into micro-slice overload.
 
 ## Active task
 
-- No new implementation packet is active until ChatGPT selects the next bounded step after reviewing the completed `F-037` handoff.
+- No new implementation packet is active until ChatGPT selects the next bounded step after reviewing the completed `F-038` handoff.
 
 ## Completed tasks
+
+### F-038
+- Status: completed
+- Module: rough cut preferred-only focus slice
+- Goal: add one bounded local-first focus mode inside the `Rough Cut` lane so the runtime can switch between the full saved rough-cut segment set and the current preferred rough-cut subset only, without changing persistence semantics and without drifting into playback, trimming, timeline, render/export, backend, or workflow buildout.
+- Outcome: added two explicit rough-cut focus modes in the real `Rough Cut` lane, switched the visible rough-cut segment list and dominant handoff text between all-saved and preferred-only views, kept preferred-only empty state honest, kept selected-segment behavior coherent across focus changes, preserved blocked-but-readable reopen honesty in both modes, verified app-level focus, empty-state, selection, and reopen behavior through local tests, and kept the packet intentionally narrow.
 
 ### F-037
 - Status: completed

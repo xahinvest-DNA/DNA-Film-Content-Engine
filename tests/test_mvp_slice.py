@@ -3366,6 +3366,116 @@ class DNAFilmAppTests(unittest.TestCase):
             finally:
                 root.destroy()
 
+    def test_app_rough_cut_can_switch_to_preferred_only_focus(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    self._build_timecode_ready_app_project(app, "UI Rough Cut Preferred Focus Map")
+                    app._switch_view("Rough Cut")
+                    app.rough_cut_segment_label_var.set("Opening segment")
+                    app.save_rough_cut_segment_stub()
+                    app.rough_cut_segment_label_var.set("Reaction segment")
+                    app.save_rough_cut_segment_stub()
+                    app._select_rough_cut_segment_by_id(app.project.rough_cut_segment_stubs[1]["record_id"])
+                    app.include_selected_rough_cut_segment()
+
+                app.rough_cut_focus_var.set("show_preferred_subset_only")
+                app.on_rough_cut_focus_changed()
+                handoff = app.rough_cut_handoff.get("1.0", "end").strip()
+                self.assertIn("Rough-cut focus: preferred subset only | visible segments: 1.", handoff)
+                self.assertIn("- 02. Reaction segment | selected", handoff)
+                self.assertNotIn("- 01. Opening segment", handoff)
+            finally:
+                root.destroy()
+
+    def test_app_rough_cut_can_switch_back_to_all_saved_focus(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    self._build_timecode_ready_app_project(app, "UI Rough Cut Focus Return Map")
+                    app._switch_view("Rough Cut")
+                    app.rough_cut_segment_label_var.set("Opening segment")
+                    app.save_rough_cut_segment_stub()
+                    app.rough_cut_segment_label_var.set("Reaction segment")
+                    app.save_rough_cut_segment_stub()
+                    app._select_rough_cut_segment_by_id(app.project.rough_cut_segment_stubs[1]["record_id"])
+                    app.include_selected_rough_cut_segment()
+
+                app.rough_cut_focus_var.set("show_preferred_subset_only")
+                app.on_rough_cut_focus_changed()
+                app.rough_cut_focus_var.set("show_all_saved_segments")
+                app.on_rough_cut_focus_changed()
+                handoff = app.rough_cut_handoff.get("1.0", "end").strip()
+                self.assertIn("Rough-cut focus: all saved segments | visible segments: 2.", handoff)
+                self.assertIn("- 01. Opening segment", handoff)
+                self.assertIn("- 02. Reaction segment | selected", handoff)
+            finally:
+                root.destroy()
+
+    def test_app_rough_cut_preferred_only_focus_empty_state_is_honest(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    self._build_timecode_ready_app_project(app, "UI Rough Cut Preferred Empty Map")
+                    app._switch_view("Rough Cut")
+                    app.rough_cut_segment_label_var.set("Opening segment")
+                    app.save_rough_cut_segment_stub()
+
+                app.rough_cut_focus_var.set("show_preferred_subset_only")
+                app.on_rough_cut_focus_changed()
+                handoff = app.rough_cut_handoff.get("1.0", "end").strip()
+                self.assertIn("Rough-cut focus: preferred subset only | visible segments: 0.", handoff)
+                self.assertIn("- none in current focus (preferred subset only)", handoff)
+            finally:
+                root.destroy()
+
+    def test_app_rough_cut_selected_segment_remains_coherent_across_focus_changes(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    self._build_timecode_ready_app_project(app, "UI Rough Cut Focus Selection Map")
+                    app._switch_view("Rough Cut")
+                    app.rough_cut_segment_label_var.set("Opening segment")
+                    app.save_rough_cut_segment_stub()
+                    app.rough_cut_segment_label_var.set("Reaction segment")
+                    app.save_rough_cut_segment_stub()
+                    app._select_rough_cut_segment_by_id(app.project.rough_cut_segment_stubs[1]["record_id"])
+                    app.include_selected_rough_cut_segment()
+
+                preferred_id = app.project.rough_cut_segment_stubs[1]["record_id"]
+                app.rough_cut_focus_var.set("show_preferred_subset_only")
+                app.on_rough_cut_focus_changed()
+                self.assertEqual(app.rough_cut_segment_options.get(app.rough_cut_segment_var.get(), ""), preferred_id)
+                app.rough_cut_focus_var.set("show_all_saved_segments")
+                app.on_rough_cut_focus_changed()
+                self.assertEqual(app.rough_cut_segment_options.get(app.rough_cut_segment_var.get(), ""), preferred_id)
+            finally:
+                root.destroy()
+
     def test_app_selected_rough_cut_segment_remains_coherent_after_reload(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = tk.Tk()
@@ -3645,6 +3755,40 @@ class DNAFilmAppTests(unittest.TestCase):
                 self.assertIn("Rough Cut remains blocked", handoff)
                 self.assertIn("- 01. Reaction segment | selected", handoff)
                 self.assertNotIn("Opening segment", handoff)
+            finally:
+                root.destroy()
+
+    def test_app_rough_cut_preferred_only_focus_remains_honest_when_reopened(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    self._build_timecode_ready_app_project(app, "UI Rough Cut Preferred Focus Reopen Map")
+                    app._switch_view("Rough Cut")
+                    app.rough_cut_segment_label_var.set("Opening segment")
+                    app.save_rough_cut_segment_stub()
+                    app.rough_cut_segment_label_var.set("Reaction segment")
+                    app.save_rough_cut_segment_stub()
+                    app._select_rough_cut_segment_by_id(app.project.rough_cut_segment_stubs[1]["record_id"])
+                    app.include_selected_rough_cut_segment()
+                    app.rough_cut_focus_var.set("show_preferred_subset_only")
+                    app.on_rough_cut_focus_changed()
+                    target_block_id = app.project.semantic_blocks[1]["record_id"]
+                    app._select_block_by_id(target_block_id)
+                    app.reorder_selected_block("up")
+
+                app._switch_view("Rough Cut")
+                handoff = app.rough_cut_handoff.get("1.0", "end").strip()
+                self.assertEqual(app.rough_cut_text.get(), "Rough cut readiness: blocked | rough-cut handoff remains visible but upstream semantic approval was reopened")
+                self.assertIn("Rough Cut remains blocked", handoff)
+                self.assertIn("Rough-cut focus: preferred subset only | visible segments: 1.", handoff)
+                self.assertIn("- 02. Reaction segment | selected", handoff)
+                self.assertNotIn("- 01. Opening segment", handoff)
             finally:
                 root.destroy()
 

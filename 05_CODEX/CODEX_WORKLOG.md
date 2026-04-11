@@ -1,3 +1,22 @@
+## 2026-04-11 - F-038 completed and Rough Cut gained preferred-only editorial focus
+
+### Completed
+- completed the rough cut preferred-only focus slice as one bounded follow-up to the first complete rough-cut structural control loop;
+- added two explicit focus modes inside the real `Rough Cut` lane: one for all saved rough-cut segment stubs and one for the current preferred rough-cut subset only;
+- switched the visible rough-cut segment list and dominant handoff section according to the active focus mode without changing persistence semantics or subset membership semantics;
+- kept selected-segment behavior coherent while switching focus modes and surfaced an honest empty state when preferred-only mode has no preferred segments to show;
+- preserved blocked-but-readable reopen honesty in both rough-cut focus modes;
+- verified app-level focus switching, preferred-only visibility, empty-state readability, selected-segment coherence, and reopen behavior through local tests;
+- synchronized the repository state layer after real implementation progress.
+
+### Repository effect
+- the runtime now supports both broad saved-structure reading and preferred-only editorial focus inside the existing rough-cut lane;
+- the repository gained one clearer editorial working mode without opening playback, trimming, mini-timeline, render/export, backend, or workflow-engine semantics;
+- the next bounded packet should now be selected by manager review against current repository capability rather than assumed by inertia.
+
+### Recommended next step
+ChatGPT should select the next strongest bounded packet after `F-038`, based on the fact that the runtime now supports both all-saved and preferred-only editorial rough-cut focus modes.
+
 ## 2026-04-11 - F-037 completed and Rough Cut gained bounded segment removal
 
 ### Completed

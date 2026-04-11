@@ -35,6 +35,7 @@ FOCUS_TO_SUITABILITY_KEY = {
     "Packaging focus": "packaging",
 }
 CANDIDATE_STATUS_FOCUS_OPTIONS = ("all", "tentative", "selected", "rejected")
+ROUGH_CUT_FOCUS_OPTIONS = ("show_all_saved_segments", "show_preferred_subset_only")
 
 
 class DNAFilmApp:
@@ -104,6 +105,7 @@ class DNAFilmApp:
         self.candidate_status_var = tk.StringVar(value=ALLOWED_CANDIDATE_REVIEW_STATUSES[0])
         self.candidate_rationale_var = tk.StringVar()
         self.candidate_focus_var = tk.StringVar(value=CANDIDATE_STATUS_FOCUS_OPTIONS[0])
+        self.rough_cut_focus_var = tk.StringVar(value=ROUGH_CUT_FOCUS_OPTIONS[0])
         self.scene_reference_label_var = tk.StringVar()
         self.timecode_start_var = tk.StringVar()
         self.timecode_end_var = tk.StringVar()
@@ -457,11 +459,27 @@ class DNAFilmApp:
         list_frame = ttk.LabelFrame(frame, text="Saved rough-cut segment set", padding=8)
         list_frame.grid(row=5, column=0, sticky="ew", pady=(0, 8))
         list_frame.columnconfigure(0, weight=1)
+        focus_controls = ttk.Frame(list_frame)
+        focus_controls.grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 8))
+        ttk.Radiobutton(
+            focus_controls,
+            text="Show All Saved Segments",
+            value=ROUGH_CUT_FOCUS_OPTIONS[0],
+            variable=self.rough_cut_focus_var,
+            command=self.on_rough_cut_focus_changed,
+        ).pack(side="left")
+        ttk.Radiobutton(
+            focus_controls,
+            text="Show Preferred Subset Only",
+            value=ROUGH_CUT_FOCUS_OPTIONS[1],
+            variable=self.rough_cut_focus_var,
+            command=self.on_rough_cut_focus_changed,
+        ).pack(side="left", padx=(12, 0))
         self.rough_cut_segment_combo = ttk.Combobox(list_frame, textvariable=self.rough_cut_segment_var, state="readonly")
-        self.rough_cut_segment_combo.grid(row=0, column=0, sticky="ew")
+        self.rough_cut_segment_combo.grid(row=1, column=0, sticky="ew")
         self.rough_cut_segment_combo.bind("<<ComboboxSelected>>", self.on_rough_cut_segment_selected)
         controls = ttk.Frame(list_frame)
-        controls.grid(row=0, column=1, sticky="w", padx=(12, 0))
+        controls.grid(row=1, column=1, sticky="w", padx=(12, 0))
         self.rough_cut_move_up_button = ttk.Button(controls, text="Move Up", command=lambda: self.reorder_selected_rough_cut_segment("up"))
         self.rough_cut_move_up_button.pack(side="left")
         self.rough_cut_move_down_button = ttk.Button(controls, text="Move Down", command=lambda: self.reorder_selected_rough_cut_segment("down"))
@@ -867,6 +885,12 @@ class DNAFilmApp:
     def on_rough_cut_segment_selected(self, _event: object | None = None) -> None:
         if self.project is None:
             self.rough_cut_segment_var.set("")
+            return
+        self._refresh_rough_cut_controls(self.project)
+        self._update_rough_cut_surface(self.project)
+
+    def on_rough_cut_focus_changed(self) -> None:
+        if self.project is None:
             return
         self._refresh_rough_cut_controls(self.project)
         self._update_rough_cut_surface(self.project)
@@ -1378,15 +1402,16 @@ class DNAFilmApp:
             self.remove_rough_cut_segment_button.configure(state="disabled")
             return
         current_display = self.rough_cut_segment_var.get()
+        visible_entries = self._visible_rough_cut_segments(project)
         self.rough_cut_segment_options = {
             self._rough_cut_segment_option_label(entry): entry["record_id"]
-            for entry in project.rough_cut_segment_stubs
+            for entry in visible_entries
         }
         values = tuple(self.rough_cut_segment_options.keys())
         self.rough_cut_segment_combo.configure(values=values)
         selected_display = current_display if current_display in self.rough_cut_segment_options else (values[0] if values else "")
         self.rough_cut_segment_var.set(selected_display)
-        selected_entry = next((entry for entry in project.rough_cut_segment_stubs if self._rough_cut_segment_option_label(entry) == selected_display), None)
+        selected_entry = next((entry for entry in visible_entries if self._rough_cut_segment_option_label(entry) == selected_display), None)
         if selected_entry is not None:
             self.rough_cut_segment_label_var.set(selected_entry.get("segment_label", ""))
         elif not self.rough_cut_segment_label_var.get().strip():
@@ -1409,6 +1434,18 @@ class DNAFilmApp:
         self.remove_rough_cut_segment_button.configure(
             state="normal" if subset_enabled else "disabled"
         )
+
+    def _visible_rough_cut_segments(self, project: ProjectSlice) -> list[dict]:
+        focus = self.rough_cut_focus_var.get() if self.rough_cut_focus_var.get() in ROUGH_CUT_FOCUS_OPTIONS else ROUGH_CUT_FOCUS_OPTIONS[0]
+        if focus == "show_preferred_subset_only":
+            return self._preferred_rough_cut_segments(project)
+        return list(project.rough_cut_segment_stubs)
+
+    def _rough_cut_focus_label(self) -> str:
+        focus = self.rough_cut_focus_var.get() if self.rough_cut_focus_var.get() in ROUGH_CUT_FOCUS_OPTIONS else ROUGH_CUT_FOCUS_OPTIONS[0]
+        if focus == "show_preferred_subset_only":
+            return "preferred subset only"
+        return "all saved segments"
 
     def _rough_cut_segment_option_label(self, entry: dict) -> str:
         return f"{entry.get('sequence', 0):02d}. {entry.get('segment_label', 'Untitled segment')} [{entry.get('record_id', 'unknown')}]"
@@ -1610,11 +1647,14 @@ class DNAFilmApp:
         ]
 
     def _rough_cut_segment_stub_lines(self, project: ProjectSlice) -> list[str]:
+        visible_entries = self._visible_rough_cut_segments(project)
         if not project.rough_cut_segment_stubs:
             return ["- none saved yet", ""]
+        if not visible_entries:
+            return [f"- none in current focus ({self._rough_cut_focus_label()})", ""]
         selected_segment_id = self.rough_cut_segment_options.get(self.rough_cut_segment_var.get(), "")
         lines: list[str] = [""]
-        for entry in project.rough_cut_segment_stubs:
+        for entry in visible_entries:
             selected_marker = " | selected" if entry.get("record_id") == selected_segment_id else ""
             subset_marker = " | in current preferred rough cut" if entry.get("subset_status", "saved_only") == "selected_for_current_rough_cut" else ""
             lines.extend([
@@ -1887,6 +1927,8 @@ class DNAFilmApp:
         timecode_range_stub_summary = self._timecode_range_stub_summary(project)
         rough_cut_segment_stub_summary = self._rough_cut_segment_stub_summary(project)
         rough_cut_preferred_subset_summary = self._rough_cut_preferred_subset_summary(project)
+        rough_cut_focus_label = self._rough_cut_focus_label()
+        visible_segment_count = len(self._visible_rough_cut_segments(project))
         self.rough_cut_segment_summary_text.set(rough_cut_segment_stub_summary)
         self._set_rough_cut_enabled(gate_state == "ready")
         if gate_state != "ready":
@@ -1899,10 +1941,11 @@ class DNAFilmApp:
                 timecode_range_stub_summary,
                 rough_cut_segment_stub_summary,
                 rough_cut_preferred_subset_summary,
+                f"Rough-cut focus: {rough_cut_focus_label} | visible segments: {visible_segment_count}.",
                 "",
                 "Current preferred rough-cut subset",
                 *self._preferred_rough_cut_segment_lines(project),
-                "Current rough-cut segment set",
+                f"Current rough-cut segment set | focus: {rough_cut_focus_label}",
                 *self._rough_cut_segment_stub_lines(project),
                 "Current timecode range stub",
                 *self._timecode_range_stub_lines(project),
@@ -1920,10 +1963,11 @@ class DNAFilmApp:
                 timecode_range_stub_summary,
                 rough_cut_segment_stub_summary,
                 rough_cut_preferred_subset_summary,
+                f"Rough-cut focus: {rough_cut_focus_label} | visible segments: {visible_segment_count}.",
                 "",
                 "Current preferred rough-cut subset",
                 *self._preferred_rough_cut_segment_lines(project),
-                "Current rough-cut segment set",
+                f"Current rough-cut segment set | focus: {rough_cut_focus_label}",
                 *self._rough_cut_segment_stub_lines(project),
                 "Current timecode range stub",
                 *self._timecode_range_stub_lines(project),
