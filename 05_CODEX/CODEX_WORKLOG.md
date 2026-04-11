@@ -1,3 +1,22 @@
+## 2026-04-11 - F-035 completed and Rough Cut gained its first ordered rough-cut segment set
+
+### Completed
+- completed the first rough cut segment list slice as one bounded follow-up to the singular rough-cut segment stub boundary;
+- replaced singular rough-cut stub persistence with one ordered local-first `rough_cut_segment_stub` list and allowed more than one assembly-facing segment stub to be saved into the current rough-cut set;
+- added bounded move-up and move-down behavior, kept one selected rough-cut segment coherent in the runtime surface, and preserved list order across reload;
+- updated the real `Rough Cut` lane and handoff text to surface the current ordered rough-cut set rather than one singular current stub;
+- reconciled the whole saved rough-cut set against upstream accepted-reference, accepted-scene-reference, and timecode invalidation so stale assembly-facing structure does not persist;
+- verified store-level list creation, reload, reorder, and invalidation behavior plus app-level ordered list, selected-segment, reorder-control, and reopen readability behavior through local tests;
+- synchronized the repository state layer after real implementation progress.
+
+### Repository effect
+- the runtime now holds the first bounded rough-cut structure rather than only one singular assembly-facing artifact;
+- the repository can carry one ordered current rough-cut set forward while still staying explicitly provisional, local-first, pre-render, and outside real editing or workflow-engine semantics;
+- the next bounded packet should now be selected by manager review against current repository capability rather than assumed by inertia.
+
+### Recommended next step
+ChatGPT should select the next strongest bounded packet after `F-035`, based on the fact that the runtime now supports one ordered rough-cut segment set with bounded reorder behavior.
+
 ## 2026-04-10 - F-034 completed and the runtime gained its first assembly-facing rough-cut segment stub
 
 ### Completed

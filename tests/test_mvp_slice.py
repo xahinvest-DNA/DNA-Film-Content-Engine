@@ -1191,34 +1191,76 @@ class ProjectSliceStoreTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "blocked until one current timecode range stub exists"):
                 store.save_rough_cut_segment_stub(project.project_dir, "Opening segment")
 
-    def test_rough_cut_segment_stub_can_be_saved_and_persist_after_reload(self) -> None:
+    def test_first_rough_cut_segment_stub_can_be_saved_into_list(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             store = ProjectSliceStore(Path(temp_dir))
             project = self._build_timecode_ready_project(store, "Rough Cut Save Map")
 
             saved = store.save_rough_cut_segment_stub(project.project_dir, "Opening segment")
 
-            self.assertIsNotNone(saved.rough_cut_segment_stub)
-            self.assertEqual(saved.rough_cut_segment_stub["segment_label"], "Opening segment")
-            self.assertEqual(saved.rough_cut_segment_stub["start_timecode"], "00:00:10")
-            self.assertTrue((saved.project_dir / "records" / "rough_cut" / "rough_cut_segment_stub.json").exists())
+            self.assertEqual(len(saved.rough_cut_segment_stubs), 1)
+            self.assertEqual(saved.rough_cut_segment_stubs[0]["segment_label"], "Opening segment")
+            self.assertEqual(saved.rough_cut_segment_stubs[0]["start_timecode"], "00:00:10")
+            self.assertTrue((saved.project_dir / "records" / "rough_cut" / "rough_cut_segments.json").exists())
 
             reloaded = store.load_project(saved.project_dir)
-            self.assertIsNotNone(reloaded.rough_cut_segment_stub)
-            self.assertEqual(reloaded.rough_cut_segment_stub["record_type"], "rough_cut_segment_stub")
-            self.assertEqual(reloaded.rough_cut_segment_stub["source_timecode_range_stub_id"], "timecode-range-current")
+            self.assertEqual(len(reloaded.rough_cut_segment_stubs), 1)
+            self.assertEqual(reloaded.rough_cut_segment_stubs[0]["record_type"], "rough_cut_segment_stub")
+            self.assertEqual(reloaded.rough_cut_segment_stubs[0]["source_timecode_range_stub_id"], "timecode-range-current")
 
-    def test_newer_rough_cut_segment_stub_replaces_prior_one(self) -> None:
+    def test_second_rough_cut_segment_stub_can_be_saved_into_list(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             store = ProjectSliceStore(Path(temp_dir))
             project = self._build_timecode_ready_project(store, "Rough Cut Replacement Map")
             project = store.save_rough_cut_segment_stub(project.project_dir, "Opening segment")
 
-            replaced = store.save_rough_cut_segment_stub(project.project_dir, "Tighter opening segment")
+            saved = store.save_rough_cut_segment_stub(project.project_dir, "Tighter opening segment")
 
-            self.assertIsNotNone(replaced.rough_cut_segment_stub)
-            self.assertEqual(replaced.rough_cut_segment_stub["segment_label"], "Tighter opening segment")
-            self.assertEqual(replaced.rough_cut_segment_stub["record_id"], "rough-cut-segment-current")
+            self.assertEqual(len(saved.rough_cut_segment_stubs), 2)
+            self.assertEqual(saved.rough_cut_segment_stubs[0]["segment_label"], "Opening segment")
+            self.assertEqual(saved.rough_cut_segment_stubs[1]["segment_label"], "Tighter opening segment")
+            self.assertEqual(saved.rough_cut_segment_stubs[0]["sequence"], 1)
+            self.assertEqual(saved.rough_cut_segment_stubs[1]["sequence"], 2)
+
+    def test_rough_cut_segment_stub_list_survives_reload(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = self._build_timecode_ready_project(store, "Rough Cut Reload Map")
+            project = store.save_rough_cut_segment_stub(project.project_dir, "Opening segment")
+            project = store.save_rough_cut_segment_stub(project.project_dir, "Reaction segment")
+
+            reloaded = store.load_project(project.project_dir)
+
+            self.assertEqual([entry["segment_label"] for entry in reloaded.rough_cut_segment_stubs], ["Opening segment", "Reaction segment"])
+            self.assertEqual([entry["sequence"] for entry in reloaded.rough_cut_segment_stubs], [1, 2])
+
+    def test_rough_cut_segment_reorder_up_persists(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = self._build_timecode_ready_project(store, "Rough Cut Reorder Up Map")
+            project = store.save_rough_cut_segment_stub(project.project_dir, "Opening segment")
+            project = store.save_rough_cut_segment_stub(project.project_dir, "Reaction segment")
+
+            moved = store.reorder_rough_cut_segment_stub(project.project_dir, project.rough_cut_segment_stubs[1]["record_id"], "up")
+
+            self.assertEqual([entry["segment_label"] for entry in moved.rough_cut_segment_stubs], ["Reaction segment", "Opening segment"])
+            self.assertEqual([entry["sequence"] for entry in moved.rough_cut_segment_stubs], [1, 2])
+            reloaded = store.load_project(project.project_dir)
+            self.assertEqual([entry["segment_label"] for entry in reloaded.rough_cut_segment_stubs], ["Reaction segment", "Opening segment"])
+
+    def test_rough_cut_segment_reorder_down_persists(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = self._build_timecode_ready_project(store, "Rough Cut Reorder Down Map")
+            project = store.save_rough_cut_segment_stub(project.project_dir, "Opening segment")
+            project = store.save_rough_cut_segment_stub(project.project_dir, "Reaction segment")
+            project = store.reorder_rough_cut_segment_stub(project.project_dir, project.rough_cut_segment_stubs[1]["record_id"], "up")
+
+            moved = store.reorder_rough_cut_segment_stub(project.project_dir, project.rough_cut_segment_stubs[0]["record_id"], "down")
+
+            self.assertEqual([entry["segment_label"] for entry in moved.rough_cut_segment_stubs], ["Opening segment", "Reaction segment"])
+            reloaded = store.load_project(project.project_dir)
+            self.assertEqual([entry["segment_label"] for entry in reloaded.rough_cut_segment_stubs], ["Opening segment", "Reaction segment"])
 
     def test_rough_cut_segment_stub_disappears_when_accepted_reference_becomes_unavailable(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -1229,9 +1271,9 @@ class ProjectSliceStoreTests(unittest.TestCase):
             dropped = store.update_matching_candidate_stub_status(project.project_dir, project.matching_candidate_stubs[0]["record_id"], "tentative")
 
             self.assertIsNone(dropped.accepted_reference)
-            self.assertIsNone(dropped.rough_cut_segment_stub)
+            self.assertEqual(dropped.rough_cut_segment_stubs, [])
             reloaded = store.load_project(dropped.project_dir)
-            self.assertIsNone(reloaded.rough_cut_segment_stub)
+            self.assertEqual(reloaded.rough_cut_segment_stubs, [])
 
     def test_rough_cut_segment_stub_disappears_when_accepted_scene_reference_stub_becomes_unavailable(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -1258,7 +1300,7 @@ class ProjectSliceStoreTests(unittest.TestCase):
             self.assertIsNotNone(replaced.accepted_reference)
             self.assertIsNone(replaced.accepted_scene_reference_stub)
             self.assertIsNone(replaced.timecode_range_stub)
-            self.assertIsNone(replaced.rough_cut_segment_stub)
+            self.assertEqual(replaced.rough_cut_segment_stubs, [])
 
     def test_rough_cut_segment_stub_disappears_when_timecode_range_stub_becomes_unavailable(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -1280,14 +1322,14 @@ class ProjectSliceStoreTests(unittest.TestCase):
                 project.accepted_reference,
                 project.accepted_scene_reference_stub,
                 None,
-                project.rough_cut_segment_stub,
+                project.rough_cut_segment_stubs,
             )
             dropped = store.load_project(project.project_dir)
 
             self.assertIsNotNone(dropped.accepted_reference)
             self.assertIsNotNone(dropped.accepted_scene_reference_stub)
             self.assertIsNone(dropped.timecode_range_stub)
-            self.assertIsNone(dropped.rough_cut_segment_stub)
+            self.assertEqual(dropped.rough_cut_segment_stubs, [])
 
     def test_analysis_text_must_be_meaningful(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -3108,7 +3150,7 @@ class DNAFilmAppTests(unittest.TestCase):
                 handoff = app.rough_cut_handoff.get("1.0", "end").strip()
                 self.assertEqual(app.current_view.get(), "Rough Cut")
                 self.assertIn("Rough Cut remains blocked", handoff)
-                self.assertIn("Rough-cut segment stub: none saved yet.", app.rough_cut_segment_summary_text.get())
+                self.assertIn("Rough-cut segment set: none saved yet.", app.rough_cut_segment_summary_text.get())
             finally:
                 root.destroy()
 
@@ -3132,7 +3174,7 @@ class DNAFilmAppTests(unittest.TestCase):
             finally:
                 root.destroy()
 
-    def test_app_rough_cut_shows_saved_segment_stub(self) -> None:
+    def test_app_rough_cut_shows_ordered_saved_segment_list(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = tk.Tk()
             root.withdraw()
@@ -3146,16 +3188,19 @@ class DNAFilmAppTests(unittest.TestCase):
                     app._switch_view("Rough Cut")
                     app.rough_cut_segment_label_var.set("Opening segment")
                     app.save_rough_cut_segment_stub()
+                    app.rough_cut_segment_label_var.set("Reaction segment")
+                    app.save_rough_cut_segment_stub()
 
                 handoff = app.rough_cut_handoff.get("1.0", "end").strip()
-                self.assertIn("current assembly-facing artifact exists", app.rough_cut_segment_summary_text.get())
-                self.assertIn("Current rough-cut segment stub", handoff)
-                self.assertIn("Segment label: Opening segment", handoff)
+                self.assertIn("2 assembly-facing segment stub(s) saved in current order", app.rough_cut_segment_summary_text.get())
+                self.assertIn("Current rough-cut segment set", handoff)
+                self.assertIn("- 01. Opening segment", handoff)
+                self.assertIn("- 02. Reaction segment", handoff)
                 self.assertIn("not a real cut or render-ready output", handoff)
             finally:
                 root.destroy()
 
-    def test_app_rough_cut_segment_stub_survives_reload(self) -> None:
+    def test_app_selected_rough_cut_segment_remains_coherent_after_reload(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = tk.Tk()
             root.withdraw()
@@ -3169,16 +3214,51 @@ class DNAFilmAppTests(unittest.TestCase):
                     app._switch_view("Rough Cut")
                     app.rough_cut_segment_label_var.set("Opening segment")
                     app.save_rough_cut_segment_stub()
+                    app.rough_cut_segment_label_var.set("Reaction segment")
+                    app.save_rough_cut_segment_stub()
+                    app._select_rough_cut_segment_by_id(app.project.rough_cut_segment_stubs[1]["record_id"])
 
                 reloaded = app.store.load_project(app.project.project_dir)
                 app._load_project_into_ui(reloaded)
                 app._switch_view("Rough Cut")
                 handoff = app.rough_cut_handoff.get("1.0", "end").strip()
-                self.assertIn("Segment label: Opening segment", handoff)
+                self.assertIn("- 01. Opening segment", handoff)
+                self.assertIn("- 02. Reaction segment | selected", handoff)
             finally:
                 root.destroy()
 
-    def test_app_rough_cut_segment_stub_remains_readable_when_semantic_lane_reopens(self) -> None:
+    def test_app_rough_cut_reorder_controls_remain_coherent(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    self._build_timecode_ready_app_project(app, "UI Rough Cut Reorder Map")
+                    app._switch_view("Rough Cut")
+                    app.rough_cut_segment_label_var.set("Opening segment")
+                    app.save_rough_cut_segment_stub()
+                    app.rough_cut_segment_label_var.set("Reaction segment")
+                    app.save_rough_cut_segment_stub()
+
+                app._select_rough_cut_segment_by_id(app.project.rough_cut_segment_stubs[1]["record_id"])
+                self.assertEqual(str(app.rough_cut_move_up_button["state"]), "normal")
+                self.assertEqual(str(app.rough_cut_move_down_button["state"]), "disabled")
+                with patch("runtime.app.messagebox.showerror"), patch("runtime.app.messagebox.showinfo"):
+                    app.reorder_selected_rough_cut_segment("up")
+
+                handoff = app.rough_cut_handoff.get("1.0", "end").strip()
+                self.assertIn("- 01. Reaction segment | selected", handoff)
+                self.assertIn("- 02. Opening segment", handoff)
+                self.assertEqual(str(app.rough_cut_move_up_button["state"]), "disabled")
+                self.assertEqual(str(app.rough_cut_move_down_button["state"]), "normal")
+            finally:
+                root.destroy()
+
+    def test_app_rough_cut_set_remains_readable_when_semantic_lane_reopens(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = tk.Tk()
             root.withdraw()
@@ -3192,6 +3272,8 @@ class DNAFilmAppTests(unittest.TestCase):
                     app._switch_view("Rough Cut")
                     app.rough_cut_segment_label_var.set("Opening segment")
                     app.save_rough_cut_segment_stub()
+                    app.rough_cut_segment_label_var.set("Reaction segment")
+                    app.save_rough_cut_segment_stub()
                     target_block_id = app.project.semantic_blocks[1]["record_id"]
                     app._select_block_by_id(target_block_id)
                     app.reorder_selected_block("up")
@@ -3200,7 +3282,9 @@ class DNAFilmAppTests(unittest.TestCase):
                 handoff = app.rough_cut_handoff.get("1.0", "end").strip()
                 self.assertEqual(app.rough_cut_text.get(), "Rough cut readiness: blocked | rough-cut handoff remains visible but upstream semantic approval was reopened")
                 self.assertIn("Rough Cut remains blocked", handoff)
-                self.assertIn("Segment label: Opening segment", handoff)
+                self.assertIn("Current rough-cut segment set", handoff)
+                self.assertIn("- 01. Opening segment", handoff)
+                self.assertIn("- 02. Reaction segment", handoff)
             finally:
                 root.destroy()
 

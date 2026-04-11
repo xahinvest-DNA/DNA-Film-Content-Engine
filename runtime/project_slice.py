@@ -16,7 +16,7 @@ MATCHING_CANDIDATE_FILENAME = "candidate_stubs.json"
 ACCEPTED_REFERENCE_FILENAME = "accepted_reference.json"
 ACCEPTED_SCENE_REFERENCE_STUB_FILENAME = "accepted_scene_reference_stub.json"
 TIMECODE_RANGE_STUB_FILENAME = "timecode_range_stub.json"
-ROUGH_CUT_SEGMENT_STUB_FILENAME = "rough_cut_segment_stub.json"
+ROUGH_CUT_SEGMENTS_FILENAME = "rough_cut_segments.json"
 ALLOWED_SEMANTIC_ROLES = (
     "claim",
     "insight",
@@ -213,15 +213,17 @@ def normalize_timecode_range_stub(timecode_range_stub: dict | None) -> dict | No
     return current
 
 
-def normalize_rough_cut_segment_stub(rough_cut_segment_stub: dict | None) -> dict | None:
-    if not rough_cut_segment_stub:
-        return None
-    current = dict(rough_cut_segment_stub)
-    current["segment_label"] = current.get("segment_label", "").strip()
-    current["start_timecode"] = current.get("start_timecode", "").strip()
-    current["end_timecode"] = current.get("end_timecode", "").strip()
-    current["segment_state"] = current.get("segment_state", "provisional_rough_cut_segment_for_later_assembly_only").strip() or "provisional_rough_cut_segment_for_later_assembly_only"
-    return current
+def normalize_rough_cut_segment_stubs(rough_cut_segment_stubs: list[dict]) -> list[dict]:
+    normalized: list[dict] = []
+    for index, entry in enumerate(rough_cut_segment_stubs, start=1):
+        current = dict(entry)
+        current["segment_label"] = current.get("segment_label", "").strip()
+        current["start_timecode"] = current.get("start_timecode", "").strip()
+        current["end_timecode"] = current.get("end_timecode", "").strip()
+        current["segment_state"] = current.get("segment_state", "provisional_rough_cut_segment_for_later_assembly_only").strip() or "provisional_rough_cut_segment_for_later_assembly_only"
+        current["sequence"] = index
+        normalized.append(current)
+    return normalized
 
 
 def semantic_completeness(intake_record: dict, semantic_blocks: list[dict]) -> tuple[str, int, int]:
@@ -288,7 +290,7 @@ class ProjectSlice:
     accepted_reference: dict | None
     accepted_scene_reference_stub: dict | None
     timecode_range_stub: dict | None
-    rough_cut_segment_stub: dict | None
+    rough_cut_segment_stubs: list[dict]
 
 
 class ProjectSliceStore:
@@ -362,7 +364,7 @@ class ProjectSliceStore:
         accepted_reference_path = project_dir / "records" / "matching_prep" / ACCEPTED_REFERENCE_FILENAME
         accepted_scene_reference_stub_path = project_dir / "records" / "scene_matching" / ACCEPTED_SCENE_REFERENCE_STUB_FILENAME
         timecode_range_stub_path = project_dir / "records" / "scene_matching" / TIMECODE_RANGE_STUB_FILENAME
-        rough_cut_segment_stub_path = project_dir / "records" / "rough_cut" / ROUGH_CUT_SEGMENT_STUB_FILENAME
+        rough_cut_segments_path = project_dir / "records" / "rough_cut" / ROUGH_CUT_SEGMENTS_FILENAME
 
         if analysis_record_path.exists():
             analysis_source_record = read_json(analysis_record_path)
@@ -387,8 +389,9 @@ class ProjectSliceStore:
         accepted_scene_reference_stub = self._reconcile_accepted_scene_reference_stub(accepted_scene_reference_stub, accepted_reference)
         timecode_range_stub = normalize_timecode_range_stub(read_json(timecode_range_stub_path) if timecode_range_stub_path.exists() else None)
         timecode_range_stub = self._reconcile_timecode_range_stub(timecode_range_stub, accepted_scene_reference_stub)
-        rough_cut_segment_stub = normalize_rough_cut_segment_stub(read_json(rough_cut_segment_stub_path) if rough_cut_segment_stub_path.exists() else None)
-        rough_cut_segment_stub = self._reconcile_rough_cut_segment_stub(rough_cut_segment_stub, accepted_reference, accepted_scene_reference_stub, timecode_range_stub)
+        rough_cut_segment_stubs = read_json(rough_cut_segments_path)["entries"] if rough_cut_segments_path.exists() else []
+        rough_cut_segment_stubs = normalize_rough_cut_segment_stubs(rough_cut_segment_stubs)
+        rough_cut_segment_stubs = self._reconcile_rough_cut_segment_stubs(rough_cut_segment_stubs, accepted_reference, accepted_scene_reference_stub, timecode_range_stub)
         return ProjectSlice(
             project_dir=project_dir,
             manifest=manifest,
@@ -402,7 +405,7 @@ class ProjectSliceStore:
             accepted_reference=accepted_reference,
             accepted_scene_reference_stub=accepted_scene_reference_stub,
             timecode_range_stub=timecode_range_stub,
-            rough_cut_segment_stub=rough_cut_segment_stub,
+            rough_cut_segment_stubs=rough_cut_segment_stubs,
         )
 
     def save_analysis_text(
@@ -1046,23 +1049,32 @@ class ProjectSliceStore:
             raise ValueError("Rough-cut segment stub creation is only available while Rough Cut is open from the current accepted downstream handoff chain.")
 
         now = utc_now()
-        rough_cut_segment_stub = {
-            "project_id": project.manifest["project_id"],
-            "record_id": "rough-cut-segment-current",
-            "record_type": "rough_cut_segment_stub",
-            "source_accepted_reference_id": project.accepted_reference["record_id"],
-            "source_accepted_scene_reference_stub_id": project.accepted_scene_reference_stub["record_id"],
-            "source_timecode_range_stub_id": project.timecode_range_stub["record_id"],
-            "source_candidate_stub_id": project.timecode_range_stub.get("source_candidate_stub_id", ""),
-            "semantic_block_id": project.timecode_range_stub.get("semantic_block_id", ""),
-            "prep_asset_id": project.timecode_range_stub.get("prep_asset_id", ""),
-            "start_timecode": project.timecode_range_stub.get("start_timecode", ""),
-            "end_timecode": project.timecode_range_stub.get("end_timecode", ""),
-            "segment_label": clean_label,
-            "segment_state": "provisional_rough_cut_segment_for_later_assembly_only",
-            "created_at": now,
-            "updated_at": now,
-        }
+        next_index = 1
+        for entry in project.rough_cut_segment_stubs:
+            match = re.fullmatch(r"rough-cut-segment-(\d+)", entry.get("record_id", ""))
+            if match:
+                next_index = max(next_index, int(match.group(1)) + 1)
+        rough_cut_segment_entries = [dict(entry) for entry in project.rough_cut_segment_stubs]
+        rough_cut_segment_entries.append(
+            {
+                "project_id": project.manifest["project_id"],
+                "record_id": f"rough-cut-segment-{next_index:03d}",
+                "record_type": "rough_cut_segment_stub",
+                "source_accepted_reference_id": project.accepted_reference["record_id"],
+                "source_accepted_scene_reference_stub_id": project.accepted_scene_reference_stub["record_id"],
+                "source_timecode_range_stub_id": project.timecode_range_stub["record_id"],
+                "source_candidate_stub_id": project.timecode_range_stub.get("source_candidate_stub_id", ""),
+                "semantic_block_id": project.timecode_range_stub.get("semantic_block_id", ""),
+                "prep_asset_id": project.timecode_range_stub.get("prep_asset_id", ""),
+                "start_timecode": project.timecode_range_stub.get("start_timecode", ""),
+                "end_timecode": project.timecode_range_stub.get("end_timecode", ""),
+                "segment_label": clean_label,
+                "sequence": len(rough_cut_segment_entries) + 1,
+                "segment_state": "provisional_rough_cut_segment_for_later_assembly_only",
+                "created_at": now,
+                "updated_at": now,
+            }
+        )
 
         manifest = dict(project.manifest)
         manifest["updated_at"] = now
@@ -1088,7 +1100,64 @@ class ProjectSliceStore:
             project.accepted_reference,
             project.accepted_scene_reference_stub,
             project.timecode_range_stub,
-            rough_cut_segment_stub,
+            rough_cut_segment_entries,
+        )
+        return self.load_project(project_dir)
+
+    def reorder_rough_cut_segment_stub(
+        self,
+        project_dir: Path,
+        rough_cut_segment_stub_id: str,
+        direction: str,
+    ) -> ProjectSlice:
+        clean_stub_id = rough_cut_segment_stub_id.strip()
+        if not clean_stub_id:
+            raise ValueError("Select one rough-cut segment stub before reordering it.")
+        if direction not in ALLOWED_REORDER_DIRECTIONS:
+            raise ValueError("Rough-cut segment reorder direction must be 'up' or 'down'.")
+
+        project = self.load_project(project_dir)
+        if project.accepted_reference is None or project.accepted_scene_reference_stub is None or project.timecode_range_stub is None or project.semantic_review_record.get("reopened_after_change"):
+            raise ValueError("Rough-cut segment reorder is only available while Rough Cut is open from the current accepted downstream handoff chain.")
+
+        entries = [dict(entry) for entry in project.rough_cut_segment_stubs]
+        current_index = next((index for index, entry in enumerate(entries) if entry.get("record_id") == clean_stub_id), None)
+        if current_index is None:
+            raise ValueError("Selected rough-cut segment stub was not found in the current rough-cut set.")
+        target_index = current_index - 1 if direction == "up" else current_index + 1
+        if target_index < 0 or target_index >= len(entries):
+            return project
+        entries[current_index], entries[target_index] = entries[target_index], entries[current_index]
+        now = utc_now()
+        for index, entry in enumerate(entries, start=1):
+            entry["sequence"] = index
+            entry["updated_at"] = now
+
+        manifest = dict(project.manifest)
+        manifest["updated_at"] = now
+        project_record = dict(project.project_record)
+        project_record["updated_at"] = now
+        intake_record = dict(project.intake_record)
+        intake_record["updated_at"] = now
+        analysis_source_record = self._copy_analysis_record(project.analysis_source_record, now)
+        semantic_review_record = dict(project.semantic_review_record)
+        semantic_review_record["updated_at"] = now
+
+        self._apply_project_summary(project_record, intake_record, project.semantic_blocks, semantic_review_record)
+        self._write_project_state(
+            project_dir,
+            manifest,
+            project_record,
+            intake_record,
+            analysis_source_record,
+            semantic_review_record,
+            project.semantic_blocks,
+            project.matching_prep_assets,
+            project.matching_candidate_stubs,
+            project.accepted_reference,
+            project.accepted_scene_reference_stub,
+            project.timecode_range_stub,
+            entries,
         )
         return self.load_project(project_dir)
 
@@ -1313,43 +1382,38 @@ class ProjectSliceStore:
         updated_stub["prep_asset_id"] = normalized_scene_reference_stub.get("prep_asset_id", "")
         return updated_stub
 
-    def _reconcile_rough_cut_segment_stub(
+    def _reconcile_rough_cut_segment_stubs(
         self,
-        rough_cut_segment_stub: dict | None,
+        rough_cut_segment_stubs: list[dict],
         accepted_reference: dict | None,
         accepted_scene_reference_stub: dict | None,
         timecode_range_stub: dict | None,
-    ) -> dict | None:
-        normalized_stub = normalize_rough_cut_segment_stub(rough_cut_segment_stub)
-        if normalized_stub is None:
-            return None
+    ) -> list[dict]:
         normalized_reference = normalize_accepted_reference(accepted_reference)
         normalized_scene_reference_stub = normalize_accepted_scene_reference_stub(accepted_scene_reference_stub)
         normalized_timecode_range_stub = normalize_timecode_range_stub(timecode_range_stub)
         if normalized_reference is None or normalized_scene_reference_stub is None or normalized_timecode_range_stub is None:
-            return None
+            return []
         current_source_candidate_stub_id = normalized_reference.get("source_candidate_stub_id", "").strip()
         if not current_source_candidate_stub_id:
-            return None
-        if normalized_stub.get("source_candidate_stub_id", "").strip() != current_source_candidate_stub_id:
-            return None
-        if normalized_scene_reference_stub.get("source_candidate_stub_id", "").strip() != current_source_candidate_stub_id:
-            return None
-        if normalized_timecode_range_stub.get("source_candidate_stub_id", "").strip() != current_source_candidate_stub_id:
-            return None
-        source_timecode_range_stub_id = normalized_stub.get("source_timecode_range_stub_id", "").strip()
-        if source_timecode_range_stub_id and source_timecode_range_stub_id != normalized_timecode_range_stub.get("record_id", "").strip():
-            return None
-        updated_stub = dict(normalized_stub)
-        updated_stub["source_accepted_reference_id"] = normalized_reference.get("record_id", "")
-        updated_stub["source_accepted_scene_reference_stub_id"] = normalized_scene_reference_stub.get("record_id", "")
-        updated_stub["source_timecode_range_stub_id"] = normalized_timecode_range_stub.get("record_id", "")
-        updated_stub["source_candidate_stub_id"] = current_source_candidate_stub_id
-        updated_stub["semantic_block_id"] = normalized_reference.get("semantic_block_id", "")
-        updated_stub["prep_asset_id"] = normalized_reference.get("prep_asset_id", "")
-        updated_stub["start_timecode"] = normalized_timecode_range_stub.get("start_timecode", "")
-        updated_stub["end_timecode"] = normalized_timecode_range_stub.get("end_timecode", "")
-        return updated_stub
+            return []
+        reconciled: list[dict] = []
+        for entry in normalize_rough_cut_segment_stubs(rough_cut_segment_stubs):
+            if entry.get("source_candidate_stub_id", "").strip() != current_source_candidate_stub_id:
+                continue
+            if entry.get("source_timecode_range_stub_id", "").strip() and entry.get("source_timecode_range_stub_id", "").strip() != normalized_timecode_range_stub.get("record_id", "").strip():
+                continue
+            updated_entry = dict(entry)
+            updated_entry["source_accepted_reference_id"] = normalized_reference.get("record_id", "")
+            updated_entry["source_accepted_scene_reference_stub_id"] = normalized_scene_reference_stub.get("record_id", "")
+            updated_entry["source_timecode_range_stub_id"] = normalized_timecode_range_stub.get("record_id", "")
+            updated_entry["source_candidate_stub_id"] = current_source_candidate_stub_id
+            updated_entry["semantic_block_id"] = normalized_reference.get("semantic_block_id", "")
+            updated_entry["prep_asset_id"] = normalized_reference.get("prep_asset_id", "")
+            updated_entry["start_timecode"] = normalized_timecode_range_stub.get("start_timecode", "")
+            updated_entry["end_timecode"] = normalized_timecode_range_stub.get("end_timecode", "")
+            reconciled.append(updated_entry)
+        return normalize_rough_cut_segment_stubs(reconciled)
 
     def _persist_semantic_update(
         self,
@@ -1417,13 +1481,13 @@ class ProjectSliceStore:
         accepted_reference: dict | None | object = KEEP_EXISTING,
         accepted_scene_reference_stub: dict | None | object = KEEP_EXISTING,
         timecode_range_stub: dict | None | object = KEEP_EXISTING,
-        rough_cut_segment_stub: dict | None | object = KEEP_EXISTING,
+        rough_cut_segment_stubs: list[dict] | object = KEEP_EXISTING,
     ) -> None:
         semantic_blocks = normalize_semantic_blocks(semantic_blocks)
         accepted_reference_path = project_dir / "records" / "matching_prep" / ACCEPTED_REFERENCE_FILENAME
         accepted_scene_reference_stub_path = project_dir / "records" / "scene_matching" / ACCEPTED_SCENE_REFERENCE_STUB_FILENAME
         timecode_range_stub_path = project_dir / "records" / "scene_matching" / TIMECODE_RANGE_STUB_FILENAME
-        rough_cut_segment_stub_path = project_dir / "records" / "rough_cut" / ROUGH_CUT_SEGMENT_STUB_FILENAME
+        rough_cut_segments_path = project_dir / "records" / "rough_cut" / ROUGH_CUT_SEGMENTS_FILENAME
         if accepted_reference is KEEP_EXISTING:
             accepted_reference_payload = normalize_accepted_reference(read_json(accepted_reference_path) if accepted_reference_path.exists() else None)
         else:
@@ -1438,11 +1502,11 @@ class ProjectSliceStore:
         else:
             timecode_range_stub_payload = normalize_timecode_range_stub(timecode_range_stub if isinstance(timecode_range_stub, dict) else None)
         timecode_range_stub_payload = self._reconcile_timecode_range_stub(timecode_range_stub_payload, accepted_scene_reference_stub_payload)
-        if rough_cut_segment_stub is KEEP_EXISTING:
-            rough_cut_segment_stub_payload = normalize_rough_cut_segment_stub(read_json(rough_cut_segment_stub_path) if rough_cut_segment_stub_path.exists() else None)
+        if rough_cut_segment_stubs is KEEP_EXISTING:
+            rough_cut_segment_entries = read_json(rough_cut_segments_path)["entries"] if rough_cut_segments_path.exists() else []
         else:
-            rough_cut_segment_stub_payload = normalize_rough_cut_segment_stub(rough_cut_segment_stub if isinstance(rough_cut_segment_stub, dict) else None)
-        rough_cut_segment_stub_payload = self._reconcile_rough_cut_segment_stub(rough_cut_segment_stub_payload, accepted_reference_payload, accepted_scene_reference_stub_payload, timecode_range_stub_payload)
+            rough_cut_segment_entries = list(rough_cut_segment_stubs) if isinstance(rough_cut_segment_stubs, list) else []
+        rough_cut_segment_entries = self._reconcile_rough_cut_segment_stubs(rough_cut_segment_entries, accepted_reference_payload, accepted_scene_reference_stub_payload, timecode_range_stub_payload)
         write_json(project_dir / "project.manifest", manifest)
         write_json(project_dir / "project.meta" / "status.json", self._status_payload(project_record, intake_record, semantic_review_record, semantic_blocks))
         write_json(project_dir / "records" / "project" / "project.json", project_record)
@@ -1465,10 +1529,10 @@ class ProjectSliceStore:
             write_json(timecode_range_stub_path, timecode_range_stub_payload)
         elif timecode_range_stub_path.exists():
             timecode_range_stub_path.unlink()
-        if rough_cut_segment_stub_payload is not None:
-            write_json(rough_cut_segment_stub_path, rough_cut_segment_stub_payload)
-        elif rough_cut_segment_stub_path.exists():
-            rough_cut_segment_stub_path.unlink()
+        if rough_cut_segment_entries:
+            write_json(rough_cut_segments_path, {"entries": rough_cut_segment_entries})
+        elif rough_cut_segments_path.exists():
+            rough_cut_segments_path.unlink()
 
     def _status_payload(
         self,
