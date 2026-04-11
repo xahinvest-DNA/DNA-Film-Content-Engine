@@ -1228,6 +1228,58 @@ class ProjectSliceStore:
         )
         return self.load_project(project_dir)
 
+    def remove_rough_cut_segment_stub(
+        self,
+        project_dir: Path,
+        rough_cut_segment_stub_id: str,
+    ) -> ProjectSlice:
+        clean_stub_id = rough_cut_segment_stub_id.strip()
+        if not clean_stub_id:
+            raise ValueError("Select one rough-cut segment stub before removing it.")
+
+        project = self.load_project(project_dir)
+        if project.accepted_reference is None or project.accepted_scene_reference_stub is None or project.timecode_range_stub is None or project.semantic_review_record.get("reopened_after_change"):
+            raise ValueError("Rough-cut segment removal is only available while Rough Cut is open from the current accepted downstream handoff chain.")
+
+        now = utc_now()
+        removed = False
+        entries: list[dict] = []
+        for entry in project.rough_cut_segment_stubs:
+            if entry.get("record_id") == clean_stub_id:
+                removed = True
+                continue
+            entries.append(dict(entry))
+        if not removed:
+            raise ValueError("Selected rough-cut segment stub was not found in the current rough-cut set.")
+
+        manifest = dict(project.manifest)
+        manifest["updated_at"] = now
+        project_record = dict(project.project_record)
+        project_record["updated_at"] = now
+        intake_record = dict(project.intake_record)
+        intake_record["updated_at"] = now
+        analysis_source_record = self._copy_analysis_record(project.analysis_source_record, now)
+        semantic_review_record = dict(project.semantic_review_record)
+        semantic_review_record["updated_at"] = now
+
+        self._apply_project_summary(project_record, intake_record, project.semantic_blocks, semantic_review_record)
+        self._write_project_state(
+            project_dir,
+            manifest,
+            project_record,
+            intake_record,
+            analysis_source_record,
+            semantic_review_record,
+            project.semantic_blocks,
+            project.matching_prep_assets,
+            project.matching_candidate_stubs,
+            project.accepted_reference,
+            project.accepted_scene_reference_stub,
+            project.timecode_range_stub,
+            entries,
+        )
+        return self.load_project(project_dir)
+
     def update_matching_candidate_stub_rationale(
         self,
         project_dir: Path,

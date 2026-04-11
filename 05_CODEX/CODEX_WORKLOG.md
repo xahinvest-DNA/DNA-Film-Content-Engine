@@ -1,3 +1,22 @@
+## 2026-04-11 - F-037 completed and Rough Cut gained bounded segment removal
+
+### Completed
+- completed the rough cut segment removal slice as one bounded follow-up to the ordered rough-cut set and preferred-subset boundaries;
+- added one local-first removal path for the currently selected rough-cut segment stub inside the real `Rough Cut` lane;
+- removed the selected segment stub from persisted rough-cut structure, resequenced the remaining entries honestly, and kept remaining preferred-subset status coherent;
+- kept selected-segment behavior sensible after removal, including fallback selection to a remaining segment or honest return to the empty rough-cut-set state;
+- preserved blocked-but-readable reopen honesty and kept removed segments from reappearing in runtime handoff or after reload;
+- verified store-level removal, resequencing, reload, preferred-subset, and empty-state behavior plus app-level selected-segment, preferred-subset, empty-state, and reopen behavior through local tests;
+- synchronized the repository state layer after real implementation progress.
+
+### Repository effect
+- the runtime now completes the first minimal rough-cut structural control loop by supporting add, reorder, preferred-subset marking, and removal inside one bounded local-first rough-cut structure;
+- the repository gained one stronger rough-cut management capability without opening playback, trimming, mini-timeline, render/export, backend, or workflow-engine semantics;
+- the next bounded packet should now be selected by manager review against current repository capability rather than assumed by inertia.
+
+### Recommended next step
+ChatGPT should select the next strongest bounded packet after `F-037`, based on the fact that the runtime now supports the first complete minimal rough-cut structural control loop.
+
 ## 2026-04-11 - F-036 completed and Rough Cut gained its first preferred current rough-cut subset
 
 ### Completed

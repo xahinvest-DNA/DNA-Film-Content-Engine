@@ -1334,6 +1334,73 @@ class ProjectSliceStoreTests(unittest.TestCase):
                 ["selected_for_current_rough_cut", "saved_only"],
             )
 
+    def test_remove_one_non_preferred_rough_cut_segment_stub(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = self._build_timecode_ready_project(store, "Rough Cut Remove Non Preferred")
+            project = store.save_rough_cut_segment_stub(project.project_dir, "Opening segment")
+            project = store.save_rough_cut_segment_stub(project.project_dir, "Reaction segment")
+
+            updated = store.remove_rough_cut_segment_stub(
+                project.project_dir,
+                project.rough_cut_segment_stubs[0]["record_id"],
+            )
+
+            self.assertEqual([entry["segment_label"] for entry in updated.rough_cut_segment_stubs], ["Reaction segment"])
+            self.assertEqual([entry["sequence"] for entry in updated.rough_cut_segment_stubs], [1])
+            self.assertEqual(updated.rough_cut_segment_stubs[0]["subset_status"], "saved_only")
+
+    def test_remove_one_preferred_rough_cut_segment_stub(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = self._build_timecode_ready_project(store, "Rough Cut Remove Preferred")
+            project = store.save_rough_cut_segment_stub(project.project_dir, "Opening segment")
+            project = store.save_rough_cut_segment_stub(project.project_dir, "Reaction segment")
+            project = store.update_rough_cut_segment_subset_status(
+                project.project_dir,
+                project.rough_cut_segment_stubs[1]["record_id"],
+                "selected_for_current_rough_cut",
+            )
+
+            updated = store.remove_rough_cut_segment_stub(
+                project.project_dir,
+                project.rough_cut_segment_stubs[1]["record_id"],
+            )
+
+            self.assertEqual([entry["segment_label"] for entry in updated.rough_cut_segment_stubs], ["Opening segment"])
+            self.assertEqual([entry["subset_status"] for entry in updated.rough_cut_segment_stubs], ["saved_only"])
+
+    def test_rough_cut_segment_removal_persists_after_reload(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = self._build_timecode_ready_project(store, "Rough Cut Remove Reload")
+            project = store.save_rough_cut_segment_stub(project.project_dir, "Opening segment")
+            project = store.save_rough_cut_segment_stub(project.project_dir, "Reaction segment")
+
+            project = store.remove_rough_cut_segment_stub(
+                project.project_dir,
+                project.rough_cut_segment_stubs[0]["record_id"],
+            )
+            reloaded = store.load_project(project.project_dir)
+
+            self.assertEqual([entry["segment_label"] for entry in reloaded.rough_cut_segment_stubs], ["Reaction segment"])
+            self.assertEqual([entry["sequence"] for entry in reloaded.rough_cut_segment_stubs], [1])
+
+    def test_rough_cut_segment_empty_state_persists_after_removing_last_segment(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = self._build_timecode_ready_project(store, "Rough Cut Remove Last")
+            project = store.save_rough_cut_segment_stub(project.project_dir, "Opening segment")
+
+            updated = store.remove_rough_cut_segment_stub(
+                project.project_dir,
+                project.rough_cut_segment_stubs[0]["record_id"],
+            )
+
+            self.assertEqual(updated.rough_cut_segment_stubs, [])
+            reloaded = store.load_project(project.project_dir)
+            self.assertEqual(reloaded.rough_cut_segment_stubs, [])
+
     def test_rough_cut_segment_stub_disappears_when_accepted_reference_becomes_unavailable(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             store = ProjectSliceStore(Path(temp_dir))
@@ -3438,6 +3505,84 @@ class DNAFilmAppTests(unittest.TestCase):
             finally:
                 root.destroy()
 
+    def test_app_can_remove_selected_rough_cut_segment_from_current_set(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    self._build_timecode_ready_app_project(app, "UI Rough Cut Remove Map")
+                    app._switch_view("Rough Cut")
+                    app.rough_cut_segment_label_var.set("Opening segment")
+                    app.save_rough_cut_segment_stub()
+                    app.rough_cut_segment_label_var.set("Reaction segment")
+                    app.save_rough_cut_segment_stub()
+                    app._select_rough_cut_segment_by_id(app.project.rough_cut_segment_stubs[0]["record_id"])
+                    app.remove_selected_saved_rough_cut_segment()
+
+                handoff = app.rough_cut_handoff.get("1.0", "end").strip()
+                self.assertEqual([entry["segment_label"] for entry in app.project.rough_cut_segment_stubs], ["Reaction segment"])
+                self.assertEqual(app.rough_cut_segment_options.get(app.rough_cut_segment_var.get(), ""), app.project.rough_cut_segment_stubs[0]["record_id"])
+                self.assertIn("- 01. Reaction segment | selected", handoff)
+                self.assertNotIn("Opening segment", handoff)
+            finally:
+                root.destroy()
+
+    def test_app_rough_cut_preferred_subset_updates_after_removing_preferred_segment(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    self._build_timecode_ready_app_project(app, "UI Rough Cut Remove Preferred Map")
+                    app._switch_view("Rough Cut")
+                    app.rough_cut_segment_label_var.set("Opening segment")
+                    app.save_rough_cut_segment_stub()
+                    app.rough_cut_segment_label_var.set("Reaction segment")
+                    app.save_rough_cut_segment_stub()
+                    app._select_rough_cut_segment_by_id(app.project.rough_cut_segment_stubs[1]["record_id"])
+                    app.include_selected_rough_cut_segment()
+                    app.remove_selected_saved_rough_cut_segment()
+
+                handoff = app.rough_cut_handoff.get("1.0", "end").strip()
+                self.assertIn("Preferred current rough cut: none selected yet.", handoff)
+                self.assertNotIn("Reaction segment", handoff)
+            finally:
+                root.destroy()
+
+    def test_app_rough_cut_empty_state_is_honest_after_removing_last_segment(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    self._build_timecode_ready_app_project(app, "UI Rough Cut Remove Last Map")
+                    app._switch_view("Rough Cut")
+                    app.rough_cut_segment_label_var.set("Opening segment")
+                    app.save_rough_cut_segment_stub()
+                    app.remove_selected_saved_rough_cut_segment()
+
+                handoff = app.rough_cut_handoff.get("1.0", "end").strip()
+                self.assertEqual(app.project.rough_cut_segment_stubs, [])
+                self.assertEqual(app.rough_cut_segment_var.get(), "")
+                self.assertIn("Rough-cut segment set: none saved yet.", app.rough_cut_segment_summary_text.get())
+                self.assertIn("Current rough-cut segment set", handoff)
+                self.assertIn("- none saved yet", handoff)
+            finally:
+                root.destroy()
+
     def test_app_rough_cut_set_remains_readable_when_semantic_lane_reopens(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = tk.Tk()
@@ -3469,6 +3614,37 @@ class DNAFilmAppTests(unittest.TestCase):
                 self.assertIn("Current rough-cut segment set", handoff)
                 self.assertIn("- 01. Opening segment", handoff)
                 self.assertIn("- 02. Reaction segment | selected", handoff)
+            finally:
+                root.destroy()
+
+    def test_app_rough_cut_removal_remains_honest_when_semantic_lane_reopens(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    self._build_timecode_ready_app_project(app, "UI Rough Cut Remove Reopen Map")
+                    app._switch_view("Rough Cut")
+                    app.rough_cut_segment_label_var.set("Opening segment")
+                    app.save_rough_cut_segment_stub()
+                    app.rough_cut_segment_label_var.set("Reaction segment")
+                    app.save_rough_cut_segment_stub()
+                    app._select_rough_cut_segment_by_id(app.project.rough_cut_segment_stubs[0]["record_id"])
+                    app.remove_selected_saved_rough_cut_segment()
+                    target_block_id = app.project.semantic_blocks[1]["record_id"]
+                    app._select_block_by_id(target_block_id)
+                    app.reorder_selected_block("up")
+
+                app._switch_view("Rough Cut")
+                handoff = app.rough_cut_handoff.get("1.0", "end").strip()
+                self.assertEqual(app.rough_cut_text.get(), "Rough cut readiness: blocked | rough-cut handoff remains visible but upstream semantic approval was reopened")
+                self.assertIn("Rough Cut remains blocked", handoff)
+                self.assertIn("- 01. Reaction segment | selected", handoff)
+                self.assertNotIn("Opening segment", handoff)
             finally:
                 root.destroy()
 

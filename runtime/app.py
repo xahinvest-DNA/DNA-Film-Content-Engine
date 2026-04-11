@@ -470,6 +470,8 @@ class DNAFilmApp:
         self.include_rough_cut_subset_button.pack(side="left", padx=(8, 0))
         self.remove_rough_cut_subset_button = ttk.Button(controls, text="Remove from Current Rough Cut", command=self.remove_selected_rough_cut_segment)
         self.remove_rough_cut_subset_button.pack(side="left", padx=(8, 0))
+        self.remove_rough_cut_segment_button = ttk.Button(controls, text="Remove Selected Segment", command=self.remove_selected_saved_rough_cut_segment)
+        self.remove_rough_cut_segment_button.pack(side="left", padx=(8, 0))
 
         self.rough_cut_handoff = tk.Text(frame, height=18, wrap="word")
         self.rough_cut_handoff.grid(row=6, column=0, sticky="nsew")
@@ -867,6 +869,7 @@ class DNAFilmApp:
             self.rough_cut_segment_var.set("")
             return
         self._refresh_rough_cut_controls(self.project)
+        self._update_rough_cut_surface(self.project)
 
     def reorder_selected_rough_cut_segment(self, direction: str) -> None:
         if self.project is None:
@@ -890,6 +893,37 @@ class DNAFilmApp:
 
     def remove_selected_rough_cut_segment(self) -> None:
         self._update_selected_rough_cut_subset_status("saved_only", "Selected rough-cut segment was returned to the saved-only rough-cut set.")
+
+    def remove_selected_saved_rough_cut_segment(self) -> None:
+        if self.project is None:
+            messagebox.showerror("Rough Cut", "Create or open a project first.")
+            return
+        segment_id = self.rough_cut_segment_options.get(self.rough_cut_segment_var.get(), "")
+        current_ids = [entry["record_id"] for entry in self.project.rough_cut_segment_stubs]
+        try:
+            current_index = current_ids.index(segment_id)
+        except ValueError:
+            current_index = -1
+        try:
+            project = self.store.remove_rough_cut_segment_stub(self.project.project_dir, segment_id)
+        except ValueError as exc:
+            messagebox.showerror("Rough Cut", str(exc))
+            return
+
+        current_block_id = self.selected_block_id
+        self._load_project_into_ui(project, select_block_id=current_block_id)
+        remaining_entries = project.rough_cut_segment_stubs
+        next_segment_id = None
+        if remaining_entries:
+            fallback_index = current_index
+            if fallback_index < 0:
+                fallback_index = 0
+            if fallback_index >= len(remaining_entries):
+                fallback_index = len(remaining_entries) - 1
+            next_segment_id = remaining_entries[fallback_index]["record_id"]
+        self._select_rough_cut_segment_by_id(next_segment_id)
+        self._switch_view("Rough Cut")
+        messagebox.showinfo("Rough Cut", "Selected rough-cut segment stub was removed from the local rough-cut set.")
 
     def _update_selected_rough_cut_subset_status(self, subset_status: str, success_message: str) -> None:
         if self.project is None:
@@ -1214,6 +1248,7 @@ class DNAFilmApp:
             self.rough_cut_move_down_button.configure(state="disabled")
             self.include_rough_cut_subset_button.configure(state="disabled")
             self.remove_rough_cut_subset_button.configure(state="disabled")
+            self.remove_rough_cut_segment_button.configure(state="disabled")
 
     def _set_editor_enabled(self, enabled: bool) -> None:
         entry_state = "normal" if enabled else "disabled"
@@ -1340,6 +1375,7 @@ class DNAFilmApp:
             self.rough_cut_segment_label_var.set("")
             self.include_rough_cut_subset_button.configure(state="disabled")
             self.remove_rough_cut_subset_button.configure(state="disabled")
+            self.remove_rough_cut_segment_button.configure(state="disabled")
             return
         current_display = self.rough_cut_segment_var.get()
         self.rough_cut_segment_options = {
@@ -1370,6 +1406,9 @@ class DNAFilmApp:
         self.remove_rough_cut_subset_button.configure(
             state="normal" if subset_enabled and selected_subset_status == "selected_for_current_rough_cut" else "disabled"
         )
+        self.remove_rough_cut_segment_button.configure(
+            state="normal" if subset_enabled else "disabled"
+        )
 
     def _rough_cut_segment_option_label(self, entry: dict) -> str:
         return f"{entry.get('sequence', 0):02d}. {entry.get('segment_label', 'Untitled segment')} [{entry.get('record_id', 'unknown')}]"
@@ -1381,6 +1420,7 @@ class DNAFilmApp:
         if display:
             self.rough_cut_segment_var.set(display)
             self._refresh_rough_cut_controls(self.project)
+            self._update_rough_cut_surface(self.project)
 
     def _refresh_matching_candidate_controls(self, project: ProjectSlice | None) -> None:
         if project is None:

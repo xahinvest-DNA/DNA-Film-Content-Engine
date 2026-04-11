@@ -1,16 +1,22 @@
 # Codex Tasks
 
 Last updated: 2026-04-10
-Current focus: manager review and next bounded packet selection after F-036
+Current focus: manager review and next bounded packet selection after F-037
 
 ## Working rule
 Tasks should be bounded, product-visible, and small enough to preserve continuity without turning the repository into micro-slice overload.
 
 ## Active task
 
-- No new implementation packet is active until ChatGPT selects the next bounded step after reviewing the completed `F-036` handoff.
+- No new implementation packet is active until ChatGPT selects the next bounded step after reviewing the completed `F-037` handoff.
 
 ## Completed tasks
+
+### F-037
+- Status: completed
+- Module: rough cut segment removal slice
+- Goal: add one bounded local-first removal path for saved rough-cut segment stubs so the runtime can remove one selected rough-cut segment stub from the current saved rough-cut structure while preserving coherent order, preferred-subset readability, and blocked/open honesty without drifting into playback, trimming, timeline, render/export, backend, or workflow buildout.
+- Outcome: added one store-level removal path for the selected rough-cut segment stub, removed the selected stub from persisted rough-cut structure, resequenced the remaining entries cleanly, preserved preferred-subset status on remaining entries, added one minimal `Remove Selected Segment` control in the real `Rough Cut` lane, kept selected-segment behavior coherent after removal including empty-state fallback, verified store-level and app-level removal, resequencing, reload, preferred-subset, empty-state, and reopen behavior through local tests, and kept the packet intentionally narrow.
 
 ### F-036
 - Status: completed
