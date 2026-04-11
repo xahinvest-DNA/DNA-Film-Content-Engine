@@ -21,3 +21,4 @@ class ProjectSlice:
     rough_cut_segment_stubs: list[dict]
     packaging_script_bundle: dict | None
     shorts_reels_script: dict | None
+    long_video_script: dict | None

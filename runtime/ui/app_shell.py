@@ -53,8 +53,10 @@ class DNAFilmApp(DNAFilmAppLayoutMixin, DNAFilmAppPresentationMixin):
         self.scene_matching_text = tk.StringVar(value="Scene matching readiness: blocked | no accepted reference available yet")
         self.rough_cut_text = tk.StringVar(value="Rough cut readiness: blocked | no accepted reference available yet")
         self.output_builder_status_text = tk.StringVar(value="Output builder readiness: blocked | no rough-cut output path available yet")
-        self.output_builder_summary_text = tk.StringVar(value="Packaging-ready script bundle: none built yet. Shorts/Reels script: none built yet.")
-        self.output_builder_path_text = tk.StringVar(value="Packaging path: none | Shorts/Reels path: none")
+        self.output_builder_summary_text = tk.StringVar(
+            value="Packaging-ready script bundle: none built yet. Shorts/Reels script: none built yet. Long-video script: none built yet."
+        )
+        self.output_builder_path_text = tk.StringVar(value="Packaging path: none | Shorts/Reels path: none | Long-video path: none")
         self.scene_matching_reference_summary_text = tk.StringVar(value="Accepted scene reference stub: none created yet.")
         self.scene_matching_timecode_summary_text = tk.StringVar(value="Timecode range stub: none saved yet.")
         self.rough_cut_focus_summary_text = tk.StringVar(value="Focus: all saved segments | Visible: 0 | Saved total: 0 | Preferred total: 0")
@@ -518,6 +520,21 @@ class DNAFilmApp(DNAFilmAppLayoutMixin, DNAFilmAppPresentationMixin):
         self._load_project_into_ui(project, select_block_id=current_block_id)
         self._switch_view("Output Tracks")
         messagebox.showinfo("Output Tracks", "Shorts/Reels script was built and saved in the project package.")
+
+    def build_long_video_script(self) -> None:
+        if self.project is None:
+            messagebox.showerror("Output Tracks", "Create or open a project first.")
+            return
+        try:
+            project = self.store.build_long_video_script(self.project.project_dir)
+        except ValueError as exc:
+            messagebox.showerror("Output Tracks", str(exc))
+            return
+
+        current_block_id = self.selected_block_id
+        self._load_project_into_ui(project, select_block_id=current_block_id)
+        self._switch_view("Output Tracks")
+        messagebox.showinfo("Output Tracks", "Long-video script was built and saved in the project package.")
 
     def on_rough_cut_segment_selected(self, _event: object | None = None) -> None:
         if self.project is None:

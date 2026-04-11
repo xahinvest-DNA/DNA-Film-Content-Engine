@@ -1,5 +1,23 @@
 # Codex Worklog
 
+## 2026-04-11 - B-002 completed and the product gained its third real builder
+
+### Completed
+- added a long-video script builder under `runtime/builders` beside packaging and Shorts/Reels;
+- persisted the new builder as both `records/output/long_video_script.json` and `outputs/long_video/long_video_script.md`;
+- integrated the new builder into `Output Tracks` so the user can build, inspect, and keep all three artifacts in one surface;
+- kept packaging and Shorts/Reels builders working without regression;
+- added tests for builder availability, long-video reload reproducibility, stale invalidation, UI build flow, preferred-subset sourcing, coexistence with the other builders, and distinct long-form structure;
+- verified the full suite through `python -m unittest tests\\test_mvp_slice.py tests\\test_runtime_integration_smoke.py tests\\test_output_builder_slice.py tests\\test_runtime_boundaries.py -q`.
+
+### Repository effect
+- Stage B now has three honest local-first output builders instead of two;
+- the output layer now covers packaging, short-form, and long-form script handoffs from the same truth chain;
+- the product more clearly behaves like multi-format content software rather than a single-output prototype.
+
+### Recommended next step
+Execute `B-003 Carousel Script Builder Expansion`.
+
 ## 2026-04-11 - B-001 completed and the product gained its second real builder
 
 ### Completed
