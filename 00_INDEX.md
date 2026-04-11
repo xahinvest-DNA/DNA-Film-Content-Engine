@@ -1,35 +1,41 @@
-﻿# DNA Film Content Engine Project Brain
+# DNA Film Content Engine Project Brain
 
 ## Purpose / navigation rule
 
-This file is the main navigation entry point into the DNA Film Content Engine project.
+This file is the main navigation entry point into the repository.
 
-It owns navigation only. It must not restate live project state or the active Codex packet as independent truth.
+It owns navigation only and must not restate live state as separate truth.
 
 ## Operational orientation
 
-- For current project state, read `01_MASTER/CURRENT_STATE.md`.
-- For accepted decisions, read `01_MASTER/DECISIONS.md`.
-- For reading authority and anti-drift rules, read `01_MASTER/SSOT_MAP.md`.
-- For the active implementation packet, read `05_CODEX/NEXT_TASK.md`.
+- for current project state, read `01_MASTER/CURRENT_STATE.md`;
+- for accepted decisions, read `01_MASTER/DECISIONS.md`;
+- for finished-product definition, read `01_MASTER/TARGET_STATE.md`;
+- for delivery sequencing, read `01_MASTER/DELIVERY_PLAN.md`;
+- for release readiness, read `01_MASTER/RELEASE_CRITERIA.md`;
+- for reading authority, read `01_MASTER/SSOT_MAP.md`;
+- for the active Codex packet, read `05_CODEX/NEXT_TASK.md`.
 
 ## Stable reading order
 
 1. `01_MASTER/CURRENT_STATE.md`
 2. `01_MASTER/DECISIONS.md`
-3. `01_MASTER/ROADMAP.md`
-4. `01_MASTER/SSOT_MAP.md`
-5. `05_CODEX/NEXT_TASK.md` when the purpose is implementation
-6. Relevant product/module/tech documents for the active question
+3. `01_MASTER/TARGET_STATE.md`
+4. `01_MASTER/DELIVERY_PLAN.md`
+5. `01_MASTER/RELEASE_CRITERIA.md`
+6. `01_MASTER/SSOT_MAP.md`
+7. `05_CODEX/NEXT_TASK.md` when the purpose is implementation
+8. relevant product/module/tech documents for the active packet
 
 ## Current core documents
 
 ### Master
-- `01_MASTER/DECISIONS.md`
-- `01_MASTER/PRODUCT_SCOPE.md`
-- `01_MASTER/MVP_vs_FULL.md`
-- `01_MASTER/ROADMAP.md`
 - `01_MASTER/CURRENT_STATE.md`
+- `01_MASTER/DECISIONS.md`
+- `01_MASTER/TARGET_STATE.md`
+- `01_MASTER/DELIVERY_PLAN.md`
+- `01_MASTER/RELEASE_CRITERIA.md`
+- `01_MASTER/ROADMAP.md`
 - `01_MASTER/SSOT_MAP.md`
 
 ### Product
@@ -60,27 +66,7 @@ It owns navigation only. It must not restate live project state or the active Co
 
 ### Codex operating layer
 - `05_CODEX/NEXT_TASK.md`
-- `05_CODEX/IMPLEMENTATION_RULES.md`
-- `05_CODEX/HANDOFF_TEMPLATE.md`
-- `05_CODEX/CODEX_WORKLOG.md`
 - `05_CODEX/TASKS.md`
-
-## Planned document map (planning only, not proof of existence/completion)
-
-The paths below are part of the intended repository map and are not proof that the documents already exist or are completed.
-
-### Planned modules
-- `03_MODULES/FILM_INGEST.md`
-- `03_MODULES/TEXT_ANALYSIS.md`
-- `03_MODULES/TIMECODE_ENGINE.md`
-- `03_MODULES/EXPORT_CENTER.md`
-- `03_MODULES/FILM_LIBRARY.md`
-
-### Planned tech
-None beyond the current core set.
-
-### Planned quality
-- `06_QUALITY/MATCHING_QUALITY.md`
-- `06_QUALITY/CONTENT_QUALITY_RULES.md`
-- `06_QUALITY/EDITOR_APPROVAL_RULES.md`
-- `06_QUALITY/PLATFORM_ACCEPTANCE.md`
+- `05_CODEX/CODEX_WORKLOG.md`
+- `05_CODEX/HANDOFF_TEMPLATE.md`
+- `05_CODEX/IMPLEMENTATION_RULES.md`

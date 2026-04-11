@@ -1,6 +1,6 @@
-﻿# Decisions
+# Decisions
 
-Last updated: 2026-04-08
+Last updated: 2026-04-11
 Status: active
 
 ## D-001 Repository operating model
@@ -11,44 +11,45 @@ The repository is managed as a source-of-truth project system, not as a loose fo
 - `00_INDEX.md` owns navigation only.
 - `01_MASTER/CURRENT_STATE.md` owns live current state.
 - `05_CODEX/NEXT_TASK.md` owns the one active implementation packet.
-- Weaker documents must point to stronger owners instead of duplicating live state.
+- weaker documents must point to stronger owners instead of duplicating live state.
 
 ## D-002 Product starting point
 
 DNA Film Content Engine starts as a desktop-first product.
 
 ### Consequences
-- The first user-facing operating surface is desktop.
-- Mobile, cloud sync, team workflows, and publication automation are deferred.
+- the first user-facing operating surface is desktop;
+- mobile, cloud sync, team workflows, and publication automation are deferred.
 
 ## D-003 Product logic
 
-The product is defined as a meaning-to-media engine rather than as a generic video editor.
+The product is a meaning-to-media engine, not a generic video editor.
 
 ### Canonical flow
-`analysis text -> semantic blocks -> scene matching -> timecodes -> rough cut -> shorts/reels -> carousel -> packaging/export`
+`analysis text -> semantic map -> matching -> scene/timecode chain -> rough cut -> output builder -> export package`
 
 ### Consequences
-- Semantic structure is primary.
-- Raw montage automation is secondary to meaning alignment.
-- Interface design must reflect semantic control, not only timeline manipulation.
+- semantic structure is primary;
+- rough cut is not the final unit of value;
+- the product is judged by usable content outputs.
 
-## D-004 First implementation frontier
+## D-004 Delivery program rule
 
-The first strong frontier is interface-first product framing.
+The project is governed as a delivery program rather than as an open-ended chain of bounded local slices.
 
 ### Consequences
-- The project starts with user flows, screen map, and UX principles.
-- Heavy engine implementation is deferred until the user-facing operating model is fixed.
+- the repository must always have one active stage;
+- the repository must always have one active delivery milestone;
+- Codex must always have one active packet that moves that milestone.
 
 ## D-005 Scope-control rule
 
-The project adopts anti-drift discipline from Trader Trainer, but does not inherit its excessive micro-slice granularity.
+The project keeps anti-drift discipline, but not at the cost of turning progress into endless micro-slice management.
 
 ### Consequences
-- Work should move in bounded product slices.
-- Task packets should map to real user-visible gains.
-- The repository should stay resumable without turning into task-history overload.
+- packets must map to real delivery progress;
+- local improvements are justified only if they unlock the next product step;
+- the control layer should stay compact.
 
 ## D-006 Manager-led execution model
 
@@ -60,32 +61,30 @@ The project is run through a manager-led execution model.
 
 ### Consequences
 - strongest-next-step selection belongs to ChatGPT;
-- bounded task packets are issued by ChatGPT;
 - Codex executes packets and synchronizes the repository;
-- Codex must not independently redefine project direction;
-- repository state must remain resumable through synchronized state files.
-
-### Why
-This model reduces noise, improves decision quality, preserves project coherence, and prevents repository drift caused by mixing strategic and operational roles.
+- Codex must not independently redefine project direction.
 
 ## D-007 Manager review depth and efficiency gate
 
 ChatGPT must review Codex handoffs as project-management inputs, not only as completion confirmations.
 
-### Required manager review depth
-- completion review must confirm what files changed, what was completed, and what remains open;
-- management review must judge what capability the packet added, what this newly unlocks, what it still does not solve, whether local refinement is overtaking strategic efficiency, and whether the next step should stay in the current lane or change scale.
-
 ### Operating consequence
-- strongest-next-step selection must pass an efficiency gate that checks value gained per packet, strategic relevance, current packet granularity, and whether a larger or different next move is now stronger than another local refinement.
-- ChatGPT must not choose the next packet by inertia from the previous recommendation, the last local opening, or the current micro-frontier alone; the choice must be re-evaluated against current repository capability and sequencing efficiency.
+- strongest-next-step selection must pass an efficiency gate that checks value gained, strategic relevance, and whether the next step should change scale;
+- the next packet must not be chosen by inertia from the previous local recommendation.
 
 ## D-008 First runtime boundary
 
-The first runtime implementation boundary is a local-first, file-based desktop prototype rather than a backend-led or network-led architecture.
+The current runtime boundary remains local-first, file-based, and desktop-first.
 
 ### Consequences
-- the initial executable slice should run locally without external services or dependency-heavy infrastructure;
-- project state should persist as a real local project package on disk;
-- desktop-facing proof matters more than generalized platform abstractions at this stage;
-- backend, API, matching, and downstream execution layers remain deferred until the semantic workspace becomes meaningfully editable.
+- project state persists as a real local project package on disk;
+- backend, cloud, heavy rendering, and platform publishing remain deferred until the first usable output path exists.
+
+## D-009 Current stage logic
+
+The repository is currently in `Stage A - Usable end-to-end engine`.
+
+### Consequences
+- the main gap is the absence of a real builder and export-ready artifact;
+- structural refactoring is justified only because it reduces the cost of that first output path;
+- success is defined by one usable end-to-end content workflow.
