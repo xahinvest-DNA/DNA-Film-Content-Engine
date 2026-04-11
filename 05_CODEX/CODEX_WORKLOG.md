@@ -1,3 +1,21 @@
+## 2026-04-11 - F-039 completed and Rough Cut gained reorder honesty in preferred-only focus
+
+### Completed
+- completed the rough cut preferred-only reorder guard slice as one bounded follow-up to the preferred-only editorial focus mode inside the real `Rough Cut` lane;
+- disabled `Move Up` and `Move Down` while preferred-only focus is active so the runtime no longer implies a false local reorder model inside the filtered subset view;
+- added explicit handoff guidance that saved-order semantics belong to the full rough-cut set and that reorder becomes available again in all-saved focus;
+- kept selected-segment behavior coherent across focus changes and preserved blocked-but-readable reopen honesty with the guard active;
+- verified the new guard through local app-level tests alongside prior regressions;
+- synchronized the repository state layer after real implementation progress.
+
+### Repository effect
+- the runtime now keeps preferred-only rough-cut focus editorially useful without pretending that the filtered view owns its own reorder semantics;
+- the repository gained one narrower honesty guard without opening playback, timeline, render/export, backend, or workflow-engine semantics;
+- the next bounded packet should now be selected by manager review against current repository capability rather than assumed by inertia.
+
+### Recommended next step
+ChatGPT should select the next strongest bounded packet after `F-039`, based on the fact that the runtime now guards reorder meaning while preferred-only rough-cut focus is active.
+
 ## 2026-04-11 - F-038 completed and Rough Cut gained preferred-only editorial focus
 
 ### Completed

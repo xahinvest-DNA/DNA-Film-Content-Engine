@@ -1420,7 +1420,8 @@ class DNAFilmApp:
         combo_state = "readonly" if gate_state == "ready" and values else "disabled"
         self.rough_cut_segment_combo.configure(state=combo_state)
         selected_index = values.index(selected_display) if selected_display in values else -1
-        move_enabled = gate_state == "ready" and selected_index >= 0
+        reorder_allowed = self._rough_cut_focus_label() == "all saved segments"
+        move_enabled = gate_state == "ready" and selected_index >= 0 and reorder_allowed
         self.rough_cut_move_up_button.configure(state="normal" if move_enabled and selected_index > 0 else "disabled")
         self.rough_cut_move_down_button.configure(state="normal" if move_enabled and 0 <= selected_index < len(values) - 1 else "disabled")
         selected_subset_status = (selected_entry or {}).get("subset_status", "saved_only")
@@ -1446,6 +1447,11 @@ class DNAFilmApp:
         if focus == "show_preferred_subset_only":
             return "preferred subset only"
         return "all saved segments"
+
+    def _rough_cut_reorder_guidance(self) -> str:
+        if self._rough_cut_focus_label() == "preferred subset only":
+            return "Reorder is available only in all-saved focus because saved order belongs to the full rough-cut set."
+        return "Reorder applies to the full saved rough-cut order."
 
     def _rough_cut_segment_option_label(self, entry: dict) -> str:
         return f"{entry.get('sequence', 0):02d}. {entry.get('segment_label', 'Untitled segment')} [{entry.get('record_id', 'unknown')}]"
@@ -1928,6 +1934,7 @@ class DNAFilmApp:
         rough_cut_segment_stub_summary = self._rough_cut_segment_stub_summary(project)
         rough_cut_preferred_subset_summary = self._rough_cut_preferred_subset_summary(project)
         rough_cut_focus_label = self._rough_cut_focus_label()
+        rough_cut_reorder_guidance = self._rough_cut_reorder_guidance()
         visible_segment_count = len(self._visible_rough_cut_segments(project))
         self.rough_cut_segment_summary_text.set(rough_cut_segment_stub_summary)
         self._set_rough_cut_enabled(gate_state == "ready")
@@ -1942,6 +1949,7 @@ class DNAFilmApp:
                 rough_cut_segment_stub_summary,
                 rough_cut_preferred_subset_summary,
                 f"Rough-cut focus: {rough_cut_focus_label} | visible segments: {visible_segment_count}.",
+                rough_cut_reorder_guidance,
                 "",
                 "Current preferred rough-cut subset",
                 *self._preferred_rough_cut_segment_lines(project),
@@ -1964,6 +1972,7 @@ class DNAFilmApp:
                 rough_cut_segment_stub_summary,
                 rough_cut_preferred_subset_summary,
                 f"Rough-cut focus: {rough_cut_focus_label} | visible segments: {visible_segment_count}.",
+                rough_cut_reorder_guidance,
                 "",
                 "Current preferred rough-cut subset",
                 *self._preferred_rough_cut_segment_lines(project),

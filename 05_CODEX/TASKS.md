@@ -1,16 +1,22 @@
 # Codex Tasks
 
-Last updated: 2026-04-10
-Current focus: manager review and next bounded packet selection after F-038
+Last updated: 2026-04-11
+Current focus: manager review and next bounded packet selection after F-039
 
 ## Working rule
 Tasks should be bounded, product-visible, and small enough to preserve continuity without turning the repository into micro-slice overload.
 
 ## Active task
 
-- No new implementation packet is active until ChatGPT selects the next bounded step after reviewing the completed `F-038` handoff.
+- No new implementation packet is active until ChatGPT selects the next bounded step after reviewing the completed `F-039` handoff.
 
 ## Completed tasks
+
+### F-039
+- Status: completed
+- Module: rough cut preferred-only reorder guard slice
+- Goal: add one bounded guard for reorder behavior while the `Rough Cut` lane is in preferred-only focus mode so the UI does not imply a false local reorder meaning, without changing persistence semantics, reorder algorithm semantics, or drifting into playback, trimming, timeline, render/export, backend, or workflow buildout.
+- Outcome: disabled `Move Up` and `Move Down` while preferred-only focus is active, added explicit rough-cut handoff guidance that saved-order semantics belong to the full rough-cut set, restored normal reorder availability when switching back to all-saved focus, kept selected-segment and blocked-but-readable reopen behavior coherent across focus changes, verified the new guard through local app-level tests, and kept the packet intentionally narrow.
 
 ### F-038
 - Status: completed

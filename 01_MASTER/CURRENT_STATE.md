@@ -1,11 +1,11 @@
 # Current State
 
-Last updated: 2026-04-10
+Last updated: 2026-04-11
 Status: active
-Current stage: F-038 rough cut preferred-only focus slice is completed
+Current stage: F-039 rough cut preferred-only reorder guard slice is completed
 Active module: manager review and next bounded packet selection
-Active frontier: post-F-038 state synchronization
-Active question: which one strongest bounded packet should follow now that the runtime can switch the Rough Cut lane between all-saved and preferred-only editorial focus modes without opening playback, trimming, timeline, render/export, backend, or workflow-engine scope
+Active frontier: post-F-039 state synchronization
+Active question: which one strongest bounded packet should follow now that the runtime keeps preferred-only rough-cut focus readable without implying a false local reorder model and without opening playback, trimming, timeline, render/export, backend, or workflow-engine scope
 
 ## Where the project is now
 
@@ -42,13 +42,14 @@ At this point:
 - the `Rough Cut` lane now also distinguishes between all saved rough-cut segment stubs and the current preferred rough-cut subset, persists that subset status locally, and surfaces it as the dominant current editorial handoff without turning the lane into a mini-timeline;
 - the `Rough Cut` lane now also supports one bounded removal path for the currently selected rough-cut segment stub, resequences the remaining set honestly, keeps preferred-subset readability coherent, and preserves blocked-but-readable reopen honesty without opening playback or timeline semantics;
 - the `Rough Cut` lane now also supports one bounded focus mode switch between the full saved rough-cut set and the preferred rough-cut subset only, keeps selection coherent across both views, and preserves blocked-but-readable honesty in either focus mode without changing persistence semantics;
+- the `Rough Cut` lane now also guards reorder honesty in preferred-only focus mode by disabling `Move Up` and `Move Down` there and explicitly stating that saved-order semantics belong to the full rough-cut set rather than to the filtered preferred-only view;
 - the main MVP operating surface remains fixed as `Semantic Map Workspace`;
 - the meaning-first architecture is now explicit across product, domain, schema, project-package, asset, downstream output, and implementation layers;
 - the project now uses a manager-led execution model;
 - ChatGPT owns strongest-next-step selection;
 - Codex owns repository execution and state synchronization;
 - manager review depth and next-step efficiency-gate doctrine are now fixed in repository governance documents rather than left to chat memory;
-- F-038 is completed and no longer the active runtime frontier;
+- F-039 is completed and no longer the active runtime frontier;
 - the repository is now waiting for ChatGPT to select the next strongest bounded packet.
 
 ## Accepted boundaries right now
@@ -69,14 +70,14 @@ At this point:
 ## Open items
 
 - preserve the new timecode range stub boundary as a bounded temporal artifact slice rather than letting it drift into transcript alignment, automatic timing extraction, ranking, or workflow-engine semantics;
-- preserve the new rough-cut preferred-only focus boundary as editorial working visibility inside the existing ordered rough-cut set rather than letting it drift into timeline editing, playback, render, or export semantics;
+- preserve the new rough-cut preferred-only focus and reorder-honesty boundaries as editorial working visibility inside the existing ordered rough-cut set rather than letting them drift into timeline editing, playback, render, or export semantics;
 - keep the new `HH:MM:SS` manual-format and ordering guard narrow rather than letting it grow into smart parsing, normalization, or frame-accurate validation policy;
 - choose one strongest next bounded packet now that the runtime can cross from accepted prep reference into scene-side and temporal downstream artifacts inside `Scene Matching`;
 - keep later scene-matching work explicitly outside automatic matching, transcript alignment, confidence engines, timecodes beyond this stub, backend, dashboard, and workflow-engine scope until a stronger packet justifies opening them.
 
 ## Next step
 
-ChatGPT should review the completed `F-038 Rough Cut Preferred-Only Focus Slice` handoff and select one strongest next bounded packet.
+ChatGPT should review the completed `F-039 Rough Cut Preferred-Only Reorder Guard Slice` handoff and select one strongest next bounded packet.
 
 ## What must not be lost in a new chat
 
@@ -85,6 +86,6 @@ ChatGPT should review the completed `F-038 Rough Cut Preferred-Only Focus Slice`
 - manager-led execution model is fixed.
 - MVP main surface is `Semantic Map Workspace`.
 - product, domain, schema, project-file, asset, and downstream output-boundary layers are fixed.
-- F-038 is completed with one bounded focus mode on the ordered `rough_cut_segment_stub` set, so the runtime now supports both broad saved-structure reading and preferred-only editorial focus while still staying provisional, local-first, pre-render, and outside workflow-engine semantics.
+- F-039 is completed with one reorder-honesty guard in preferred-only rough-cut focus mode, so the runtime no longer implies a false filtered-order model while still staying provisional, local-first, pre-render, and outside workflow-engine semantics.
 - ChatGPT must read Codex handoffs as management signals about capability gained, capability unlocked, unresolved gap, and packet-size efficiency before choosing what comes next.
 - the next strong active runtime step must be re-selected from current repository capability rather than assumed by inertia from the just-completed matching-prep status slice.

@@ -3447,6 +3447,64 @@ class DNAFilmAppTests(unittest.TestCase):
             finally:
                 root.destroy()
 
+    def test_app_rough_cut_reorder_is_disabled_in_preferred_only_focus(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    self._build_timecode_ready_app_project(app, "UI Rough Cut Reorder Guard Map")
+                    app._switch_view("Rough Cut")
+                    app.rough_cut_segment_label_var.set("Opening segment")
+                    app.save_rough_cut_segment_stub()
+                    app.rough_cut_segment_label_var.set("Reaction segment")
+                    app.save_rough_cut_segment_stub()
+                    app._select_rough_cut_segment_by_id(app.project.rough_cut_segment_stubs[1]["record_id"])
+                    app.include_selected_rough_cut_segment()
+
+                app.rough_cut_focus_var.set("show_preferred_subset_only")
+                app.on_rough_cut_focus_changed()
+                handoff = app.rough_cut_handoff.get("1.0", "end").strip()
+                self.assertEqual(str(app.rough_cut_move_up_button["state"]), "disabled")
+                self.assertEqual(str(app.rough_cut_move_down_button["state"]), "disabled")
+                self.assertIn("Reorder is available only in all-saved focus because saved order belongs to the full rough-cut set.", handoff)
+            finally:
+                root.destroy()
+
+    def test_app_rough_cut_reorder_returns_in_all_saved_focus(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = ProjectSliceStore(app.workspace_root)
+
+                with patch("runtime.app.messagebox.showinfo"), patch("runtime.app.messagebox.showerror"):
+                    self._build_timecode_ready_app_project(app, "UI Rough Cut Reorder Guard Return Map")
+                    app._switch_view("Rough Cut")
+                    app.rough_cut_segment_label_var.set("Opening segment")
+                    app.save_rough_cut_segment_stub()
+                    app.rough_cut_segment_label_var.set("Reaction segment")
+                    app.save_rough_cut_segment_stub()
+                    app._select_rough_cut_segment_by_id(app.project.rough_cut_segment_stubs[1]["record_id"])
+                    app.include_selected_rough_cut_segment()
+
+                app.rough_cut_focus_var.set("show_preferred_subset_only")
+                app.on_rough_cut_focus_changed()
+                app.rough_cut_focus_var.set("show_all_saved_segments")
+                app.on_rough_cut_focus_changed()
+                handoff = app.rough_cut_handoff.get("1.0", "end").strip()
+                self.assertEqual(str(app.rough_cut_move_up_button["state"]), "normal")
+                self.assertEqual(str(app.rough_cut_move_down_button["state"]), "disabled")
+                self.assertIn("Reorder applies to the full saved rough-cut order.", handoff)
+            finally:
+                root.destroy()
+
     def test_app_rough_cut_selected_segment_remains_coherent_across_focus_changes(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = tk.Tk()
