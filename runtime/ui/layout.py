@@ -400,9 +400,10 @@ class DNAFilmAppLayoutMixin:
             wraplength=760,
         ).grid(row=1, column=0, sticky="w", pady=(8, 6))
         ttk.Label(frame, textvariable=self.output_builder_status_text, wraplength=760).grid(row=2, column=0, sticky="w", pady=(0, 4))
-        ttk.Label(frame, textvariable=self.output_builder_summary_text, wraplength=760).grid(row=3, column=0, sticky="w", pady=(0, 8))
+        ttk.Label(frame, textvariable=self.output_builder_inventory_text, wraplength=760).grid(row=3, column=0, sticky="w", pady=(0, 4))
+        ttk.Label(frame, textvariable=self.output_builder_summary_text, wraplength=760).grid(row=4, column=0, sticky="w", pady=(0, 8))
         action_frame = ttk.Frame(frame)
-        action_frame.grid(row=4, column=0, sticky="w", pady=(0, 8))
+        action_frame.grid(row=5, column=0, sticky="w", pady=(0, 8))
         self.build_packaging_bundle_button = ttk.Button(
             action_frame,
             text="Build Packaging-Ready Script Bundle",
@@ -429,7 +430,7 @@ class DNAFilmAppLayoutMixin:
         self.build_carousel_button.pack(side="left", padx=(8, 0))
         ttk.Label(action_frame, textvariable=self.output_builder_path_text, wraplength=520).pack(side="left", padx=(12, 0))
         self.output_builder_handoff = tk.Text(frame, height=20, wrap="word")
-        self.output_builder_handoff.grid(row=5, column=0, sticky="nsew")
+        self.output_builder_handoff.grid(row=6, column=0, sticky="nsew")
         self.output_builder_handoff.configure(state="disabled")
         return frame
 

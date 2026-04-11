@@ -54,6 +54,7 @@ from runtime.domain.workflow_rules import (
     approval_readiness_label,
     default_review_record,
     mark_reopened_if_needed,
+    output_project_status_summary,
     reconcile_accepted_reference,
     reconcile_accepted_scene_reference_stub,
     reconcile_carousel_script,
@@ -1119,10 +1120,12 @@ class ProjectSliceStore:
         manifest["updated_at"] = now
         project_record = dict(project.project_record)
         project_record["updated_at"] = now
-        project_record["project_status"] = "packaging_script_bundle_ready"
-        project_record["current_readiness_summary"] = (
-            f"Packaging-ready script bundle built from {packaging_script_bundle['segment_count']} rough-cut segment(s) "
-            f"using {packaging_script_bundle['source_focus_mode']}."
+        project_record["project_status"], project_record["current_readiness_summary"] = output_project_status_summary(
+            packaging_script_bundle,
+            project.shorts_reels_script,
+            project.long_video_script,
+            project.carousel_script,
+            latest_build_label="Packaging-ready script bundle",
         )
         intake_record = dict(project.intake_record)
         intake_record["updated_at"] = now
@@ -1166,10 +1169,12 @@ class ProjectSliceStore:
         manifest["updated_at"] = now
         project_record = dict(project.project_record)
         project_record["updated_at"] = now
-        project_record["project_status"] = "shorts_reels_script_ready"
-        project_record["current_readiness_summary"] = (
-            f"Shorts/Reels script built from {shorts_reels_script['segment_count']} rough-cut segment(s) "
-            f"using {shorts_reels_script['source_focus_mode']}."
+        project_record["project_status"], project_record["current_readiness_summary"] = output_project_status_summary(
+            project.packaging_script_bundle,
+            shorts_reels_script,
+            project.long_video_script,
+            project.carousel_script,
+            latest_build_label="Shorts/Reels script",
         )
         intake_record = dict(project.intake_record)
         intake_record["updated_at"] = now
@@ -1213,10 +1218,12 @@ class ProjectSliceStore:
         manifest["updated_at"] = now
         project_record = dict(project.project_record)
         project_record["updated_at"] = now
-        project_record["project_status"] = "long_video_script_ready"
-        project_record["current_readiness_summary"] = (
-            f"Long-video script built from {long_video_script['segment_count']} rough-cut segment(s) "
-            f"using {long_video_script['source_focus_mode']}."
+        project_record["project_status"], project_record["current_readiness_summary"] = output_project_status_summary(
+            project.packaging_script_bundle,
+            project.shorts_reels_script,
+            long_video_script,
+            project.carousel_script,
+            latest_build_label="Long-video script",
         )
         intake_record = dict(project.intake_record)
         intake_record["updated_at"] = now
@@ -1261,10 +1268,12 @@ class ProjectSliceStore:
         manifest["updated_at"] = now
         project_record = dict(project.project_record)
         project_record["updated_at"] = now
-        project_record["project_status"] = "carousel_script_ready"
-        project_record["current_readiness_summary"] = (
-            f"Carousel script built from {carousel_script['segment_count']} rough-cut segment(s) "
-            f"using {carousel_script['source_focus_mode']}."
+        project_record["project_status"], project_record["current_readiness_summary"] = output_project_status_summary(
+            project.packaging_script_bundle,
+            project.shorts_reels_script,
+            project.long_video_script,
+            carousel_script,
+            latest_build_label="Carousel script",
         )
         intake_record = dict(project.intake_record)
         intake_record["updated_at"] = now

@@ -2,25 +2,25 @@
 
 Last updated: 2026-04-11
 Status: active
-Task ID: C-001
+Task ID: C-002
 Task type: production_hardening
-Title: Multi-Builder Output Hardening Entry
+Title: Recovery and Validation Hardening Follow-up
 
 ## Goal
 
-Harden the four-builder runtime so the product becomes more repeatable, recoverable, and trustworthy as local production software.
+Deepen recovery and validation trust around the four-builder runtime so repeated local use feels dependable beyond the first Stage C hardening entry.
 
 ## Why this is next
 
-`B-003` is complete and the product now has four honest builders: the packaging-ready script bundle, the Shorts/Reels script, the long-video script, and the carousel script.
+`C-001` is complete and the product now has clearer multi-builder inventory, trust summaries, and stronger repeated-use coverage across the existing four outputs.
 
-The strongest next move is no longer another builder by inertia. Stage B breadth now exists, so the main risk has shifted to production hardening: output-surface density, recovery confidence, validation depth, and release-quality trust.
+The strongest next move remains production hardening, but now with a narrower focus: deepen recovery confidence, rebuild/open behavior, and validation honesty rather than broadening the output family set.
 
 ## In scope
 
-- harden the four-builder output surface without redesigning the whole UI;
-- improve validation and recovery confidence around reload, stale cleanup, and multi-builder coexistence;
-- strengthen local production readiness for repeated use of the existing builder set;
+- deepen recovery confidence around open, reload, rebuild, and stale-cleared project packages;
+- strengthen validation honesty around multi-builder repeated use and edge-state transitions;
+- make the current four-builder workstation safer to trust without changing product direction;
 - keep `runtime/app.py`, `runtime/builders/`, and `runtime/persistence/project_store.py` within the current hardened boundary model.
 
 ## Out of scope
@@ -34,10 +34,10 @@ The strongest next move is no longer another builder by inertia. Stage B breadth
 
 ## Recommended validation
 
-- verify one project can repeatedly reload and use all four builders without stale or misleading output state;
-- expand test protection around multi-builder surface behavior, recovery, and validation honesty;
-- confirm the output surface remains coherent with four builders before any future export-center expansion;
-- confirm production hardening work does not re-centralize logic in `runtime/app.py` or `runtime/persistence/project_store.py`.
+- verify one project can survive more demanding open/reload/rebuild cycles without misleading output state;
+- expand test protection around recovery behavior, status persistence, and rebuild-after-clear flows;
+- confirm the four-builder output surface stays coherent while deeper recovery hardening lands;
+- confirm hardening work still does not re-centralize logic in `runtime/app.py` or `runtime/persistence/project_store.py`.
 
 ## Required handoff format
 
@@ -45,6 +45,6 @@ Use `05_CODEX/HANDOFF_TEMPLATE.md` exactly.
 
 Also include:
 
-- what hardening areas were improved first and why;
+- what recovery and validation areas were hardened next and why;
 - what risks still remain before release-grade confidence;
-- which later watchlist items should stay watching rather than become immediate tasks.
+- which watchlist items moved and which still remain watching.

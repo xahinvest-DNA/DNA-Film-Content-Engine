@@ -19,6 +19,82 @@ from runtime.domain.semantic_rules import (
     semantic_completeness,
 )
 
+OUTPUT_ARTIFACT_LABELS = (
+    ("packaging", "Packaging"),
+    ("shorts_reels", "Shorts/Reels"),
+    ("long_video", "Long Video"),
+    ("carousel", "Carousel"),
+)
+
+
+def output_artifact_inventory(
+    packaging_script_bundle: dict | None = None,
+    shorts_reels_script: dict | None = None,
+    long_video_script: dict | None = None,
+    carousel_script: dict | None = None,
+) -> dict:
+    artifact_values = {
+        "packaging": packaging_script_bundle,
+        "shorts_reels": shorts_reels_script,
+        "long_video": long_video_script,
+        "carousel": carousel_script,
+    }
+    built_keys = [key for key, _ in OUTPUT_ARTIFACT_LABELS if artifact_values[key] is not None]
+    missing_keys = [key for key, _ in OUTPUT_ARTIFACT_LABELS if artifact_values[key] is None]
+    built_labels = [label for key, label in OUTPUT_ARTIFACT_LABELS if artifact_values[key] is not None]
+    missing_labels = [label for key, label in OUTPUT_ARTIFACT_LABELS if artifact_values[key] is None]
+    total_slots = len(OUTPUT_ARTIFACT_LABELS)
+    built_count = len(built_keys)
+    if built_count == 0:
+        runtime_state = "none_built"
+    elif built_count == total_slots:
+        runtime_state = "all_built"
+    else:
+        runtime_state = "partially_built"
+    return {
+        "built_keys": built_keys,
+        "missing_keys": missing_keys,
+        "built_labels": built_labels,
+        "missing_labels": missing_labels,
+        "built_count": built_count,
+        "total_slots": total_slots,
+        "runtime_state": runtime_state,
+    }
+
+
+def output_project_status_summary(
+    packaging_script_bundle: dict | None = None,
+    shorts_reels_script: dict | None = None,
+    long_video_script: dict | None = None,
+    carousel_script: dict | None = None,
+    latest_build_label: str = "",
+) -> tuple[str, str]:
+    inventory = output_artifact_inventory(
+        packaging_script_bundle,
+        shorts_reels_script,
+        long_video_script,
+        carousel_script,
+    )
+    built_count = inventory["built_count"]
+    total_slots = inventory["total_slots"]
+    missing_labels = inventory["missing_labels"]
+    latest_prefix = f"Latest build: {latest_build_label}. " if latest_build_label else ""
+    if inventory["runtime_state"] == "none_built":
+        return (
+            "output_tracks_ready",
+            "Output Tracks is ready, but no output artifacts are built yet.",
+        )
+    if inventory["runtime_state"] == "all_built":
+        return (
+            "all_output_tracks_ready",
+            f"{latest_prefix}All {total_slots} output artifacts are currently built and reload-safe.",
+        )
+    missing_text = ", ".join(missing_labels)
+    return (
+        "partial_output_tracks_ready",
+        f"{latest_prefix}{built_count} of {total_slots} output artifacts are currently built. Remaining: {missing_text}.",
+    )
+
 
 def reconcile_accepted_reference(
     accepted_reference: dict | None,
@@ -316,6 +392,12 @@ def status_payload(
     carousel_script: dict | None = None,
 ) -> dict:
     completeness_label, issue_count, blocks_with_issues = semantic_completeness(intake_record, semantic_blocks)
+    inventory = output_artifact_inventory(
+        packaging_script_bundle,
+        shorts_reels_script,
+        long_video_script,
+        carousel_script,
+    )
     return {
         "project_status": project_record["project_status"],
         "current_readiness_summary": project_record["current_readiness_summary"],
@@ -335,6 +417,11 @@ def status_payload(
         "shorts_reels_script_ready": shorts_reels_script is not None,
         "long_video_script_ready": long_video_script is not None,
         "carousel_script_ready": carousel_script is not None,
+        "output_artifacts_built_count": inventory["built_count"],
+        "output_artifacts_total_slots": inventory["total_slots"],
+        "output_runtime_state": inventory["runtime_state"],
+        "built_output_families": inventory["built_keys"],
+        "missing_output_families": inventory["missing_keys"],
         "updated_at": project_record["updated_at"],
     }
 

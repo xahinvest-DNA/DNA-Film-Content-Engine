@@ -4,8 +4,8 @@ Last updated: 2026-04-11
 Status: active
 Product goal: desktop-first content production software
 Active stage: Stage C - Production hardening
-Active delivery milestone: harden the four-builder runtime into repeatable local production software
-Active Codex packet: C-001 Multi-Builder Output Hardening Entry
+Active delivery milestone: deepen recovery, validation, and repeated-use trust around the four-builder runtime
+Active Codex packet: C-002 Recovery and Validation Hardening Follow-up
 
 ## What is true now
 
@@ -35,13 +35,21 @@ The runtime boundary hardening pass is now also complete:
 - boundary tests now protect reopen cleanup, reload reproducibility, and builder-entrypoint consistency.
 - `01_MASTER/STRATEGIC_WATCHLIST.md` now exists as a separate strategic-observation layer for non-blocking but potentially high-impact concerns.
 
+The first Stage C hardening entry is now also complete:
+
+- `Output Tracks` now reports explicit multi-builder inventory, trust/recovery state, next sensible action, and built artifact paths instead of relying on one dense mixed summary;
+- repeated-use trust is stronger across `nothing built`, `partial build set`, `all built`, and `cleared after upstream reopen` states;
+- `project.meta/status.json` now records output inventory state (`none_built`, `partially_built`, `all_built`) plus built/missing output families;
+- repeated rebuild order, reload, and stale-cleanup scenarios are now more directly test-protected.
+
 ## Main product gap
 
 The main gap has changed again:
 
 - the product now has four honest builders and Stage B breadth is materially real;
 - the main remaining gap is no longer output-family coverage, but production hardening;
-- recovery confidence, validation depth, output-surface scalability, and release quality still need a deliberate Stage C pass.
+- recovery confidence and validation depth are now stronger than before C-001, but they still need more hardening before release-grade trust;
+- output-surface scalability and broader release quality remain open.
 
 The software is now a real multi-format content path proof, but it still needs harder release quality.
 
@@ -54,11 +62,11 @@ The project is now governed through four levels:
 3. one active delivery milestone at a time;
 4. one active Codex packet at a time.
 
-The current active milestone belongs to Stage C and is aimed at making the now-broadened multi-builder runtime more durable, recoverable, and release-facing.
+The current active milestone belongs to Stage C and is aimed at making the now-broadened multi-builder runtime more durable, recoverable, and release-facing under repeated local use.
 
 ## What the next packet must do
 
-`B-003` is now complete.
+`C-001` is now complete.
 
 Four proven output builders are now real:
 
@@ -67,9 +75,9 @@ Four proven output builders are now real:
 - long-video script;
 - carousel script.
 
-All four artifacts now exist as saved markdown plus persisted output records behind the same hardened builder boundary, reload path, and stale-cleanup model.
+All four artifacts now exist as saved markdown plus persisted output records behind the same hardened builder boundary, reload path, stale-cleanup model, and clearer multi-builder trust surface.
 
-The next active packet is `C-001`, because the strongest next move is to harden recovery, validation, and multi-builder usability rather than continue format expansion by inertia.
+The next active packet is `C-002`, because the strongest next move is to keep hardening recovery and validation depth rather than broaden format coverage again.
 
 What is preserved:
 
@@ -78,6 +86,7 @@ What is preserved:
 - the product remains local-first and desktop-first;
 - the export center is still intentionally narrow and not yet a full publishing system.
 - the strategic watchlist now exists, but it is not a backlog and must not compete with the one active packet rule.
+- Output Tracks is now clearer and less misleading in partial-build and cleared-after-reopen scenarios.
 
 ## Accepted boundaries right now
 
@@ -93,13 +102,13 @@ What is preserved:
 
 ## Open items
 
-- harden recovery, validation, and release quality now that Stage B breadth exists;
-- keep the four-builder output surface coherent as production hardening begins;
+- deepen recovery, validation, and release quality now that the first hardening entry is complete;
+- keep the four-builder output surface coherent as Stage C continues;
 - use the watchlist to capture high-impact signals without converting everything into immediate packets.
 
 ## Next step
 
-Execute `C-001 Multi-Builder Output Hardening Entry`.
+Execute `C-002 Recovery and Validation Hardening Follow-up`.
 
 ## What must not be lost in a new chat
 
@@ -114,4 +123,5 @@ Execute `C-001 Multi-Builder Output Hardening Entry`.
 - the fourth proven builder is the carousel script artifact;
 - A-002 boundary hardening is complete and Stage B can expand on a cleaner runtime boundary;
 - `STRATEGIC_WATCHLIST.md` exists as a strategic observation layer and is not a task backlog;
-- `C-001` is now the one active packet because production hardening is the strongest next move after Stage B breadth is proven.
+- `C-001` improved multi-builder trust, inventory visibility, and repeated-use coverage;
+- `C-002` is now the one active packet because deeper recovery and validation hardening is the strongest next move after the first trust pass.

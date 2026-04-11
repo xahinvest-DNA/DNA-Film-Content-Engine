@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import tempfile
 import tkinter as tk
 import unittest
@@ -271,8 +272,8 @@ class OutputBuilderTests(unittest.TestCase):
                     app.build_packaging_script_bundle()
 
                 self.assertIsNotNone(app.project.packaging_script_bundle)
-                self.assertIn("Packaging-ready script bundle:", app.output_builder_summary_text.get())
-                self.assertIn("Packaging path: outputs/packaging/packaging_script_bundle.md", app.output_builder_path_text.get())
+                self.assertIn("1 of 4 artifacts built", app.output_builder_inventory_text.get())
+                self.assertIn("Packaging: outputs/packaging/packaging_script_bundle.md", app.output_builder_path_text.get())
                 self.assertIn("Packaging Script Bundle", app.output_builder_handoff.get("1.0", "end"))
             finally:
                 root.destroy()
@@ -295,8 +296,8 @@ class OutputBuilderTests(unittest.TestCase):
                     app.build_shorts_reels_script()
 
                 self.assertIsNotNone(app.project.shorts_reels_script)
-                self.assertIn("Shorts/Reels script:", app.output_builder_summary_text.get())
-                self.assertIn("Shorts/Reels path: outputs/shorts_reels/shorts_reels_script.md", app.output_builder_path_text.get())
+                self.assertIn("1 of 4 artifacts built", app.output_builder_inventory_text.get())
+                self.assertIn("Shorts/Reels: outputs/shorts_reels/shorts_reels_script.md", app.output_builder_path_text.get())
                 self.assertIn("Shorts Reels Script", app.output_builder_handoff.get("1.0", "end"))
             finally:
                 root.destroy()
@@ -319,8 +320,8 @@ class OutputBuilderTests(unittest.TestCase):
                     app.build_long_video_script()
 
                 self.assertIsNotNone(app.project.long_video_script)
-                self.assertIn("Long-video script:", app.output_builder_summary_text.get())
-                self.assertIn("Long-video path: outputs/long_video/long_video_script.md", app.output_builder_path_text.get())
+                self.assertIn("1 of 4 artifacts built", app.output_builder_inventory_text.get())
+                self.assertIn("Long Video: outputs/long_video/long_video_script.md", app.output_builder_path_text.get())
                 self.assertIn("Long Video Script", app.output_builder_handoff.get("1.0", "end"))
             finally:
                 root.destroy()
@@ -343,9 +344,90 @@ class OutputBuilderTests(unittest.TestCase):
                     app.build_carousel_script()
 
                 self.assertIsNotNone(app.project.carousel_script)
-                self.assertIn("Carousel script:", app.output_builder_summary_text.get())
-                self.assertIn("Carousel path: outputs/carousel/carousel_script.md", app.output_builder_path_text.get())
+                self.assertIn("1 of 4 artifacts built", app.output_builder_inventory_text.get())
+                self.assertIn("Carousel: outputs/carousel/carousel_script.md", app.output_builder_path_text.get())
                 self.assertIn("Carousel Script", app.output_builder_handoff.get("1.0", "end"))
+            finally:
+                root.destroy()
+
+    def test_output_tracks_reports_ready_but_nothing_built_yet(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = self._build_rough_cut_ready_project(store, "Output Tracks Empty State")
+
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = store
+                app._load_project_into_ui(project)
+                app._switch_view("Output Tracks")
+
+                self.assertIn("Output builder readiness: ready", app.output_builder_status_text.get())
+                self.assertIn("0 of 4 artifacts built", app.output_builder_inventory_text.get())
+                self.assertIn("ready for the first builder run", app.output_builder_summary_text.get())
+                self.assertEqual("Built artifact paths: none yet.", app.output_builder_path_text.get())
+                self.assertIn("Next sensible action: Build packaging-ready script bundle", app.output_builder_handoff.get("1.0", "end"))
+            finally:
+                root.destroy()
+
+    def test_output_tracks_reports_partial_state_after_reload(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = self._build_rough_cut_ready_project(store, "Output Tracks Partial State")
+            project = store.build_packaging_script_bundle(project.project_dir)
+            project = store.build_shorts_reels_script(project.project_dir)
+            reloaded = store.load_project(project.project_dir)
+
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = store
+                app._load_project_into_ui(reloaded)
+                app._switch_view("Output Tracks")
+
+                self.assertIn("2 of 4 artifacts built", app.output_builder_inventory_text.get())
+                self.assertIn("built artifacts remain current and reload-safe", app.output_builder_summary_text.get())
+                self.assertIn("Packaging: outputs/packaging/packaging_script_bundle.md", app.output_builder_path_text.get())
+                self.assertIn("Shorts/Reels: outputs/shorts_reels/shorts_reels_script.md", app.output_builder_path_text.get())
+                self.assertNotIn("Long Video:", app.output_builder_path_text.get())
+                self.assertNotIn("Carousel:", app.output_builder_path_text.get())
+                self.assertIn("Next sensible action: Build long-video script", app.output_builder_handoff.get("1.0", "end"))
+            finally:
+                root.destroy()
+
+    def test_output_tracks_reports_cleared_state_after_upstream_reopen(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = self._build_rough_cut_ready_project(store, "Output Tracks Cleared State")
+            project = store.build_packaging_script_bundle(project.project_dir)
+            project = store.build_shorts_reels_script(project.project_dir)
+            project = store.build_long_video_script(project.project_dir)
+            project = store.build_carousel_script(project.project_dir)
+            project = store.update_semantic_block(
+                project.project_dir,
+                project.semantic_blocks[0]["record_id"],
+                project.semantic_blocks[0]["title"],
+                project.semantic_blocks[0]["semantic_role"],
+                "Reopened semantic block should clear all output trust state.",
+            )
+
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = store
+                app._load_project_into_ui(project)
+                app._switch_view("Output Tracks")
+
+                self.assertIn("Output builder readiness: blocked", app.output_builder_status_text.get())
+                self.assertIn("0 of 4 artifacts built", app.output_builder_inventory_text.get())
+                self.assertIn("downstream rough-cut and output artifacts were cleared", app.output_builder_summary_text.get())
+                self.assertEqual("Built artifact paths: none yet.", app.output_builder_path_text.get())
             finally:
                 root.destroy()
 

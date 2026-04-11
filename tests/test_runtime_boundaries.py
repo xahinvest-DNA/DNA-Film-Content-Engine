@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -229,6 +230,43 @@ class RuntimeBoundaryTests(unittest.TestCase):
             self.assertTrue((built.project_dir / "records" / "output" / "shorts_reels_script.json").exists())
             self.assertTrue((built.project_dir / "records" / "output" / "long_video_script.json").exists())
             self.assertTrue((built.project_dir / "records" / "output" / "carousel_script.json").exists())
+
+    def test_status_payload_tracks_partial_and_complete_output_inventory(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            built = self._build_output_ready_project(store, "Boundary Status Payload")
+
+            status_path = built.project_dir / "project.meta" / "status.json"
+            status = json.loads(status_path.read_text(encoding="utf-8"))
+            self.assertEqual(1, status["output_artifacts_built_count"])
+            self.assertEqual(4, status["output_artifacts_total_slots"])
+            self.assertEqual("partially_built", status["output_runtime_state"])
+            self.assertEqual(["packaging"], status["built_output_families"])
+
+            built = store.build_carousel_script(built.project_dir)
+            built = store.build_long_video_script(built.project_dir)
+            built = store.build_shorts_reels_script(built.project_dir)
+            status = json.loads(status_path.read_text(encoding="utf-8"))
+            self.assertEqual(4, status["output_artifacts_built_count"])
+            self.assertEqual("all_built", status["output_runtime_state"])
+            self.assertEqual([], status["missing_output_families"])
+
+    def test_rebuild_order_variance_keeps_coherent_output_state(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = self._build_output_ready_project(store, "Boundary Build Order")
+            project = store.build_carousel_script(project.project_dir)
+            project = store.build_long_video_script(project.project_dir)
+            project = store.build_shorts_reels_script(project.project_dir)
+            reloaded = store.load_project(project.project_dir)
+            rebuilt = store.build_packaging_script_bundle(reloaded.project_dir)
+
+            self.assertIsNotNone(rebuilt.packaging_script_bundle)
+            self.assertIsNotNone(rebuilt.shorts_reels_script)
+            self.assertIsNotNone(rebuilt.long_video_script)
+            self.assertIsNotNone(rebuilt.carousel_script)
+            self.assertEqual("all_output_tracks_ready", rebuilt.project_record["project_status"])
+            self.assertIn("All 4 output artifacts are currently built", rebuilt.project_record["current_readiness_summary"])
 
 
 if __name__ == "__main__":

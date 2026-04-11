@@ -65,7 +65,7 @@ Stop condition:
 
 Current stage: Stage C
 
-Current milestone: harden the four-builder runtime into repeatable local production software
+Current milestone: deepen recovery, validation, and repeated-use trust around the four-builder runtime
 
 Current packet sequence:
 
@@ -75,4 +75,5 @@ Current packet sequence:
 4. `B-001 First Shorts/Reels Builder Expansion` - completed
 5. `B-002 Long Video Script Builder Expansion` - completed
 6. `B-003 Carousel Script Builder Expansion and Strategic Watchlist Initialization` - completed
-7. `C-001 Multi-Builder Output Hardening Entry` - active
+7. `C-001 Multi-Builder Output Hardening Entry` - completed
+8. `C-002 Recovery and Validation Hardening Follow-up` - active

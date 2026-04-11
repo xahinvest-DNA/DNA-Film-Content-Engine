@@ -9,7 +9,7 @@ from runtime.project_slice import (
     semantic_completeness,
     split_sentences,
 )
-from runtime.domain.workflow_rules import builder_gate
+from runtime.domain.workflow_rules import builder_gate, output_artifact_inventory
 from runtime.ui.constants import CANDIDATE_STATUS_FOCUS_OPTIONS, FOCUS_TO_SUITABILITY_KEY, ROUGH_CUT_FOCUS_OPTIONS
 
 
@@ -422,6 +422,66 @@ class DNAFilmAppPresentationMixin:
     def _output_builder_gate_text(self, project: ProjectSlice) -> str:
         state, reason = self._output_builder_gate(project)
         return f"Output builder readiness: {state} | {reason}"
+
+    def _output_inventory(self, project: ProjectSlice) -> dict:
+        return output_artifact_inventory(
+            project.packaging_script_bundle,
+            project.shorts_reels_script,
+            project.long_video_script,
+            project.carousel_script,
+        )
+
+    def _output_inventory_text(self, project: ProjectSlice) -> str:
+        inventory = self._output_inventory(project)
+        built_count = inventory["built_count"]
+        total_slots = inventory["total_slots"]
+        if not built_count:
+            missing_text = ", ".join(inventory["missing_labels"])
+            return f"Output inventory: 0 of {total_slots} artifacts built. Missing: {missing_text}."
+        if inventory["runtime_state"] == "all_built":
+            built_text = ", ".join(inventory["built_labels"])
+            return f"Output inventory: all {total_slots} artifacts built and currently available. Built: {built_text}."
+        built_text = ", ".join(inventory["built_labels"])
+        missing_text = ", ".join(inventory["missing_labels"])
+        return f"Output inventory: {built_count} of {total_slots} artifacts built. Built: {built_text}. Missing: {missing_text}."
+
+    def _output_recovery_text(self, project: ProjectSlice, gate_state: str, gate_reason: str) -> str:
+        inventory = self._output_inventory(project)
+        if gate_state != "ready":
+            if project.semantic_review_record.get("reopened_after_change"):
+                return "Output trust: upstream semantic approval was reopened, so downstream rough-cut and output artifacts were cleared and must be rebuilt from the refreshed chain."
+            return f"Output trust: no current output artifact can be treated as ready because {gate_reason}."
+        if inventory["runtime_state"] == "none_built":
+            return "Output trust: the downstream chain is current and ready for the first builder run."
+        if inventory["runtime_state"] == "all_built":
+            return "Output trust: all four artifacts are current, reload-safe, and ready for repeated local review or rebuild."
+        return "Output trust: built artifacts remain current and reload-safe, while missing artifacts can be added without rebuilding the ones already present."
+
+    def _output_paths_text(self, project: ProjectSlice) -> str:
+        entries = [
+            ("Packaging", project.packaging_script_bundle),
+            ("Shorts/Reels", project.shorts_reels_script),
+            ("Long Video", project.long_video_script),
+            ("Carousel", project.carousel_script),
+        ]
+        built_paths = [
+            f"{label}: {artifact.get('artifact_relative_path', 'none')}"
+            for label, artifact in entries
+            if artifact is not None
+        ]
+        if not built_paths:
+            return "Built artifact paths: none yet."
+        return "Built artifact paths: " + " | ".join(built_paths)
+
+    def _builder_slot_status_lines(self, label: str, artifact: dict | None, empty_text: str) -> list[str]:
+        if artifact is None:
+            return [f"- {label}: not built yet", f"  State: {empty_text}", ""]
+        return [
+            f"- {label}: built and current",
+            f"  Path: {artifact.get('artifact_relative_path', 'none')}",
+            f"  Source focus: {artifact.get('source_focus_mode', 'all_saved_segments')}",
+            "",
+        ]
 
     def _refresh_rough_cut_controls(self, project: ProjectSlice | None) -> None:
         if project is None:
@@ -1097,6 +1157,8 @@ class DNAFilmAppPresentationMixin:
 
     def _update_output_tracks_surface(self, project: ProjectSlice) -> None:
         gate_state, gate_reason = self._output_builder_gate(project)
+        inventory_text = self._output_inventory_text(project)
+        recovery_text = self._output_recovery_text(project, gate_state, gate_reason)
         bundle_summary = self._packaging_script_bundle_summary(project)
         shorts_summary = self._shorts_reels_script_summary(project)
         long_video_summary = self._long_video_script_summary(project)
@@ -1109,29 +1171,41 @@ class DNAFilmAppPresentationMixin:
         shorts_path = shorts_script.get("artifact_relative_path", "none") if shorts_script else "none"
         long_video_path = long_video_script.get("artifact_relative_path", "none") if long_video_script else "none"
         carousel_path = carousel_script.get("artifact_relative_path", "none") if carousel_script else "none"
-        self.output_builder_summary_text.set(f"{bundle_summary} {shorts_summary} {long_video_summary} {carousel_summary}")
-        self.output_builder_path_text.set(
-            f"Packaging path: {packaging_path} | Shorts/Reels path: {shorts_path} | Long-video path: {long_video_path} | Carousel path: {carousel_path}"
-        )
+        self.output_builder_inventory_text.set(inventory_text)
+        self.output_builder_summary_text.set(recovery_text)
+        self.output_builder_path_text.set(self._output_paths_text(project))
         self._set_output_builder_enabled(gate_state == "ready")
         lines = [
             "Output builders",
             "",
             f"Readiness: {gate_state} | {gate_reason}.",
+            inventory_text,
+            recovery_text,
+            f"Next sensible action: {self._next_action_label(project).replace('Next action: ', '', 1)}",
+            self._rough_cut_segment_stub_summary(project),
+            self._rough_cut_preferred_subset_summary(project),
+            "",
+            "Current builder slots",
+            *self._builder_slot_status_lines("Packaging", bundle, "Build Packaging-Ready Script Bundle to create the first packaging artifact."),
+            *self._builder_slot_status_lines("Shorts/Reels", shorts_script, "Build Shorts/Reels Script to add the short-form output path."),
+            *self._builder_slot_status_lines("Long Video", long_video_script, "Build Long-Video Script to add the long-form output path."),
+            *self._builder_slot_status_lines("Carousel", carousel_script, "Build Carousel Script to add the slide-based output path."),
             "",
             "Packaging-ready script bundle builder",
             bundle_summary,
+            f"Path: {packaging_path}",
             "",
             "Shorts/Reels script builder",
             shorts_summary,
+            f"Path: {shorts_path}",
             "",
             "Long-video script builder",
             long_video_summary,
+            f"Path: {long_video_path}",
             "",
             "Carousel script builder",
             carousel_summary,
-            self._rough_cut_segment_stub_summary(project),
-            self._rough_cut_preferred_subset_summary(project),
+            f"Path: {carousel_path}",
             "",
             "Packaging-ready script bundle preview",
             *self._packaging_script_bundle_lines(project),
@@ -1186,14 +1260,14 @@ class DNAFilmAppPresentationMixin:
         readiness = self._approval_readiness(project)
         rough_cut_state, _ = self._rough_cut_gate(project)
         output_builder_state, _ = self._output_builder_gate(project)
-        if output_builder_state == "ready" and project.carousel_script is None:
-            return "Next action: Build carousel script"
-        if output_builder_state == "ready" and project.long_video_script is None:
-            return "Next action: Build long-video script"
-        if output_builder_state == "ready" and project.shorts_reels_script is None:
-            return "Next action: Build Shorts/Reels script"
         if output_builder_state == "ready" and project.packaging_script_bundle is None:
             return "Next action: Build packaging-ready script bundle"
+        if output_builder_state == "ready" and project.shorts_reels_script is None:
+            return "Next action: Build Shorts/Reels script"
+        if output_builder_state == "ready" and project.long_video_script is None:
+            return "Next action: Build long-video script"
+        if output_builder_state == "ready" and project.carousel_script is None:
+            return "Next action: Build carousel script"
         if (
             project.packaging_script_bundle is not None
             or project.shorts_reels_script is not None

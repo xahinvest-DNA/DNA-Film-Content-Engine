@@ -1,7 +1,7 @@
 # Codex Tasks
 
 Last updated: 2026-04-11
-Current focus: Stage C delivery milestone - harden the now-proven four-builder runtime for repeatable local production use
+Current focus: Stage C delivery milestone - deepen recovery and validation trust around the four-builder local production runtime
 
 ## Working rule
 
@@ -9,12 +9,17 @@ There must be exactly one active packet at a time, and that packet must move the
 
 ## Active task
 
-### C-001
+### C-002
 - Status: active
-- Title: Multi-Builder Output Hardening Entry
-- Goal: turn the now-proven four-builder runtime into a more recoverable, validation-led, production-facing local workstation.
+- Title: Recovery and Validation Hardening Follow-up
+- Goal: deepen reload/open/rebuild confidence and validation honesty after the first multi-builder trust pass.
 
 ## Recently completed
+
+### C-001
+- Status: completed
+- Title: Multi-Builder Output Hardening Entry
+- Outcome: made `Output Tracks` clearer about built vs missing vs cleared output state, added explicit multi-builder inventory/trust/path summaries, strengthened repeated-use and stale-cleanup tests, and added output inventory state to `project.meta/status.json`.
 
 ### B-003
 - Status: completed

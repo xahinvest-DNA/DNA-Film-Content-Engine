@@ -53,10 +53,11 @@ class DNAFilmApp(DNAFilmAppLayoutMixin, DNAFilmAppPresentationMixin):
         self.scene_matching_text = tk.StringVar(value="Scene matching readiness: blocked | no accepted reference available yet")
         self.rough_cut_text = tk.StringVar(value="Rough cut readiness: blocked | no accepted reference available yet")
         self.output_builder_status_text = tk.StringVar(value="Output builder readiness: blocked | no rough-cut output path available yet")
+        self.output_builder_inventory_text = tk.StringVar(value="Output inventory: 0 of 4 artifacts built. Missing: Packaging, Shorts/Reels, Long Video, Carousel.")
         self.output_builder_summary_text = tk.StringVar(
-            value="Packaging-ready script bundle: none built yet. Shorts/Reels script: none built yet. Long-video script: none built yet. Carousel script: none built yet."
+            value="Output trust: waiting for the downstream chain before any output artifact can be built."
         )
-        self.output_builder_path_text = tk.StringVar(value="Packaging path: none | Shorts/Reels path: none | Long-video path: none | Carousel path: none")
+        self.output_builder_path_text = tk.StringVar(value="Built artifact paths: none yet.")
         self.scene_matching_reference_summary_text = tk.StringVar(value="Accepted scene reference stub: none created yet.")
         self.scene_matching_timecode_summary_text = tk.StringVar(value="Timecode range stub: none saved yet.")
         self.rough_cut_focus_summary_text = tk.StringVar(value="Focus: all saved segments | Visible: 0 | Saved total: 0 | Preferred total: 0")

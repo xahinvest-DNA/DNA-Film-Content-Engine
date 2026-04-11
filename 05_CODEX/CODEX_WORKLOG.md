@@ -1,5 +1,22 @@
 # Codex Worklog
 
+## 2026-04-11 - C-001 completed and multi-builder trust became clearer under repeated local use
+
+### Completed
+- hardened `Output Tracks` so it now shows explicit output inventory, trust/recovery wording, built artifact paths, and next sensible action instead of relying on one dense mixed summary;
+- added output inventory state to `project.meta/status.json`, including built-count, runtime state, and built/missing output families;
+- updated build-completion summaries so project-level output state reflects aggregate multi-builder reality rather than only the last built artifact;
+- strengthened tests around partial-build reload, cleared-after-reopen state, rebuild-order variance, and output inventory/status persistence;
+- verified the full suite through `python -m unittest tests\\test_mvp_slice.py tests\\test_runtime_integration_smoke.py tests\\test_output_builder_slice.py tests\\test_runtime_boundaries.py -q`.
+
+### Repository effect
+- the product is now less likely to mislead the user during `nothing built`, `partially built`, `all built`, and `cleared after upstream reopen` states;
+- repeated local use is more trustworthy because UI and status payload now describe aggregate output truth more directly;
+- Stage C is now grounded in real hardening progress rather than just a stage label change.
+
+### Recommended next step
+Execute `C-002 Recovery and Validation Hardening Follow-up`.
+
 ## 2026-04-11 - B-003 completed and the product gained its fourth real builder plus a strategic watchlist layer
 
 ### Completed

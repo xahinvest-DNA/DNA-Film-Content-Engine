@@ -25,10 +25,10 @@ Title: Output Tracks UI density growth
 Area: ui
 
 What is observed now:
-- `Output Tracks` now carries Packaging, Shorts/Reels, Long Video, and Carousel in one compact surface.
+- `Output Tracks` now carries Packaging, Shorts/Reels, Long Video, and Carousel in one compact surface, and C-001 already improved inventory/trust wording for current states.
 
 Why it is not a blocker yet:
-- all four builders still fit in one readable local-first surface and the current interactions remain understandable.
+- all four builders still fit in one readable local-first surface and the current interactions remain understandable after the first hardening pass.
 
 Why it may become high-impact later:
 - more builder rows, summaries, and previews can quickly turn the output surface into a dense wall of controls that slows build-review work.
@@ -145,7 +145,7 @@ Title: Release-quality gap remains large
 Area: release_readiness
 
 What is observed now:
-- Stage B breadth is now strong, but recovery confidence, validation depth, and release polish still lag behind output coverage.
+- Stage B breadth is now strong, and C-001 improved output trust/readiness visibility plus repeated-use coverage, but recovery confidence, validation depth, and release polish still lag behind output breadth.
 
 Why it is not a blocker yet:
 - the current focus was builder expansion, not production hardening.
