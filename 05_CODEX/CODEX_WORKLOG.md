@@ -1,5 +1,21 @@
 # Codex Worklog
 
+## 2026-04-11 - C-003 completed and repeated local-use confidence is now protected across broader multi-cycle scenarios
+
+### Completed
+- expanded validation depth beyond narrow recovery cases by adding tests for repeated reopen/recover/rebuild cycles across different output subsets;
+- added mixed partial-rebuild plus resurrected-stale-file coverage so load-time truth now stays test-protected when current and stale artifacts could otherwise be confused;
+- added UI-level repeated-cycle coverage so `Output Tracks` next action, inventory, path visibility, and slot honesty are checked after more than one recovery pass;
+- verified the full suite through `python -m unittest tests\\test_mvp_slice.py tests\\test_runtime_integration_smoke.py tests\\test_output_builder_slice.py tests\\test_runtime_boundaries.py -q`.
+
+### Repository effect
+- repeated local use now has broader evidence behind it instead of relying mostly on first-pass recovery scenarios;
+- the four-builder workstation is harder to mistrust under mixed rebuild history because UI truth, persisted truth, and on-disk truth are now covered across a wider transition set;
+- Stage C is now better grounded for release-facing acceptance hardening instead of only more internal confidence work.
+
+### Recommended next step
+Execute `C-004 Release Criteria and Acceptance Hardening`.
+
 ## 2026-04-11 - C-002B completed and Output Tracks became lighter while builder-slot metadata became less repetitive
 
 ### Completed

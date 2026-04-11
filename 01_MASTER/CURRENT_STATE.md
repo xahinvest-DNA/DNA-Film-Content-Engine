@@ -4,8 +4,8 @@ Last updated: 2026-04-11
 Status: active
 Product goal: desktop-first content production software
 Active stage: Stage C - Production hardening
-Active delivery milestone: raise release confidence across repeated local use, four-builder validation, and surface trust
-Active Codex packet: C-003 Release Confidence and Validation Hardening
+Active delivery milestone: convert stronger runtime trust into release-facing acceptance confidence
+Active Codex packet: C-004 Release Criteria and Acceptance Hardening
 
 ## What is true now
 
@@ -57,14 +57,21 @@ The next output-surface density and metadata hardening pass is now also complete
 - none-built, partial-built, all-built, cleared-after-reopen, and recovered-partial states are now easier to scan without weakening recovery truth;
 - tests now protect the compact slot overview and pending-slot behavior alongside the existing recovery self-heal scenarios.
 
+The next release-confidence and validation hardening pass is now also complete:
+
+- repeated multi-cycle build/reopen/recover/rebuild flows are now test-protected beyond the earlier one-cycle recovery cases;
+- mixed partial rebuild states plus resurrected stale output drift are now validated against UI truth, persisted status payload, and on-disk artifact truth;
+- `Output Tracks` next-action and slot-state honesty are now checked after multiple consecutive recovery cycles rather than only after one reset;
+- the validation layer now covers a broader set of damaging transitions without widening product scope.
+
 ## Main product gap
 
 The main gap has changed again:
 
 - the product now has four honest builders and Stage B breadth is materially real;
 - the main remaining gap is no longer output-family coverage, but production hardening;
-- recovery confidence, validation depth, and output-surface readability are now stronger than before C-002B, but they still need more hardening before release-grade trust;
-- broader release quality remains open even though density and metadata maintenance risk are lower.
+- recovery confidence, validation depth, and output-surface readability are now stronger than before C-003, but release-grade trust still needs a clearer acceptance and release-confidence layer;
+- broader release quality remains open even though repeated-use validation is materially deeper.
 
 The software is now a real multi-format content path proof, but it still needs harder release quality.
 
@@ -77,11 +84,11 @@ The project is now governed through four levels:
 3. one active delivery milestone at a time;
 4. one active Codex packet at a time.
 
-The current active milestone belongs to Stage C and is aimed at making the four-builder runtime more release-trustworthy under repeated local use, stronger validation, and clearer output-state behavior.
+The current active milestone belongs to Stage C and is aimed at turning the now-hardened four-builder runtime into something that is not only honest under repeated use, but also closer to explicit release-facing acceptance confidence.
 
 ## What the next packet must do
 
-`C-002B` is now complete.
+`C-003` is now complete.
 
 Four proven output builders are now real:
 
@@ -90,9 +97,9 @@ Four proven output builders are now real:
 - long-video script;
 - carousel script.
 
-All four artifacts now exist as saved markdown plus persisted output records behind the same hardened builder boundary, reload path, stale-cleanup model, stronger load-time truth recovery, and a less dense multi-builder output surface.
+All four artifacts now exist as saved markdown plus persisted output records behind the same hardened builder boundary, reload path, stale-cleanup model, stronger load-time truth recovery, a less dense multi-builder output surface, and broader repeated-use validation coverage.
 
-The next active packet is `C-003`, because the strongest next move is to push from clearer surface trust toward broader release-confidence and validation hardening without changing product direction.
+The next active packet is `C-004`, because the strongest next move is to turn the stronger runtime truth and repeated-use coverage into clearer release-facing acceptance confidence without changing product direction.
 
 What is preserved:
 
@@ -105,6 +112,7 @@ What is preserved:
 - open/reload now also repairs stale on-disk output drift instead of only reconciling it in memory.
 - Output Tracks now uses a compact builder-slot overview plus pending-slot separation rather than repeating the same metadata wall for all four builders.
 - bounded UI slot metadata now reduces repeated builder wiring without introducing a heavy registry framework.
+- multi-cycle recovery and mixed partial-rebuild truth now have broader test protection than the earlier single-recovery cases.
 
 ## Accepted boundaries right now
 
@@ -120,13 +128,13 @@ What is preserved:
 
 ## Open items
 
-- deepen recovery, validation, and release quality now that the first three hardening entries are complete;
+- deepen release-facing acceptance confidence now that the first four hardening entries are complete;
 - keep the four-builder output surface coherent as Stage C continues without turning UI metadata into a new abstraction sink;
 - use the watchlist to capture high-impact signals without converting everything into immediate packets.
 
 ## Next step
 
-Execute `C-003 Release Confidence and Validation Hardening`.
+Execute `C-004 Release Criteria and Acceptance Hardening`.
 
 ## What must not be lost in a new chat
 
@@ -144,4 +152,5 @@ Execute `C-003 Release Confidence and Validation Hardening`.
 - `C-001` improved multi-builder trust, inventory visibility, and repeated-use coverage;
 - `C-002A` hardened load-time recovery truth and repaired the decisions-layer SSOT conflict;
 - `C-002B` reduced output-surface density and repeated builder-slot wiring through a bounded shared UI metadata contract;
-- `C-003` is now the one active packet because broader release-confidence and validation depth are the strongest next bounded hardening targets.
+- `C-003` materially expanded repeated-use validation depth across multi-cycle recovery and mixed partial rebuild states;
+- `C-004` is now the one active packet because release-facing acceptance confidence is the strongest next bounded hardening target.

@@ -74,6 +74,44 @@ class RuntimeBoundaryTests(unittest.TestCase):
         project = store.save_rough_cut_segment_stub(project.project_dir, "Mechanism beat")
         return store.build_packaging_script_bundle(project.project_dir)
 
+    def _recover_downstream_chain(
+        self,
+        store: ProjectSliceStore,
+        project,
+        *,
+        scene_label: str,
+        segment_labels: list[str],
+        timecode_start: str = "00:00:10",
+        timecode_end: str = "00:00:18",
+    ):
+        project = store.update_semantic_review_status(project.project_dir, "ready_for_review")
+        project = store.update_semantic_review_status(project.project_dir, "approved")
+        project = store.update_matching_candidate_stub_status(
+            project.project_dir,
+            project.matching_candidate_stubs[0]["record_id"],
+            "selected",
+        )
+        project = store.promote_matching_candidate_stub_to_accepted_reference(
+            project.project_dir,
+            project.matching_candidate_stubs[0]["record_id"],
+        )
+        project = store.save_accepted_scene_reference_stub(project.project_dir, scene_label)
+        project = store.save_timecode_range_stub(project.project_dir, timecode_start, timecode_end)
+        for label in segment_labels:
+            project = store.save_rough_cut_segment_stub(project.project_dir, label)
+        return project
+
+    def _build_output_subset(self, store: ProjectSliceStore, project, builder_keys: list[str]):
+        builders = {
+            "packaging": store.build_packaging_script_bundle,
+            "shorts_reels": store.build_shorts_reels_script,
+            "long_video": store.build_long_video_script,
+            "carousel": store.build_carousel_script,
+        }
+        for key in builder_keys:
+            project = builders[key](project.project_dir)
+        return project
+
     def test_builder_boundary_reexports_single_packaging_builder(self) -> None:
         self.assertIs(builder_build_carousel_script, service_build_carousel_script)
         self.assertIs(builder_build_packaging_script_bundle, service_build_packaging_script_bundle)
@@ -397,6 +435,128 @@ class RuntimeBoundaryTests(unittest.TestCase):
             self.assertEqual(2, status["output_artifacts_built_count"])
             self.assertEqual("partially_built", status["output_runtime_state"])
             self.assertEqual(["packaging", "shorts_reels"], status["built_output_families"])
+
+    def test_multiple_recovery_cycles_keep_output_truth_coherent(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = self._build_output_ready_project(store, "Boundary Multi Cycle")
+            project = self._build_output_subset(store, project, ["shorts_reels", "long_video", "carousel"])
+
+            project = store.update_semantic_block(
+                project.project_dir,
+                project.semantic_blocks[0]["record_id"],
+                project.semantic_blocks[0]["title"],
+                project.semantic_blocks[0]["semantic_role"],
+                "First reopen cycle should clear all downstream output truth.",
+            )
+            project = self._recover_downstream_chain(
+                store,
+                project,
+                scene_label="Cycle one scene",
+                segment_labels=["Cycle one hook", "Cycle one mechanism"],
+            )
+            project = self._build_output_subset(store, project, ["packaging", "carousel"])
+
+            project = store.update_semantic_block(
+                project.project_dir,
+                project.semantic_blocks[1]["record_id"],
+                project.semantic_blocks[1]["title"],
+                project.semantic_blocks[1]["semantic_role"],
+                "Second reopen cycle should also clear partial rebuilt output truth.",
+            )
+            project = self._recover_downstream_chain(
+                store,
+                project,
+                scene_label="Cycle two scene",
+                segment_labels=["Cycle two short hook"],
+            )
+            project = self._build_output_subset(store, project, ["shorts_reels", "long_video"])
+            reloaded = store.load_project(project.project_dir)
+            status = json.loads((project.project_dir / "project.meta" / "status.json").read_text(encoding="utf-8"))
+
+            self.assertIsNone(reloaded.packaging_script_bundle)
+            self.assertIsNotNone(reloaded.shorts_reels_script)
+            self.assertIsNotNone(reloaded.long_video_script)
+            self.assertIsNone(reloaded.carousel_script)
+            self.assertEqual(2, status["output_artifacts_built_count"])
+            self.assertEqual("partially_built", status["output_runtime_state"])
+            self.assertEqual(["shorts_reels", "long_video"], status["built_output_families"])
+            self.assertEqual(["packaging", "carousel"], status["missing_output_families"])
+            self.assertFalse((project.project_dir / "records" / "output" / "packaging_script_bundle.json").exists())
+            self.assertFalse((project.project_dir / "records" / "output" / "carousel_script.json").exists())
+
+    def test_load_project_self_heals_mixed_partial_output_drift_after_second_cycle(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = self._build_output_ready_project(store, "Boundary Mixed Drift")
+            project = self._build_output_subset(store, project, ["shorts_reels", "long_video", "carousel"])
+
+            stale_packaging = project.packaging_script_bundle
+            stale_shorts = project.shorts_reels_script
+            stale_long = project.long_video_script
+            stale_carousel = project.carousel_script
+
+            project = store.update_semantic_block(
+                project.project_dir,
+                project.semantic_blocks[0]["record_id"],
+                project.semantic_blocks[0]["title"],
+                project.semantic_blocks[0]["semantic_role"],
+                "Cycle reset before mixed partial drift self-heal.",
+            )
+            project = self._recover_downstream_chain(
+                store,
+                project,
+                scene_label="Mixed drift scene",
+                segment_labels=["Mixed drift hook"],
+            )
+            project = store.build_packaging_script_bundle(project.project_dir)
+
+            resurrected_payloads = [
+                ("records/output/shorts_reels_script.json", stale_shorts),
+                ("records/output/long_video_script.json", stale_long),
+                ("records/output/carousel_script.json", stale_carousel),
+            ]
+            resurrected_markdowns = [
+                ("outputs/shorts_reels/shorts_reels_script.md", stale_shorts["markdown_content"]),
+                ("outputs/long_video/long_video_script.md", stale_long["markdown_content"]),
+                ("outputs/carousel/carousel_script.md", stale_carousel["markdown_content"]),
+            ]
+            for relative_path, payload in resurrected_payloads:
+                target = project.project_dir / relative_path
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+            for relative_path, content in resurrected_markdowns:
+                target = project.project_dir / relative_path
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(content, encoding="utf-8")
+
+            status_path = project.project_dir / "project.meta" / "status.json"
+            tampered = json.loads(status_path.read_text(encoding="utf-8"))
+            tampered["output_artifacts_built_count"] = 4
+            tampered["output_runtime_state"] = "all_built"
+            tampered["built_output_families"] = ["packaging", "shorts_reels", "long_video", "carousel"]
+            tampered["missing_output_families"] = []
+            status_path.write_text(json.dumps(tampered, indent=2) + "\n", encoding="utf-8")
+
+            healed = store.load_project(project.project_dir)
+            healed_status = json.loads(status_path.read_text(encoding="utf-8"))
+
+            self.assertIsNotNone(healed.packaging_script_bundle)
+            self.assertIsNone(healed.shorts_reels_script)
+            self.assertIsNone(healed.long_video_script)
+            self.assertIsNone(healed.carousel_script)
+            self.assertTrue((project.project_dir / "records" / "output" / "packaging_script_bundle.json").exists())
+            self.assertFalse((project.project_dir / "records" / "output" / "shorts_reels_script.json").exists())
+            self.assertFalse((project.project_dir / "records" / "output" / "long_video_script.json").exists())
+            self.assertFalse((project.project_dir / "records" / "output" / "carousel_script.json").exists())
+            self.assertTrue((project.project_dir / "outputs" / "packaging" / "packaging_script_bundle.md").exists())
+            self.assertFalse((project.project_dir / "outputs" / "shorts_reels" / "shorts_reels_script.md").exists())
+            self.assertFalse((project.project_dir / "outputs" / "long_video" / "long_video_script.md").exists())
+            self.assertFalse((project.project_dir / "outputs" / "carousel" / "carousel_script.md").exists())
+            self.assertEqual(1, healed_status["output_artifacts_built_count"])
+            self.assertEqual("partially_built", healed_status["output_runtime_state"])
+            self.assertEqual(["packaging"], healed_status["built_output_families"])
+            self.assertEqual(["shorts_reels", "long_video", "carousel"], healed_status["missing_output_families"])
 
 
 if __name__ == "__main__":

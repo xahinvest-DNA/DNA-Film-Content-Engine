@@ -67,6 +67,33 @@ class OutputBuilderTests(unittest.TestCase):
         project = store.save_rough_cut_segment_stub(project.project_dir, "Mechanism beat")
         return project
 
+    def _recover_downstream_chain(
+        self,
+        store: ProjectSliceStore,
+        project,
+        *,
+        scene_label: str,
+        segment_labels: list[str],
+        timecode_start: str = "00:00:10",
+        timecode_end: str = "00:00:18",
+    ):
+        project = store.update_semantic_review_status(project.project_dir, "ready_for_review")
+        project = store.update_semantic_review_status(project.project_dir, "approved")
+        project = store.update_matching_candidate_stub_status(
+            project.project_dir,
+            project.matching_candidate_stubs[0]["record_id"],
+            "selected",
+        )
+        project = store.promote_matching_candidate_stub_to_accepted_reference(
+            project.project_dir,
+            project.matching_candidate_stubs[0]["record_id"],
+        )
+        project = store.save_accepted_scene_reference_stub(project.project_dir, scene_label)
+        project = store.save_timecode_range_stub(project.project_dir, timecode_start, timecode_end)
+        for label in segment_labels:
+            project = store.save_rough_cut_segment_stub(project.project_dir, label)
+        return project
+
     def test_packaging_script_bundle_persists_after_reload(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             store = ProjectSliceStore(Path(temp_dir))
@@ -528,6 +555,67 @@ class OutputBuilderTests(unittest.TestCase):
                 self.assertIn("1 of 4 artifacts built", app.output_builder_inventory_text.get())
                 self.assertIn("Packaging: outputs/packaging/packaging_script_bundle.md", app.output_builder_path_text.get())
                 self.assertNotIn("Shorts/Reels:", app.output_builder_path_text.get())
+            finally:
+                root.destroy()
+
+    def test_output_tracks_remains_honest_after_multiple_recovery_cycles(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ProjectSliceStore(Path(temp_dir))
+            project = self._build_rough_cut_ready_project(store, "Output Tracks Multi Cycle")
+            project = store.build_packaging_script_bundle(project.project_dir)
+            project = store.build_shorts_reels_script(project.project_dir)
+            project = store.build_long_video_script(project.project_dir)
+            project = store.build_carousel_script(project.project_dir)
+
+            project = store.update_semantic_block(
+                project.project_dir,
+                project.semantic_blocks[0]["record_id"],
+                project.semantic_blocks[0]["title"],
+                project.semantic_blocks[0]["semantic_role"],
+                "First repeated cycle should clear all output trust.",
+            )
+            project = self._recover_downstream_chain(
+                store,
+                project,
+                scene_label="Cycle one rebuilt scene",
+                segment_labels=["Cycle one rebuilt segment"],
+            )
+            project = store.build_packaging_script_bundle(project.project_dir)
+            project = store.build_carousel_script(project.project_dir)
+
+            project = store.update_semantic_block(
+                project.project_dir,
+                project.semantic_blocks[1]["record_id"],
+                project.semantic_blocks[1]["title"],
+                project.semantic_blocks[1]["semantic_role"],
+                "Second repeated cycle should reset partial rebuild truth again.",
+            )
+            project = self._recover_downstream_chain(
+                store,
+                project,
+                scene_label="Cycle two rebuilt scene",
+                segment_labels=["Cycle two rebuilt segment"],
+            )
+            project = store.build_long_video_script(project.project_dir)
+            reloaded = store.load_project(project.project_dir)
+
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = DNAFilmApp(root)
+                app.workspace_root = Path(temp_dir)
+                app.store = store
+                app._load_project_into_ui(reloaded)
+                app._switch_view("Output Tracks")
+
+                handoff = app.output_builder_handoff.get("1.0", "end")
+                self.assertEqual("Next action: Build packaging-ready script bundle", app.next_action.get())
+                self.assertIn("1 of 4 artifacts built", app.output_builder_inventory_text.get())
+                self.assertIn("Long Video: outputs/long_video/long_video_script.md", app.output_builder_path_text.get())
+                self.assertNotIn("Packaging: outputs/packaging/packaging_script_bundle.md", app.output_builder_path_text.get())
+                self.assertIn("- Long Video: built | Path: outputs/long_video/long_video_script.md | Source: all_saved_segments", handoff)
+                self.assertIn("- Packaging: missing | Next: Build Packaging-Ready Script Bundle to create the first packaging artifact.", handoff)
+                self.assertIn("built artifacts remain current and reload-safe", app.output_builder_summary_text.get())
             finally:
                 root.destroy()
 

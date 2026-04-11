@@ -145,7 +145,7 @@ Title: Release-quality gap remains large
 Area: release_readiness
 
 What is observed now:
-- Stage B breadth is now strong, and C-001/C-002A/C-002B improved output trust, repeated-use coverage, load-time recovery honesty, and output-surface maintainability, but validation depth and release polish still lag behind output breadth.
+- Stage B breadth is now strong, and C-001/C-002A/C-002B/C-003 improved output trust, repeated-use coverage, load-time recovery honesty, output-surface maintainability, and multi-cycle validation depth, but release polish and acceptance confidence still lag behind output breadth.
 
 Why it is not a blocker yet:
 - the current focus was builder expansion, not production hardening.

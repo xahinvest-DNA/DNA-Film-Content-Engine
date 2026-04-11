@@ -2,25 +2,25 @@
 
 Last updated: 2026-04-11
 Status: active
-Task ID: C-003
+Task ID: C-004
 Task type: production_hardening
-Title: Release Confidence and Validation Hardening
+Title: Release Criteria and Acceptance Hardening
 
 ## Goal
 
-Push the four-builder workstation from clearer trust and recovery behavior toward broader release-confidence by strengthening validation depth, repeated local-use confidence, and final trust semantics.
+Turn the now-broader runtime trust and repeated-use validation into clearer release-facing acceptance confidence, so Stage C stops being only “harder to break” and becomes “closer to explicit release readiness.”
 
 ## Why this is next
 
-`C-002B` is complete and the product now has a less dense `Output Tracks` surface plus thinner per-builder metadata wiring on top of the recovery-truth guarantees from `C-001` and `C-002A`.
+`C-003` is complete and the product now has broader repeated-use validation across multi-cycle recover/rebuild scenarios on top of the surface and recovery hardening from `C-001`, `C-002A`, and `C-002B`.
 
-The strongest next move is now a bounded release-confidence hardening pass: the runtime is clearer and more honest than before, but validation depth, repeated-use confidence, and release-facing trust still lag behind builder breadth.
+The strongest next move is now a bounded release-facing hardening pass: the runtime is clearer and more test-protected than before, but acceptance confidence and release-facing evidence still lag behind the four-builder workstation breadth.
 
 ## In scope
 
-- strengthen validation around repeated open/reload/rebuild/invalidation cycles across the four-builder runtime;
-- harden release-facing trust semantics where the current workstation can still feel less than release-grade under repeated local use;
-- preserve the current boundary model while improving confidence rather than breadth;
+- convert stronger runtime truth into clearer acceptance-style and release-facing validation evidence;
+- tighten the most important gaps between current hardening progress and `RELEASE_CRITERIA.md`;
+- preserve the current boundary model while improving release confidence rather than breadth;
 - keep the one-active-packet rule and avoid turning the watchlist into a backlog.
 
 ## Out of scope
@@ -34,9 +34,9 @@ The strongest next move is now a bounded release-confidence hardening pass: the 
 
 ## Recommended validation
 
-- verify the four-builder runtime remains coherent across repeated build, reopen, reload, clear, and rebuild cycles;
-- strengthen tests where release-facing trust still depends on a narrow set of scenarios;
-- confirm the clearer `Output Tracks` surface still stays honest after harder repeated-use transitions;
+- verify the four-builder runtime remains coherent against the release criteria under acceptance-style validation, not only unit-level or narrow boundary scenarios;
+- strengthen tests where release-facing confidence is still implied rather than explicitly proven;
+- confirm the clearer `Output Tracks` surface still stays honest while broader acceptance evidence is added;
 - confirm hardening work still does not re-centralize logic in `runtime/app.py` or `runtime/persistence/project_store.py`.
 
 ## Required handoff format
@@ -45,6 +45,6 @@ Use `05_CODEX/HANDOFF_TEMPLATE.md` exactly.
 
 Also include:
 
-- what release-confidence areas were hardened next and why;
+- what release-criteria and acceptance-confidence areas were hardened next and why;
 - what risks still remain before release-grade confidence;
 - which watchlist items moved and which still remain watching.

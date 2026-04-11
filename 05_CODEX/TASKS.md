@@ -1,7 +1,7 @@
 # Codex Tasks
 
 Last updated: 2026-04-11
-Current focus: Stage C delivery milestone - keep the four-builder local production runtime trustworthy enough for repeated use and stronger release-facing validation
+Current focus: Stage C delivery milestone - convert stronger four-builder runtime trust into clearer release-facing acceptance confidence
 
 ## Working rule
 
@@ -9,12 +9,17 @@ There must be exactly one active packet at a time, and that packet must move the
 
 ## Active task
 
-### C-003
+### C-004
 - Status: active
-- Title: Release Confidence and Validation Hardening
-- Goal: deepen repeated-use trust and validation depth now that recovery truth and output-surface density have already been hardened.
+- Title: Release Criteria and Acceptance Hardening
+- Goal: align the now-hardened runtime with clearer release-facing acceptance evidence and the existing release criteria.
 
 ## Recently completed
+
+### C-003
+- Status: completed
+- Title: Release Confidence and Validation Hardening
+- Outcome: expanded validation depth across multi-cycle reopen/recover/rebuild paths, added mixed partial/stale recovery coverage, and protected Output Tracks honesty after repeated recovery cycles without changing product direction.
 
 ### C-002B
 - Status: completed

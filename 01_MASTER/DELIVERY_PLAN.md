@@ -65,7 +65,7 @@ Stop condition:
 
 Current stage: Stage C
 
-Current milestone: raise release confidence across repeated local use, four-builder validation, and surface trust
+Current milestone: convert stronger runtime trust into release-facing acceptance confidence
 
 Current packet sequence:
 
@@ -78,4 +78,5 @@ Current packet sequence:
 7. `C-001 Multi-Builder Output Hardening Entry` - completed
 8. `C-002A Recovery Truth Hardening and SSOT Decision-State Alignment` - completed
 9. `C-002B Output Surface Density and Metadata Hardening` - completed
-10. `C-003 Release Confidence and Validation Hardening` - active
+10. `C-003 Release Confidence and Validation Hardening` - completed
+11. `C-004 Release Criteria and Acceptance Hardening` - active
