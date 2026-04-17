@@ -1,491 +1,6 @@
 from __future__ import annotations
 
-from pathlib import Path
-
-from runtime.builders.common import current_output_source_segments
-from runtime.domain.project_types import ProjectSlice
-from runtime.domain.semantic_rules import (
-    ALLOWED_CANDIDATE_REVIEW_STATUSES,
-    APPROVAL_BLOCK_REASON,
-    completeness_readiness_hint,
-    normalize_accepted_reference,
-    normalize_accepted_scene_reference_stub,
-    normalize_carousel_script,
-    normalize_long_video_script,
-    normalize_packaging_script_bundle,
-    normalize_rough_cut_segment_stubs,
-    normalize_shorts_reels_script,
-    normalize_timecode_range_stub,
-    semantic_completeness,
-)
-
-OUTPUT_ARTIFACT_LABELS = (
-    ("packaging", "Packaging"),
-    ("shorts_reels", "Shorts/Reels"),
-    ("long_video", "Long Video"),
-    ("carousel", "Carousel"),
-)
-
-
-def output_artifact_inventory(
-    packaging_script_bundle: dict | None = None,
-    shorts_reels_script: dict | None = None,
-    long_video_script: dict | None = None,
-    carousel_script: dict | None = None,
-) -> dict:
-    artifact_values = {
-        "packaging": packaging_script_bundle,
-        "shorts_reels": shorts_reels_script,
-        "long_video": long_video_script,
-        "carousel": carousel_script,
-    }
-    built_keys = [key for key, _ in OUTPUT_ARTIFACT_LABELS if artifact_values[key] is not None]
-    missing_keys = [key for key, _ in OUTPUT_ARTIFACT_LABELS if artifact_values[key] is None]
-    built_labels = [label for key, label in OUTPUT_ARTIFACT_LABELS if artifact_values[key] is not None]
-    missing_labels = [label for key, label in OUTPUT_ARTIFACT_LABELS if artifact_values[key] is None]
-    total_slots = len(OUTPUT_ARTIFACT_LABELS)
-    built_count = len(built_keys)
-    if built_count == 0:
-        runtime_state = "none_built"
-    elif built_count == total_slots:
-        runtime_state = "all_built"
-    else:
-        runtime_state = "partially_built"
-    return {
-        "built_keys": built_keys,
-        "missing_keys": missing_keys,
-        "built_labels": built_labels,
-        "missing_labels": missing_labels,
-        "built_count": built_count,
-        "total_slots": total_slots,
-        "runtime_state": runtime_state,
-    }
-
-
-def output_project_status_summary(
-    packaging_script_bundle: dict | None = None,
-    shorts_reels_script: dict | None = None,
-    long_video_script: dict | None = None,
-    carousel_script: dict | None = None,
-    latest_build_label: str = "",
-) -> tuple[str, str]:
-    inventory = output_artifact_inventory(
-        packaging_script_bundle,
-        shorts_reels_script,
-        long_video_script,
-        carousel_script,
-    )
-    built_count = inventory["built_count"]
-    total_slots = inventory["total_slots"]
-    missing_labels = inventory["missing_labels"]
-    latest_prefix = f"Latest build: {latest_build_label}. " if latest_build_label else ""
-    if inventory["runtime_state"] == "none_built":
-        return (
-            "output_tracks_ready",
-            "Output Tracks is ready, but no output artifacts are built yet.",
-        )
-    if inventory["runtime_state"] == "all_built":
-        return (
-            "all_output_tracks_ready",
-            f"{latest_prefix}All {total_slots} output artifacts are currently built and reload-safe.",
-        )
-    missing_text = ", ".join(missing_labels)
-    return (
-        "partial_output_tracks_ready",
-        f"{latest_prefix}{built_count} of {total_slots} output artifacts are currently built. Remaining: {missing_text}.",
-    )
-
-
-def reconcile_accepted_reference(
-    accepted_reference: dict | None,
-    matching_candidate_stubs: list[dict],
-    semantic_review_record: dict,
-) -> dict | None:
-    if semantic_review_record.get("review_status") != "approved" or semantic_review_record.get("reopened_after_change"):
-        return None
-    normalized_reference = normalize_accepted_reference(accepted_reference)
-    if normalized_reference is None:
-        return None
-    source_candidate_stub_id = normalized_reference.get("source_candidate_stub_id", "").strip()
-    if not source_candidate_stub_id:
-        return None
-    source_candidate = next((entry for entry in matching_candidate_stubs if entry.get("record_id") == source_candidate_stub_id), None)
-    if source_candidate is None:
-        return None
-    if source_candidate.get("review_status", ALLOWED_CANDIDATE_REVIEW_STATUSES[0]) != "selected":
-        return None
-    updated_reference = dict(normalized_reference)
-    updated_reference["semantic_block_id"] = source_candidate.get("semantic_block_id", "")
-    updated_reference["prep_asset_id"] = source_candidate.get("prep_asset_id", "")
-    return updated_reference
-
-
-def reconcile_accepted_scene_reference_stub(
-    accepted_scene_reference_stub: dict | None,
-    accepted_reference: dict | None,
-) -> dict | None:
-    normalized_stub = normalize_accepted_scene_reference_stub(accepted_scene_reference_stub)
-    if normalized_stub is None:
-        return None
-    normalized_reference = normalize_accepted_reference(accepted_reference)
-    if normalized_reference is None:
-        return None
-    if normalized_stub.get("source_candidate_stub_id", "").strip() != normalized_reference.get("source_candidate_stub_id", "").strip():
-        return None
-    updated_stub = dict(normalized_stub)
-    updated_stub["source_accepted_reference_id"] = normalized_reference.get("record_id", "")
-    updated_stub["semantic_block_id"] = normalized_reference.get("semantic_block_id", "")
-    updated_stub["prep_asset_id"] = normalized_reference.get("prep_asset_id", "")
-    return updated_stub
-
-
-def builder_gate(project: ProjectSlice) -> tuple[str, str]:
-    if project.accepted_reference is None:
-        return ("blocked", "no accepted reference available yet")
-    if project.accepted_scene_reference_stub is None:
-        return ("blocked", "no accepted scene reference stub available yet")
-    if project.timecode_range_stub is None:
-        return ("blocked", "no timecode range stub available yet")
-    if not project.rough_cut_segment_stubs:
-        return ("blocked", "no rough-cut segment set available yet")
-    return ("ready", "rough-cut handoff can now produce output builder artifacts")
-
-
-def reconcile_timecode_range_stub(
-    timecode_range_stub: dict | None,
-    accepted_scene_reference_stub: dict | None,
-) -> dict | None:
-    normalized_stub = normalize_timecode_range_stub(timecode_range_stub)
-    if normalized_stub is None:
-        return None
-    normalized_scene_reference_stub = normalize_accepted_scene_reference_stub(accepted_scene_reference_stub)
-    if normalized_scene_reference_stub is None:
-        return None
-    if normalized_stub.get("source_candidate_stub_id", "").strip() != normalized_scene_reference_stub.get("source_candidate_stub_id", "").strip():
-        return None
-    updated_stub = dict(normalized_stub)
-    updated_stub["source_accepted_scene_reference_stub_id"] = normalized_scene_reference_stub.get("record_id", "")
-    updated_stub["semantic_block_id"] = normalized_scene_reference_stub.get("semantic_block_id", "")
-    updated_stub["prep_asset_id"] = normalized_scene_reference_stub.get("prep_asset_id", "")
-    return updated_stub
-
-
-def reconcile_rough_cut_segment_stubs(
-    rough_cut_segment_stubs: list[dict],
-    accepted_reference: dict | None,
-    accepted_scene_reference_stub: dict | None,
-    timecode_range_stub: dict | None,
-) -> list[dict]:
-    normalized_reference = normalize_accepted_reference(accepted_reference)
-    normalized_scene_reference_stub = normalize_accepted_scene_reference_stub(accepted_scene_reference_stub)
-    normalized_timecode_range_stub = normalize_timecode_range_stub(timecode_range_stub)
-    if normalized_reference is None or normalized_scene_reference_stub is None or normalized_timecode_range_stub is None:
-        return []
-    current_source_candidate_stub_id = normalized_reference.get("source_candidate_stub_id", "").strip()
-    if not current_source_candidate_stub_id:
-        return []
-    reconciled: list[dict] = []
-    for entry in normalize_rough_cut_segment_stubs(rough_cut_segment_stubs):
-        if entry.get("source_candidate_stub_id", "").strip() != current_source_candidate_stub_id:
-            continue
-        if entry.get("source_timecode_range_stub_id", "").strip() and entry.get("source_timecode_range_stub_id", "").strip() != normalized_timecode_range_stub.get("record_id", "").strip():
-            continue
-        updated_entry = dict(entry)
-        updated_entry["source_accepted_reference_id"] = normalized_reference.get("record_id", "")
-        updated_entry["source_accepted_scene_reference_stub_id"] = normalized_scene_reference_stub.get("record_id", "")
-        updated_entry["source_timecode_range_stub_id"] = normalized_timecode_range_stub.get("record_id", "")
-        updated_entry["source_candidate_stub_id"] = current_source_candidate_stub_id
-        updated_entry["semantic_block_id"] = normalized_reference.get("semantic_block_id", "")
-        updated_entry["prep_asset_id"] = normalized_reference.get("prep_asset_id", "")
-        updated_entry["start_timecode"] = normalized_timecode_range_stub.get("start_timecode", "")
-        updated_entry["end_timecode"] = normalized_timecode_range_stub.get("end_timecode", "")
-        reconciled.append(updated_entry)
-    return normalize_rough_cut_segment_stubs(reconciled)
-
-
-def reconcile_packaging_script_bundle(
-    packaging_script_bundle: dict | None,
-    rough_cut_segment_stubs: list[dict],
-    accepted_reference: dict | None,
-    accepted_scene_reference_stub: dict | None,
-    timecode_range_stub: dict | None,
-) -> dict | None:
-    normalized_bundle = normalize_packaging_script_bundle(packaging_script_bundle)
-    if normalized_bundle is None:
-        return None
-    if accepted_reference is None or accepted_scene_reference_stub is None or timecode_range_stub is None:
-        return None
-    if normalized_bundle.get("source_candidate_stub_id", "").strip() != accepted_reference.get("source_candidate_stub_id", "").strip():
-        return None
-
-    current_project = ProjectSlice(
-        project_dir=Path(),
-        manifest={},
-        project_record={},
-        intake_record={},
-        analysis_source_record=None,
-        semantic_review_record={},
-        semantic_blocks=[],
-        matching_prep_assets=[],
-        matching_candidate_stubs=[],
-        accepted_reference=accepted_reference,
-        accepted_scene_reference_stub=accepted_scene_reference_stub,
-        timecode_range_stub=timecode_range_stub,
-        rough_cut_segment_stubs=rough_cut_segment_stubs,
-        packaging_script_bundle=None,
-        shorts_reels_script=None,
-        long_video_script=None,
-        carousel_script=None,
-    )
-    current_focus_mode, current_segments = current_output_source_segments(current_project)
-    current_segment_ids = [entry["record_id"] for entry in current_segments]
-    if normalized_bundle.get("source_focus_mode", "") != current_focus_mode:
-        return None
-    if normalized_bundle.get("source_rough_cut_segment_ids", []) != current_segment_ids:
-        return None
-    normalized_bundle["segment_count"] = len(normalized_bundle.get("segments", []))
-    return normalized_bundle
-
-
-def reconcile_shorts_reels_script(
-    shorts_reels_script: dict | None,
-    rough_cut_segment_stubs: list[dict],
-    accepted_reference: dict | None,
-    accepted_scene_reference_stub: dict | None,
-    timecode_range_stub: dict | None,
-) -> dict | None:
-    normalized_script = normalize_shorts_reels_script(shorts_reels_script)
-    if normalized_script is None:
-        return None
-    if accepted_reference is None or accepted_scene_reference_stub is None or timecode_range_stub is None:
-        return None
-    if normalized_script.get("source_candidate_stub_id", "").strip() != accepted_reference.get("source_candidate_stub_id", "").strip():
-        return None
-
-    current_project = ProjectSlice(
-        project_dir=Path(),
-        manifest={},
-        project_record={},
-        intake_record={},
-        analysis_source_record=None,
-        semantic_review_record={},
-        semantic_blocks=[],
-        matching_prep_assets=[],
-        matching_candidate_stubs=[],
-        accepted_reference=accepted_reference,
-        accepted_scene_reference_stub=accepted_scene_reference_stub,
-        timecode_range_stub=timecode_range_stub,
-        rough_cut_segment_stubs=rough_cut_segment_stubs,
-        packaging_script_bundle=None,
-        shorts_reels_script=None,
-        long_video_script=None,
-        carousel_script=None,
-    )
-    current_focus_mode, current_segments = current_output_source_segments(current_project)
-    current_segment_ids = [entry["record_id"] for entry in current_segments]
-    if normalized_script.get("source_focus_mode", "") != current_focus_mode:
-        return None
-    if normalized_script.get("source_rough_cut_segment_ids", []) != current_segment_ids:
-        return None
-    normalized_script["segment_count"] = len(normalized_script.get("segments", []))
-    normalized_script["progression_count"] = normalized_script.get("progression_count", normalized_script["segment_count"])
-    return normalized_script
-
-
-def reconcile_long_video_script(
-    long_video_script: dict | None,
-    rough_cut_segment_stubs: list[dict],
-    accepted_reference: dict | None,
-    accepted_scene_reference_stub: dict | None,
-    timecode_range_stub: dict | None,
-) -> dict | None:
-    normalized_script = normalize_long_video_script(long_video_script)
-    if normalized_script is None:
-        return None
-    if accepted_reference is None or accepted_scene_reference_stub is None or timecode_range_stub is None:
-        return None
-    if normalized_script.get("source_candidate_stub_id", "").strip() != accepted_reference.get("source_candidate_stub_id", "").strip():
-        return None
-
-    current_project = ProjectSlice(
-        project_dir=Path(),
-        manifest={},
-        project_record={},
-        intake_record={},
-        analysis_source_record=None,
-        semantic_review_record={},
-        semantic_blocks=[],
-        matching_prep_assets=[],
-        matching_candidate_stubs=[],
-        accepted_reference=accepted_reference,
-        accepted_scene_reference_stub=accepted_scene_reference_stub,
-        timecode_range_stub=timecode_range_stub,
-        rough_cut_segment_stubs=rough_cut_segment_stubs,
-        packaging_script_bundle=None,
-        shorts_reels_script=None,
-        long_video_script=None,
-        carousel_script=None,
-    )
-    current_focus_mode, current_segments = current_output_source_segments(current_project)
-    current_segment_ids = [entry["record_id"] for entry in current_segments]
-    if normalized_script.get("source_focus_mode", "") != current_focus_mode:
-        return None
-    if normalized_script.get("source_rough_cut_segment_ids", []) != current_segment_ids:
-        return None
-    normalized_script["segment_count"] = len(normalized_script.get("segments", []))
-    return normalized_script
-
-
-def reconcile_carousel_script(
-    carousel_script: dict | None,
-    rough_cut_segment_stubs: list[dict],
-    accepted_reference: dict | None,
-    accepted_scene_reference_stub: dict | None,
-    timecode_range_stub: dict | None,
-) -> dict | None:
-    normalized_script = normalize_carousel_script(carousel_script)
-    if normalized_script is None:
-        return None
-    if accepted_reference is None or accepted_scene_reference_stub is None or timecode_range_stub is None:
-        return None
-    if normalized_script.get("source_candidate_stub_id", "").strip() != accepted_reference.get("source_candidate_stub_id", "").strip():
-        return None
-
-    current_project = ProjectSlice(
-        project_dir=Path(),
-        manifest={},
-        project_record={},
-        intake_record={},
-        analysis_source_record=None,
-        semantic_review_record={},
-        semantic_blocks=[],
-        matching_prep_assets=[],
-        matching_candidate_stubs=[],
-        accepted_reference=accepted_reference,
-        accepted_scene_reference_stub=accepted_scene_reference_stub,
-        timecode_range_stub=timecode_range_stub,
-        rough_cut_segment_stubs=rough_cut_segment_stubs,
-        packaging_script_bundle=None,
-        shorts_reels_script=None,
-        long_video_script=None,
-        carousel_script=None,
-    )
-    current_focus_mode, current_segments = current_output_source_segments(current_project)
-    current_segment_ids = [entry["record_id"] for entry in current_segments]
-    if normalized_script.get("source_focus_mode", "") != current_focus_mode:
-        return None
-    if normalized_script.get("source_rough_cut_segment_ids", []) != current_segment_ids:
-        return None
-    normalized_script["segment_count"] = len(normalized_script.get("segments", []))
-    normalized_script["slide_count"] = normalized_script.get("slide_count", normalized_script["segment_count"] + 2)
-    return normalized_script
-
-
-def status_payload(
-    project_record: dict,
-    intake_record: dict,
-    semantic_review_record: dict,
-    semantic_blocks: list[dict],
-    packaging_script_bundle: dict | None = None,
-    shorts_reels_script: dict | None = None,
-    long_video_script: dict | None = None,
-    carousel_script: dict | None = None,
-) -> dict:
-    completeness_label, issue_count, blocks_with_issues = semantic_completeness(intake_record, semantic_blocks)
-    inventory = output_artifact_inventory(
-        packaging_script_bundle,
-        shorts_reels_script,
-        long_video_script,
-        carousel_script,
-    )
-    return {
-        "project_status": project_record["project_status"],
-        "current_readiness_summary": project_record["current_readiness_summary"],
-        "intake_readiness": intake_record["intake_readiness"],
-        "semantic_block_count": len(semantic_blocks),
-        "semantic_map_status": semantic_review_record["review_status"],
-        "semantic_review_approved": semantic_review_record["approved"],
-        "semantic_completeness": completeness_label,
-        "semantic_issue_count": issue_count,
-        "blocks_with_issues": blocks_with_issues,
-        "approval_readiness": approval_readiness_label(intake_record, semantic_blocks, semantic_review_record),
-        "approval_block_reason": semantic_review_record.get("approval_block_reason", ""),
-        "approval_transition_message": semantic_review_record.get("approval_transition_message", ""),
-        "reopened_after_change": semantic_review_record.get("reopened_after_change", False),
-        "reopen_reason": semantic_review_record.get("reopen_reason", ""),
-        "packaging_script_bundle_ready": packaging_script_bundle is not None,
-        "shorts_reels_script_ready": shorts_reels_script is not None,
-        "long_video_script_ready": long_video_script is not None,
-        "carousel_script_ready": carousel_script is not None,
-        "output_artifacts_built_count": inventory["built_count"],
-        "output_artifacts_total_slots": inventory["total_slots"],
-        "output_runtime_state": inventory["runtime_state"],
-        "built_output_families": inventory["built_keys"],
-        "missing_output_families": inventory["missing_keys"],
-        "updated_at": project_record["updated_at"],
-    }
-
-
-def apply_project_summary(
-    project_record: dict,
-    intake_record: dict,
-    semantic_blocks: list[dict],
-    semantic_review_record: dict,
-) -> None:
-    if intake_record["intake_readiness"] != "ready" or not semantic_blocks:
-        project_record["project_status"] = "intake_required"
-        project_record["current_readiness_summary"] = "Load analysis text to unlock semantic map."
-        return
-
-    review_status = semantic_review_record["review_status"]
-    block_count = len(semantic_blocks)
-    completeness_label, issue_count, blocks_with_issues = semantic_completeness(intake_record, semantic_blocks)
-    readiness = approval_readiness_label(intake_record, semantic_blocks, semantic_review_record)
-    issue_summary = f"Completeness: {completeness_label}. Issues: {issue_count} across {blocks_with_issues} block(s)."
-    if review_status == "approved":
-        project_record["project_status"] = "semantic_map_approved"
-        project_record["current_readiness_summary"] = f"{block_count} semantic blocks approved for later matching prep. {issue_summary}"
-    elif semantic_review_record.get("reopened_after_change"):
-        project_record["project_status"] = "semantic_map_reopened"
-        project_record["current_readiness_summary"] = f"{block_count} semantic blocks reopened after change. Readiness: {readiness}. {issue_summary}"
-    elif review_status == "ready_for_review":
-        project_record["project_status"] = "semantic_map_ready_for_review"
-        project_record["current_readiness_summary"] = f"{block_count} semantic blocks ready for approval review. Readiness: {readiness}. {issue_summary}"
-    else:
-        project_record["project_status"] = "semantic_map_under_edit"
-        project_record["current_readiness_summary"] = f"{block_count} semantic blocks under edit in Semantic Map Workspace. Readiness: {readiness}. {issue_summary}"
-
-
-def approval_readiness_label(
-    intake_record: dict,
-    semantic_blocks: list[dict],
-    semantic_review_record: dict,
-) -> str:
-    if intake_record["intake_readiness"] != "ready" or not semantic_blocks:
-        return "not_ready"
-    if semantic_review_record["review_status"] == "approved":
-        return "approved"
-    if semantic_review_record["review_status"] == "ready_for_review":
-        return "ready_for_approval"
-    if semantic_review_record.get("reopened_after_change"):
-        return "reopened_after_change"
-    completeness_label, _, _ = semantic_completeness(intake_record, semantic_blocks)
-    return completeness_readiness_hint(completeness_label)
-
-
-def mark_reopened_if_needed(semantic_review_record: dict, reopen_reason: str) -> None:
-    if semantic_review_record.get("review_status") == "approved":
-        semantic_review_record["review_status"] = "under_edit"
-        semantic_review_record["approved"] = False
-        semantic_review_record["reopened_after_change"] = True
-        semantic_review_record["reopen_reason"] = reopen_reason
-        semantic_review_record["approval_transition_message"] = "Semantic approval was reopened after a change."
-        semantic_review_record["approval_block_reason"] = APPROVAL_BLOCK_REASON
-    else:
-        semantic_review_record.setdefault("reopened_after_change", False)
-        semantic_review_record.setdefault("reopen_reason", "")
-        if semantic_review_record.get("review_status") == "under_edit":
-            semantic_review_record["approval_transition_message"] = semantic_review_record.get("approval_transition_message") or "Semantic map remains under edit."
+from runtime.domain.semantic_rules import ALLOWED_REVIEW_STATES
 
 
 def default_review_record(project_id: str, timestamp: str) -> dict:
@@ -494,12 +9,73 @@ def default_review_record(project_id: str, timestamp: str) -> dict:
         "record_id": "semantic-review-record",
         "record_type": "semantic_review_state",
         "review_status": "under_edit",
+        "approval_state": "under_edit",
         "approved": False,
-        "approval_ready": False,
-        "approval_transition_message": "Semantic map remains under edit.",
-        "approval_block_reason": APPROVAL_BLOCK_REASON,
-        "reopened_after_change": False,
-        "reopen_reason": "",
+        "editor_state": "under_edit",
+        "issue_summary": "Analysis source has not been loaded yet.",
         "created_at": timestamp,
         "updated_at": timestamp,
     }
+
+
+def mark_review_under_edit(review_record: dict, timestamp: str, issue_summary: str) -> None:
+    review_record["review_status"] = "under_edit"
+    review_record["approval_state"] = "under_edit"
+    review_record["approved"] = False
+    review_record["editor_state"] = "under_edit"
+    review_record["issue_summary"] = issue_summary
+    review_record["updated_at"] = timestamp
+
+
+def apply_project_summary(
+    project_record: dict,
+    intake_record: dict,
+    analysis_source_record: dict | None,
+    semantic_blocks: list[dict],
+    semantic_review_record: dict,
+) -> None:
+    if analysis_source_record is None or intake_record.get("intake_readiness") != "ready":
+        project_record["project_status"] = "project_created"
+        project_record["current_readiness_summary"] = "Project created. Load primary analysis text to generate the semantic map."
+        return
+
+    block_count = len(semantic_blocks)
+    review_status = semantic_review_record["review_status"]
+    if review_status == "approved":
+        project_record["project_status"] = "semantic_map_approved"
+        project_record["current_readiness_summary"] = f"{block_count} semantic blocks saved locally and approved for the current MVP slice."
+    elif review_status == "ready_for_review":
+        project_record["project_status"] = "semantic_map_ready_for_review"
+        project_record["current_readiness_summary"] = f"{block_count} semantic blocks saved locally and marked ready for review."
+    else:
+        project_record["project_status"] = "semantic_map_under_edit"
+        project_record["current_readiness_summary"] = f"{block_count} semantic blocks saved locally and currently under edit in the Semantic Map Workspace."
+
+
+def status_payload(
+    project_record: dict,
+    intake_record: dict,
+    analysis_source_record: dict | None,
+    semantic_blocks: list[dict],
+    semantic_review_record: dict,
+) -> dict:
+    return {
+        "project_created": True,
+        "project_status": project_record["project_status"],
+        "source_loaded": analysis_source_record is not None,
+        "source_record_id": (analysis_source_record or {}).get("record_id"),
+        "semantic_blocks_created": bool(semantic_blocks),
+        "semantic_block_count": len(semantic_blocks),
+        "current_approval_state": semantic_review_record["review_status"],
+        "current_edit_state": semantic_review_record.get("editor_state", "under_edit"),
+        "intake_readiness": intake_record["intake_readiness"],
+        "last_saved_at": project_record["updated_at"],
+        "status_message": project_record["current_readiness_summary"],
+    }
+
+
+def normalize_review_status(value: str) -> str:
+    clean_value = value.strip()
+    if clean_value not in ALLOWED_REVIEW_STATES:
+        raise ValueError("Review status is invalid for this F-006A slice.")
+    return clean_value

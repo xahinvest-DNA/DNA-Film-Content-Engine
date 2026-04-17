@@ -1,156 +1,109 @@
 # Current State
 
-Last updated: 2026-04-11
+Last updated: 2026-04-17
 Status: active
-Product goal: desktop-first content production software
-Active stage: Stage C - Production hardening
-Active delivery milestone: convert stronger runtime trust into release-facing acceptance confidence
-Active Codex packet: C-004 Release Criteria and Acceptance Hardening
+Product goal: desktop-first, local-first semantic-first MVP for film content production
+Active frontier: F-006 First MVP Implementation Slice
+Latest completed Codex packet: F-006A Minimal local-first desktop vertical slice for project creation, analysis intake, and semantic map inspection
+Active next packet: F-006B Matching Prep Entry After Semantic Map
 
 ## What is true now
 
-The repository has completed the governance reset from bounded-slice growth to delivery-oriented software execution.
+The repository now has the first honest executable desktop vertical slice inside frontier `F-006`.
 
-The current runtime now proves a real local-first path through:
+The runtime is intentionally minimal and bounded:
 
-- project creation;
-- analysis-text intake;
-- semantic-map generation and editing;
-- matching-prep registration and accepted-reference fixation;
-- scene-reference and timecode stub fixation;
-- rough-cut segment set assembly and preferred-subset review;
-- one real packaging-ready script bundle output artifact saved inside the project package;
-- one real Shorts/Reels script artifact saved inside the project package;
-- one real long-video script artifact saved inside the project package;
-- one real carousel script artifact saved inside the project package.
+- the desktop runtime is a local Tkinter shell;
+- projects are saved as local project packages under `runtime_projects/`;
+- the package follows the canonical local-first separation of `project.manifest`, `project.meta/`, `sources/`, `records/`, and `derived/`;
+- the manifest stays light and points to canonical records instead of duplicating the full state model.
 
-The current runtime therefore no longer stops at preparation. It now reaches reproducible exportable content artifacts through four honest builder paths.
+The runnable user path that now exists is:
 
-The runtime boundary hardening pass is now also complete:
+1. create a project;
+2. create a valid local package on disk;
+3. paste or load primary analysis text;
+4. save canonical project, intake, and analysis-source records;
+5. generate provisional semantic blocks with a bounded deterministic bootstrap;
+6. open the Semantic Map Workspace;
+7. inspect a block in the inspector;
+8. edit `title`, `role`, `output suitability`, and `notes`;
+9. save changes locally;
+10. close and reopen the project without losing data.
 
-- `runtime/app.py` is reduced to a thin entrypoint;
-- UI shell and presentation logic now live under `runtime/ui/`;
-- builder logic now has an explicit `runtime/builders/` zone;
-- `runtime/persistence/project_store.py` now coordinates persistence while domain rules own reopen, reconciliation, and downstream invalidation semantics;
-- boundary tests now protect reopen cleanup, reload reproducibility, and builder-entrypoint consistency.
-- `01_MASTER/STRATEGIC_WATCHLIST.md` now exists as a separate strategic-observation layer for non-blocking but potentially high-impact concerns.
+The persistence boundary is now explicit:
 
-The first Stage C hardening entry is now also complete:
+- source data lives in `sources/analysis/` plus the canonical analysis source record in `records/intake/analysis_source.json`;
+- editable semantic records live in `records/semantic/semantic_blocks.json`;
+- review state lives in `records/review/semantic_review.json`;
+- the provisional bootstrap artifact lives in `derived/semantic/provisional_bootstrap.json`;
+- project-level status visibility lives in `project.meta/status.json`.
 
-- `Output Tracks` now reports explicit multi-builder inventory, trust/recovery state, next sensible action, and built artifact paths instead of relying on one dense mixed summary;
-- repeated-use trust is stronger across `nothing built`, `partial build set`, `all built`, and `cleared after upstream reopen` states;
-- `project.meta/status.json` now records output inventory state (`none_built`, `partially_built`, `all_built`) plus built/missing output families;
-- repeated rebuild order, reload, and stale-cleanup scenarios are now more directly test-protected.
+The semantic bootstrap is intentionally narrow:
 
-The next recovery-truth hardening pass is now also complete:
+- it splits the analysis text by blank-line groups;
+- it is heading-sensitive when the first line behaves like a heading;
+- it creates real inspectable block records without opening any LLM orchestration frontier.
 
-- `load_project()` now self-heals persisted truth when on-disk output files or `project.meta/status.json` drift away from currently valid downstream state;
-- stale output files resurrected on disk no longer survive an open/reload cycle as if current;
-- tampered persisted output-inventory status is corrected on load back to the actually valid builder set;
-- harder reopen/reload/rebuild scenarios now have stronger test coverage;
-- `DECISIONS.md` no longer conflicts with live stage state and now correctly delegates current-stage ownership to `CURRENT_STATE.md` and `DELIVERY_PLAN.md`.
+The desktop surface is also intentionally narrow:
 
-The next output-surface density and metadata hardening pass is now also complete:
+- `Project Home` handles create/open and project status visibility;
+- `Source Intake` handles text paste/file load plus source save;
+- `Semantic Map Workspace` handles ordered block inspection, selection, editing, and local save.
 
-- `Output Tracks` now separates aggregate truth, builder-slot overview, current built artifacts, and pending builder slots instead of repeating the same per-builder blocks end to end;
-- per-builder slot metadata is now described through a bounded shared UI contract in `runtime/ui/output_slots.py` instead of repeated ad hoc wiring inside the presentation layer;
-- none-built, partial-built, all-built, cleared-after-reopen, and recovered-partial states are now easier to scan without weakening recovery truth;
-- tests now protect the compact slot overview and pending-slot behavior alongside the existing recovery self-heal scenarios.
+Verification now exists for the real F-006A path:
 
-The next release-confidence and validation hardening pass is now also complete:
-
-- repeated multi-cycle build/reopen/recover/rebuild flows are now test-protected beyond the earlier one-cycle recovery cases;
-- mixed partial rebuild states plus resurrected stale output drift are now validated against UI truth, persisted status payload, and on-disk artifact truth;
-- `Output Tracks` next-action and slot-state honesty are now checked after multiple consecutive recovery cycles rather than only after one reset;
-- the validation layer now covers a broader set of damaging transitions without widening product scope.
+- package creation and canonical folder/file placement;
+- source intake and provisional block bootstrap;
+- block editing and review-state persistence after reload;
+- UI-path create/intake/edit/reopen behavior.
 
 ## Main product gap
 
-The main gap has changed again:
+The main gap is no longer "whether the first runtime exists at all."
 
-- the product now has four honest builders and Stage B breadth is materially real;
-- the main remaining gap is no longer output-family coverage, but production hardening;
-- recovery confidence, validation depth, and output-surface readability are now stronger than before C-003, but release-grade trust still needs a clearer acceptance and release-confidence layer;
-- broader release quality remains open even though repeated-use validation is materially deeper.
+The main gap is now the next honest downstream handoff:
 
-The software is now a real multi-format content path proof, but it still needs harder release quality.
+- semantic map approval exists only as a minimal persisted state;
+- no matching-prep entry surface exists yet;
+- no scene matching, timecodes, rough cut, render/export, or broader AI orchestration exists in the active runtime;
+- the UI is functional but intentionally plain.
 
-## Delivery framing
+## Delivery framing right now
 
-The project is now governed through four levels:
+The repository is currently governed by:
 
-1. product goal: working software for content creation;
-2. program stages: Stage A, Stage B, Stage C;
-3. one active delivery milestone at a time;
-4. one active Codex packet at a time.
+1. one active frontier;
+2. one active bounded packet inside that frontier;
+3. source-of-truth state docs that must describe only what is literally true in the repo.
 
-The current active milestone belongs to Stage C and is aimed at turning the now-hardened four-builder runtime into something that is not only honest under repeated use, but also closer to explicit release-facing acceptance confidence.
+`F-006A` is complete.
 
-## What the next packet must do
-
-`C-003` is now complete.
-
-Four proven output builders are now real:
-
-- packaging-ready script bundle;
-- Shorts/Reels script;
-- long-video script;
-- carousel script.
-
-All four artifacts now exist as saved markdown plus persisted output records behind the same hardened builder boundary, reload path, stale-cleanup model, stronger load-time truth recovery, a less dense multi-builder output surface, and broader repeated-use validation coverage.
-
-The next active packet is `C-004`, because the strongest next move is to turn the stronger runtime truth and repeated-use coverage into clearer release-facing acceptance confidence without changing product direction.
-
-What is preserved:
-
-- the first end-to-end usable output path exists;
-- short-form, long-form, and carousel output paths now exist beside it;
-- the product remains local-first and desktop-first;
-- the export center is still intentionally narrow and not yet a full publishing system.
-- the strategic watchlist now exists, but it is not a backlog and must not compete with the one active packet rule.
-- Output Tracks is now clearer and less misleading in partial-build and cleared-after-reopen scenarios.
-- open/reload now also repairs stale on-disk output drift instead of only reconciling it in memory.
-- Output Tracks now uses a compact builder-slot overview plus pending-slot separation rather than repeating the same metadata wall for all four builders.
-- bounded UI slot metadata now reduces repeated builder wiring without introducing a heavy registry framework.
-- multi-cycle recovery and mixed partial-rebuild truth now have broader test protection than the earlier single-recovery cases.
+The strongest next move is `F-006B`, which should open the first minimal downstream handoff from approved semantic blocks into matching prep without widening into scene pipelines, timecodes, or export work.
 
 ## Accepted boundaries right now
 
-- `00_INDEX.md` owns navigation only.
-- `CURRENT_STATE.md` owns what is true now.
-- `TARGET_STATE.md` owns the definition of finished software.
-- `DELIVERY_PLAN.md` owns stage logic and milestone sequencing.
-- `RELEASE_CRITERIA.md` owns MVP readiness gates.
-- `STRATEGIC_WATCHLIST.md` owns non-blocking but potentially high-impact watch items only.
-- `NEXT_TASK.md` owns the one active Codex packet.
-- the product remains desktop-first, local-first, and file-based for the current program stage.
-- the next implementation work must not drift into backend/cloud, media playback, heavy rendering, or platform publishing automation.
+- the product remains desktop-first and local-first;
+- the runtime remains file-based and package-based;
+- the current slice stops at semantic map inspection and editing;
+- matching prep, scene matching, timecodes, output building, render/export, cloud sync, and broad AI orchestration remain out of scope;
+- `CURRENT_STATE.md` owns live truth, `NEXT_TASK.md` owns the one active next packet, and `TASKS.md` records packet history.
 
 ## Open items
 
-- deepen release-facing acceptance confidence now that the first four hardening entries are complete;
-- keep the four-builder output surface coherent as Stage C continues without turning UI metadata into a new abstraction sink;
-- use the watchlist to capture high-impact signals without converting everything into immediate packets.
+- add the first honest downstream handoff after semantic approval;
+- keep the project package canonical as new record families are added;
+- preserve boundedness and avoid turning the minimal runtime into premature infrastructure.
 
 ## Next step
 
-Execute `C-004 Release Criteria and Acceptance Hardening`.
+Execute `F-006B Matching Prep Entry After Semantic Map`.
 
 ## What must not be lost in a new chat
 
-- the project is judged by usable output, not by more intermediate stubs;
-- the MVP path is `analysis -> semantic map -> matching -> scene/timecode chain -> rough cut -> output builder -> export package`;
-- Stage A has been proven by the first real output path;
-- Stage B output breadth is now materially proven through four builders;
-- Stage C is now the current program stage;
-- the first proven builder is the packaging-ready script bundle;
-- the second proven builder is the Shorts/Reels script artifact;
-- the third proven builder is the long-video script artifact;
-- the fourth proven builder is the carousel script artifact;
-- A-002 boundary hardening is complete and Stage B can expand on a cleaner runtime boundary;
-- `STRATEGIC_WATCHLIST.md` exists as a strategic observation layer and is not a task backlog;
-- `C-001` improved multi-builder trust, inventory visibility, and repeated-use coverage;
-- `C-002A` hardened load-time recovery truth and repaired the decisions-layer SSOT conflict;
-- `C-002B` reduced output-surface density and repeated builder-slot wiring through a bounded shared UI metadata contract;
-- `C-003` materially expanded repeated-use validation depth across multi-cycle recovery and mixed partial rebuild states;
-- `C-004` is now the one active packet because release-facing acceptance confidence is the strongest next bounded hardening target.
+- `F-006A` is now complete and runnable;
+- the live runtime is intentionally a small Tkinter desktop shell;
+- the first honest product path is `create project -> load analysis -> bootstrap semantic blocks -> inspect/edit semantic map -> save -> reopen`;
+- semantic blocks are deterministic provisional records, not LLM-derived artifacts;
+- canonical editable state lives in `records/`, source data remains separate, and provisional bootstrap output lives in `derived/`;
+- the strongest next step is downstream handoff from semantic approval into matching prep, not cloud/backend/render/export work.

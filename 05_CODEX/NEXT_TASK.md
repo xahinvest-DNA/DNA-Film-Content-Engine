@@ -1,43 +1,54 @@
 # NEXT TASK
 
-Last updated: 2026-04-11
+Last updated: 2026-04-17
 Status: active
-Task ID: C-004
-Task type: production_hardening
-Title: Release Criteria and Acceptance Hardening
+Task ID: F-006B
+Task type: bounded_vertical_slice
+Title: Matching Prep Entry After Semantic Map
 
 ## Goal
 
-Turn the now-broader runtime trust and repeated-use validation into clearer release-facing acceptance confidence, so Stage C stops being only “harder to break” and becomes “closer to explicit release readiness.”
+Open the first honest downstream handoff after `F-006A` by letting an approved semantic map feed a minimal matching-prep surface with local persistence and bounded review state.
 
 ## Why this is next
 
-`C-003` is complete and the product now has broader repeated-use validation across multi-cycle recover/rebuild scenarios on top of the surface and recovery hardening from `C-001`, `C-002A`, and `C-002B`.
+`F-006A` completed the first executable desktop slice:
 
-The strongest next move is now a bounded release-facing hardening pass: the runtime is clearer and more test-protected than before, but acceptance confidence and release-facing evidence still lag behind the four-builder workstation breadth.
+- project creation works;
+- local project packages are created in canonical structure;
+- analysis text intake works;
+- provisional semantic blocks are created and stored;
+- Semantic Map inspection/editing works;
+- reopen/reload retains local state.
+
+The strongest next move is not wider infrastructure.
+
+The strongest next move is the next real handoff in the product logic: from approved semantic blocks into a minimal matching-prep layer.
 
 ## In scope
 
-- convert stronger runtime truth into clearer acceptance-style and release-facing validation evidence;
-- tighten the most important gaps between current hardening progress and `RELEASE_CRITERIA.md`;
-- preserve the current boundary model while improving release confidence rather than breadth;
-- keep the one-active-packet rule and avoid turning the watchlist into a backlog.
+- use approved semantic blocks as the gate into the next lane;
+- save minimal matching-prep asset references in the project package;
+- save one bounded accepted/preferred candidate linkage record for later downstream work;
+- expose a minimal matching-prep workspace inside the desktop shell;
+- keep persistence local-first and record-led.
 
 ## Out of scope
 
-- new builder families by default;
-- full publishing/export platform work;
-- backend/cloud work;
-- heavy media rendering;
-- platform publishing automation;
-- broad visual redesign.
+- scene matching;
+- timecodes;
+- rough cut;
+- render/export;
+- cloud/backend work;
+- broad AI orchestration;
+- generalized matching automation.
 
 ## Recommended validation
 
-- verify the four-builder runtime remains coherent against the release criteria under acceptance-style validation, not only unit-level or narrow boundary scenarios;
-- strengthen tests where release-facing confidence is still implied rather than explicitly proven;
-- confirm the clearer `Output Tracks` surface still stays honest while broader acceptance evidence is added;
-- confirm hardening work still does not re-centralize logic in `runtime/app.py` or `runtime/persistence/project_store.py`.
+- verify approved semantic state is the explicit gate for matching prep;
+- verify matching-prep records persist after reopen;
+- verify the package still keeps source vs editable vs derived vs review distinctions clean;
+- verify the UI still feels like one bounded vertical slice rather than a new subsystem frontier.
 
 ## Required handoff format
 
@@ -45,6 +56,6 @@ Use `05_CODEX/HANDOFF_TEMPLATE.md` exactly.
 
 Also include:
 
-- what release-criteria and acceptance-confidence areas were hardened next and why;
-- what risks still remain before release-grade confidence;
-- which watchlist items moved and which still remain watching.
+- what exact matching-prep records were added and where they persist;
+- how the semantic approval gate is enforced;
+- what remains intentionally deferred after `F-006B`.

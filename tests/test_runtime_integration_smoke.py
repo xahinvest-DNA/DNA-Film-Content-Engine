@@ -8,64 +8,41 @@ from runtime.project_slice import ProjectSliceStore
 
 
 SAMPLE_ANALYSIS = """
-The opening movement argues that the film is really about inherited fear rather than simple survival. The critic frames the family house as a system that teaches each character how to obey the past.
+Opening claim
+The analysis starts by arguing that the film's real subject is inherited fear instead of simple danger.
 
-Because the mother keeps translating danger into ritual, the essay reveals how ordinary domestic behavior becomes a mechanism of control. That repeated behavior gives the audience a way to feel the pressure before any explicit explanation arrives.
+Because each family ritual turns anxiety into routine, the essay explains how repetition becomes the mechanism that keeps the characters trapped.
 
-However, the final section suggests that the film does not stay inside despair. It shows a transition from passive inheritance toward a more conscious refusal to repeat the same emotional pattern.
+The ending paragraph describes a transition toward refusal, which gives the semantic map a final pivot instead of a flat conclusion.
 """.strip()
 
 
 class RuntimeIntegrationSmokeTests(unittest.TestCase):
-    def test_analysis_to_rough_cut_flow_still_works(self) -> None:
+    def test_create_intake_edit_save_and_reopen_flow_works(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             store = ProjectSliceStore(Path(temp_dir))
 
             project = store.create_project("Smoke Flow", film_title="Demo Film", language="en")
             project = store.save_analysis_text(project.project_dir, SAMPLE_ANALYSIS)
+            first_block_id = project.semantic_blocks[0]["record_id"]
 
-            for block in list(project.semantic_blocks):
-                project = store.update_semantic_block(
-                    project.project_dir,
-                    block["record_id"],
-                    block["title"],
-                    block["semantic_role"],
-                    "Editor clarification added.",
-                )
-
-            project = store.update_semantic_review_status(project.project_dir, "ready_for_review")
+            project = store.update_semantic_block(
+                project.project_dir,
+                first_block_id,
+                "Opening thematic claim",
+                "claim",
+                "Use this as the opening anchor in the workspace.",
+                "candidate",
+            )
             project = store.update_semantic_review_status(project.project_dir, "approved")
-            project = store.add_matching_prep_asset(
-                project.project_dir,
-                "Main subtitle file",
-                "subtitle_reference",
-                "E:/demo/subtitles.srt",
-                "Primary subtitle reference.",
-            )
-            project = store.add_matching_candidate_stub(
-                project.project_dir,
-                project.semantic_blocks[0]["record_id"],
-                project.matching_prep_assets[0]["record_id"],
-                "Accepted prep reference feeds downstream stub.",
-            )
-            project = store.update_matching_candidate_stub_status(
-                project.project_dir,
-                project.matching_candidate_stubs[0]["record_id"],
-                "selected",
-            )
-            project = store.promote_matching_candidate_stub_to_accepted_reference(
-                project.project_dir,
-                project.matching_candidate_stubs[0]["record_id"],
-            )
-            project = store.save_accepted_scene_reference_stub(project.project_dir, "Opening courtroom exchange")
-            project = store.save_timecode_range_stub(project.project_dir, "00:00:10", "00:00:18")
-            project = store.save_rough_cut_segment_stub(project.project_dir, "Opening argument beat")
 
-            self.assertIsNotNone(project.accepted_reference)
-            self.assertIsNotNone(project.accepted_scene_reference_stub)
-            self.assertIsNotNone(project.timecode_range_stub)
-            self.assertEqual(len(project.rough_cut_segment_stubs), 1)
-            self.assertEqual(project.rough_cut_segment_stubs[0]["segment_label"], "Opening argument beat")
+            reopened = store.load_project(project.project_dir)
+
+            self.assertEqual("approved", reopened.semantic_review_record["review_status"])
+            self.assertEqual(3, len(reopened.semantic_blocks))
+            self.assertEqual("Opening thematic claim", reopened.semantic_blocks[0]["title"])
+            self.assertEqual("Use this as the opening anchor in the workspace.", reopened.semantic_blocks[0]["notes"])
+            self.assertEqual("semantic_map_approved", reopened.project_record["project_status"])
 
 
 if __name__ == "__main__":

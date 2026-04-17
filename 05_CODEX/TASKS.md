@@ -1,84 +1,26 @@
 # Codex Tasks
 
-Last updated: 2026-04-11
-Current focus: Stage C delivery milestone - convert stronger four-builder runtime trust into clearer release-facing acceptance confidence
+Last updated: 2026-04-17
+Current focus: frontier F-006 - extend the first executable semantic desktop slice into the next bounded downstream handoff
 
 ## Working rule
 
-There must be exactly one active packet at a time, and that packet must move the active delivery milestone rather than locally polishing the current surface.
+There must be exactly one active packet at a time, and that packet must advance the active frontier without widening into a new uncontrolled subsystem.
 
 ## Active task
 
-### C-004
+### F-006B
 - Status: active
-- Title: Release Criteria and Acceptance Hardening
-- Goal: align the now-hardened runtime with clearer release-facing acceptance evidence and the existing release criteria.
+- Title: Matching Prep Entry After Semantic Map
+- Goal: open the next honest downstream handoff from approved semantic blocks into a minimal matching-prep layer while preserving the bounded local-first runtime.
 
 ## Recently completed
 
-### C-003
+### F-006A
 - Status: completed
-- Title: Release Confidence and Validation Hardening
-- Outcome: expanded validation depth across multi-cycle reopen/recover/rebuild paths, added mixed partial/stale recovery coverage, and protected Output Tracks honesty after repeated recovery cycles without changing product direction.
-
-### C-002B
-- Status: completed
-- Title: Output Surface Density and Metadata Hardening
-- Outcome: reduced `Output Tracks` density by separating overview, built-artifact detail, and pending-slot guidance; introduced a bounded shared UI slot-metadata contract in `runtime/ui/output_slots.py`; preserved recovery guarantees; and added tests for compact four-builder state readability.
-
-### C-002A
-- Status: completed
-- Title: Recovery Truth Hardening and SSOT Decision-State Alignment
-- Outcome: made `load_project()` self-heal stale output files and tampered status payloads back to currently valid truth, added harder recovery-edge tests, and removed the stale live-stage conflict from `DECISIONS.md`.
-
-### C-001
-- Status: completed
-- Title: Multi-Builder Output Hardening Entry
-- Outcome: made `Output Tracks` clearer about built vs missing vs cleared output state, added explicit multi-builder inventory/trust/path summaries, strengthened repeated-use and stale-cleanup tests, and added output inventory state to `project.meta/status.json`.
-
-### B-003
-- Status: completed
-- Title: Carousel Script Builder Expansion and Strategic Watchlist Initialization
-- Outcome: added a fourth real builder in `runtime/builders`, persisted a carousel markdown artifact plus output record, integrated the new builder into `Output Tracks`, preserved coexistence with packaging + Shorts/Reels + long-video, created `01_MASTER/STRATEGIC_WATCHLIST.md`, and opened the first Stage C hardening packet.
-
-### B-002
-- Status: completed
-- Title: Long Video Script Builder Expansion
-- Outcome: added a third real builder in `runtime/builders`, persisted a long-video markdown artifact plus output record, integrated the new builder into `Output Tracks`, preserved coexistence with packaging + Shorts/Reels, and added reload/invalidation/UI coverage for the long-form path.
-
-### B-001
-- Status: completed
-- Title: First Shorts/Reels Builder Expansion
-- Outcome: added a second real builder in `runtime/builders`, persisted a Shorts/Reels markdown artifact plus output record, integrated the new builder into `Output Tracks`, preserved packaging-builder compatibility, and added coexistence/reload/invalidation coverage across both builders.
-
-### A-002
-- Status: completed
-- Title: Runtime Boundary Hardening Before Builder Expansion Debt Grows
-- Outcome: moved UI shell/presentation work under `runtime/ui`, formalized `runtime/builders` as the builder zone, pushed runtime rules into domain modules, reduced `runtime/app.py` to an entrypoint, made `runtime/persistence/project_store.py` persistence-led rather than rule-led, and added boundary tests for reopen cleanup, reload reproducibility, and builder-entrypoint consistency.
-
-### P-001
-- Status: completed
-- Title: First Usable Content Output Vertical Slice
-- Outcome: chose the packaging-ready script bundle as the first honest builder, added persisted output-record plus markdown artifact storage, exposed build/view flow in `Output Tracks`, and added persistence, integration, and UI acceptance coverage from analysis text to saved artifact.
-
-### A-001
-- Status: completed
-- Title: Runtime Structural Refactor for Growth
-- Outcome: introduced `runtime/ui`, `runtime/domain`, and `runtime/persistence`, turned `runtime/project_slice.py` into a thin compatibility facade over the persistence store, moved layout/navigation construction into `runtime/ui/layout.py`, kept the current runtime behavior intact, and added an integration smoke test covering analysis-to-rough-cut flow.
-
-### M-001
-- Status: completed
-- Title: Project Governance Reset for Delivery
-- Outcome: moved the repository from bounded-slice management to delivery-oriented program control, added `TARGET_STATE.md`, `DELIVERY_PLAN.md`, and `RELEASE_CRITERIA.md`, reduced the master control contour, closed the post-`F-040` waiting state, and opened `A-001` as the active next packet.
-
-### F-040
-- Status: completed
-- Title: Rough Cut Focus Summary Cue Slice
-- Outcome: the runtime now surfaces active rough-cut focus mode plus visible, saved-total, and preferred-total counts inside the `Rough Cut` lane.
+- Title: Minimal local-first desktop vertical slice for project creation, analysis intake, and semantic map inspection
+- Outcome: added the first runnable desktop shell for project create/open, created canonical local-first project packages, saved canonical project/intake/source/review records, generated provisional semantic blocks with a deterministic bootstrap, enabled semantic-map inspection and editing in an inspector, and proved reloadability after reopen.
 
 ## Earlier completed foundation
 
-- `G-001` fixed manager review depth and efficiency-gate governance.
-- `F-006` implemented the first local runtime slice.
-- `F-007` through `F-040` extended that runtime from semantic editing through matching prep, scene/timecode stubs, and rough-cut assembly.
-- `F-001` through `F-005` fixed the product, module, schema, and downstream-output document foundation.
+- `F-001` through `F-005` established the source-of-truth product, module, schema, and package-format foundation for the MVP path.

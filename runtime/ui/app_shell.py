@@ -5,119 +5,186 @@ from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 
 from runtime.project_slice import (
-    ALLOWED_CANDIDATE_REVIEW_STATUSES,
-    ALLOWED_MATCHING_ASSET_TYPES,
     ALLOWED_OUTPUT_SUITABILITY,
     ALLOWED_REVIEW_STATES,
     ALLOWED_SEMANTIC_ROLES,
     ProjectSlice,
     ProjectSliceStore,
 )
-from runtime.ui.constants import CANDIDATE_STATUS_FOCUS_OPTIONS, FOCUS_MODES, ROUGH_CUT_FOCUS_OPTIONS
-from runtime.ui.layout import DNAFilmAppLayoutMixin
-from runtime.ui.presentation import DNAFilmAppPresentationMixin
+from runtime.ui.constants import APP_VIEWS
 
 
-class DNAFilmApp(DNAFilmAppLayoutMixin, DNAFilmAppPresentationMixin):
+class DNAFilmApp:
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
-        self.root.title("DNA Film Content Engine - Semantic Review Workspace")
-        self.root.geometry("1400x860")
+        self.root.title("DNA Film Content Engine - F-006A Desktop Slice")
+        self.root.geometry("1280x820")
 
         self.workspace_root = Path.cwd() / "runtime_projects"
-        self.workspace_root.mkdir(exist_ok=True)
+        self.workspace_root.mkdir(parents=True, exist_ok=True)
         self.store = ProjectSliceStore(self.workspace_root)
         self.project: ProjectSlice | None = None
         self.selected_block_id: str | None = None
-        self.visible_blocks: list[dict] = []
+        self.current_source_label = "analysis.txt"
 
-        self.current_view = tk.StringVar(value="Project Home")
         self.header_title = tk.StringVar(value="No project loaded")
-        self.header_status = tk.StringVar(value="Create a project to begin the semantic-first flow.")
+        self.header_status = tk.StringVar(value="Create a project to begin the first local-first desktop slice.")
         self.next_action = tk.StringVar(value="Next action: Create project")
-        self.summary_text = tk.StringVar(value="No semantic map yet.")
-        self.review_status_text = tk.StringVar(value="Semantic review: under_edit")
-        self.completeness_text = tk.StringVar(value="Semantic completeness: Incomplete")
-        self.issues_summary_text = tk.StringVar(value="Issue visibility: no semantic issues yet.")
-        self.readiness_text = tk.StringVar(value="Approval readiness: not_ready")
-        self.focus_mode_var = tk.StringVar(value=FOCUS_MODES[0])
-        self.focus_status_text = tk.StringVar(value="Focus: All blocks | showing 0 of 0 blocks.")
-        self.focus_span_text = tk.StringVar(value="Focus span: no matching blocks")
-        self.focus_position_text = tk.StringVar(value="Focused item: 0 of 0")
-        self.previous_context_text = tk.StringVar(value="Previous: No previous semantic block")
-        self.next_context_text = tk.StringVar(value="Next: No next semantic block")
-        self.approval_message_text = tk.StringVar(value="Approval message: Semantic map remains under edit.")
-        self.approval_reason_text = tk.StringVar(value="Approval reason: Approve is blocked until semantic review is moved to ready_for_review.")
-        self.reopen_text = tk.StringVar(value="Reopen state: none")
-        self.matching_prep_text = tk.StringVar(value="Matching prep readiness: blocked | semantic map not established yet")
-        self.scene_matching_text = tk.StringVar(value="Scene matching readiness: blocked | no accepted reference available yet")
-        self.rough_cut_text = tk.StringVar(value="Rough cut readiness: blocked | no accepted reference available yet")
-        self.output_builder_status_text = tk.StringVar(value="Output builder readiness: blocked | no rough-cut output path available yet")
-        self.output_builder_inventory_text = tk.StringVar(value="Output inventory: 0 of 4 artifacts built. Missing: Packaging, Shorts/Reels, Long Video, Carousel.")
-        self.output_builder_summary_text = tk.StringVar(
-            value="Output trust: waiting for the downstream chain before any output artifact can be built."
-        )
-        self.output_builder_path_text = tk.StringVar(value="Built artifact paths: none yet.")
-        self.scene_matching_reference_summary_text = tk.StringVar(value="Accepted scene reference stub: none created yet.")
-        self.scene_matching_timecode_summary_text = tk.StringVar(value="Timecode range stub: none saved yet.")
-        self.rough_cut_focus_summary_text = tk.StringVar(value="Focus: all saved segments | Visible: 0 | Saved total: 0 | Preferred total: 0")
-        self.rough_cut_segment_summary_text = tk.StringVar(value="Rough-cut segment set: none saved yet.")
-        self.matching_prep_status_text = tk.StringVar(value="Matching Prep is blocked until the semantic map is approved.")
-        self.matching_prep_summary_text = tk.StringVar(value="Prep handoff: 0 approved semantic blocks available.")
-        self.matching_asset_summary_text = tk.StringVar(value="Film-side registration: no prep inputs registered yet.")
-        self.matching_accepted_reference_summary_text = tk.StringVar(value="Accepted reference: none accepted yet for later matching work.")
-        self.matching_candidate_summary_text = tk.StringVar(value="Manual candidate stubs: none yet.")
-        self.placeholder_text = tk.StringVar(value="Available after semantic-map approval in a later bounded packet.")
+        self.package_path_text = tk.StringVar(value="Project package: not created yet")
+        self.project_summary_text = tk.StringVar(value="Project status: no project loaded")
+        self.source_status_text = tk.StringVar(value="Source status: no primary analysis source loaded")
+        self.semantic_status_text = tk.StringVar(value="Semantic status: no semantic blocks yet")
+        self.block_status_text = tk.StringVar(value="Select a semantic block to inspect it here.")
 
         self.project_name_var = tk.StringVar()
         self.film_title_var = tk.StringVar()
         self.language_var = tk.StringVar(value="en")
+        self.review_status_var = tk.StringVar(value=ALLOWED_REVIEW_STATES[0])
         self.block_title_var = tk.StringVar()
         self.block_role_var = tk.StringVar(value=ALLOWED_SEMANTIC_ROLES[0])
-        self.review_status_var = tk.StringVar(value=ALLOWED_REVIEW_STATES[0])
-        self.split_sentence_var = tk.StringVar(value="1")
-        self.block_status_var = tk.StringVar(value="Select a semantic block to inspect, reorder, split, merge, and edit it here.")
-        self.block_issues_text = tk.StringVar(value="Block issues: none")
-        self.long_video_var = tk.StringVar(value=ALLOWED_OUTPUT_SUITABILITY[0])
-        self.shorts_reels_var = tk.StringVar(value=ALLOWED_OUTPUT_SUITABILITY[0])
-        self.carousel_var = tk.StringVar(value=ALLOWED_OUTPUT_SUITABILITY[0])
-        self.packaging_var = tk.StringVar(value=ALLOWED_OUTPUT_SUITABILITY[0])
-        self.asset_label_var = tk.StringVar()
-        self.asset_type_var = tk.StringVar(value=ALLOWED_MATCHING_ASSET_TYPES[0])
-        self.asset_reference_var = tk.StringVar()
-        self.candidate_block_var = tk.StringVar()
-        self.candidate_asset_var = tk.StringVar()
-        self.candidate_note_var = tk.StringVar()
-        self.candidate_stub_var = tk.StringVar()
-        self.candidate_status_var = tk.StringVar(value=ALLOWED_CANDIDATE_REVIEW_STATUSES[0])
-        self.candidate_rationale_var = tk.StringVar()
-        self.candidate_focus_var = tk.StringVar(value=CANDIDATE_STATUS_FOCUS_OPTIONS[0])
-        self.rough_cut_focus_var = tk.StringVar(value=ROUGH_CUT_FOCUS_OPTIONS[0])
-        self.scene_reference_label_var = tk.StringVar()
-        self.timecode_start_var = tk.StringVar()
-        self.timecode_end_var = tk.StringVar()
-        self.rough_cut_segment_label_var = tk.StringVar()
-        self.rough_cut_segment_var = tk.StringVar()
-        self.candidate_block_options: dict[str, str] = {}
-        self.candidate_asset_options: dict[str, str] = {}
-        self.candidate_stub_options: dict[str, str] = {}
-        self.rough_cut_segment_options: dict[str, str] = {}
+        self.block_suitability_var = tk.StringVar(value=ALLOWED_OUTPUT_SUITABILITY[0])
+
+        self.views: dict[str, ttk.Frame] = {}
 
         self._build_layout()
         self._switch_view("Project Home")
-        self._set_editor_enabled(False)
-        self._set_structure_enabled(False, False, False, False, False)
-        self._set_focus_navigation_enabled(False, False)
-        self._set_matching_candidate_enabled(False, False, False)
-        self._set_scene_matching_enabled(False)
-        self._set_rough_cut_enabled(False)
-        self._set_output_builder_enabled(False)
+        self._set_block_editor_enabled(False)
+        self._set_review_controls_enabled(False)
+
+    def _build_layout(self) -> None:
+        self.root.columnconfigure(1, weight=1)
+        self.root.columnconfigure(2, weight=0)
+        self.root.rowconfigure(1, weight=1)
+
+        header = ttk.Frame(self.root, padding=12)
+        header.grid(row=0, column=0, columnspan=3, sticky="nsew")
+        header.columnconfigure(0, weight=1)
+        ttk.Label(header, text="DNA Film Content Engine", font=("Segoe UI", 18, "bold")).grid(row=0, column=0, sticky="w")
+        ttk.Label(header, textvariable=self.header_title, font=("Segoe UI", 11, "bold")).grid(row=1, column=0, sticky="w")
+        ttk.Label(header, textvariable=self.header_status, wraplength=980).grid(row=2, column=0, sticky="w", pady=(4, 0))
+        ttk.Label(header, textvariable=self.next_action, foreground="#0b5cad").grid(row=3, column=0, sticky="w", pady=(4, 0))
+        ttk.Label(header, textvariable=self.package_path_text, wraplength=980).grid(row=4, column=0, sticky="w", pady=(4, 0))
+
+        nav = ttk.Frame(self.root, padding=(12, 8))
+        nav.grid(row=1, column=0, sticky="nsw")
+        for view_name in APP_VIEWS:
+            ttk.Button(nav, text=view_name, width=22, command=lambda item=view_name: self._switch_view(item)).pack(anchor="w", pady=4)
+
+        main = ttk.Frame(self.root, padding=12)
+        main.grid(row=1, column=1, sticky="nsew")
+        main.columnconfigure(0, weight=1)
+        main.rowconfigure(0, weight=1)
+
+        inspector = ttk.Frame(self.root, padding=12)
+        inspector.grid(row=1, column=2, sticky="nsew")
+        inspector.columnconfigure(0, weight=1)
+        inspector.rowconfigure(8, weight=1)
+        ttk.Label(inspector, text="Semantic Block Inspector", font=("Segoe UI", 12, "bold")).grid(row=0, column=0, sticky="w")
+        ttk.Label(inspector, textvariable=self.block_status_text, wraplength=320).grid(row=1, column=0, sticky="w", pady=(6, 10))
+        ttk.Label(inspector, text="Title").grid(row=2, column=0, sticky="w")
+        self.block_title_entry = ttk.Entry(inspector, textvariable=self.block_title_var, width=36)
+        self.block_title_entry.grid(row=3, column=0, sticky="ew", pady=(0, 10))
+        ttk.Label(inspector, text="Role").grid(row=4, column=0, sticky="w")
+        self.block_role_combo = ttk.Combobox(inspector, textvariable=self.block_role_var, values=ALLOWED_SEMANTIC_ROLES, state="readonly")
+        self.block_role_combo.grid(row=5, column=0, sticky="ew", pady=(0, 10))
+        ttk.Label(inspector, text="Output suitability").grid(row=6, column=0, sticky="w")
+        self.block_suitability_combo = ttk.Combobox(
+            inspector,
+            textvariable=self.block_suitability_var,
+            values=ALLOWED_OUTPUT_SUITABILITY,
+            state="readonly",
+        )
+        self.block_suitability_combo.grid(row=7, column=0, sticky="ew", pady=(0, 10))
+        ttk.Label(inspector, text="Notes").grid(row=8, column=0, sticky="w")
+        self.notes_text = tk.Text(inspector, height=8, wrap="word")
+        self.notes_text.grid(row=9, column=0, sticky="nsew", pady=(0, 10))
+        ttk.Label(inspector, text="Block content").grid(row=10, column=0, sticky="w")
+        self.content_text = tk.Text(inspector, height=10, wrap="word")
+        self.content_text.grid(row=11, column=0, sticky="nsew", pady=(0, 10))
+        self.content_text.configure(state="disabled")
+        self.save_block_button = ttk.Button(inspector, text="Save Block Changes", command=self.save_selected_block)
+        self.save_block_button.grid(row=12, column=0, sticky="ew")
+
+        self.views["Project Home"] = self._build_home_view(main)
+        self.views["Source Intake"] = self._build_intake_view(main)
+        self.views["Semantic Map"] = self._build_semantic_view(main)
+
+    def _build_home_view(self, parent: ttk.Frame) -> ttk.Frame:
+        frame = ttk.Frame(parent, padding=12)
+        frame.grid(row=0, column=0, sticky="nsew")
+        frame.columnconfigure(1, weight=1)
+
+        ttk.Label(frame, text="Project Home", font=("Segoe UI", 14, "bold")).grid(row=0, column=0, columnspan=2, sticky="w")
+        ttk.Label(frame, text="Project title").grid(row=1, column=0, sticky="w", pady=(12, 0))
+        ttk.Entry(frame, textvariable=self.project_name_var, width=40).grid(row=1, column=1, sticky="ew", pady=(12, 0))
+        ttk.Label(frame, text="Film title").grid(row=2, column=0, sticky="w", pady=(8, 0))
+        ttk.Entry(frame, textvariable=self.film_title_var, width=40).grid(row=2, column=1, sticky="ew", pady=(8, 0))
+        ttk.Label(frame, text="Language").grid(row=3, column=0, sticky="w", pady=(8, 0))
+        ttk.Entry(frame, textvariable=self.language_var, width=16).grid(row=3, column=1, sticky="w", pady=(8, 0))
+
+        actions = ttk.Frame(frame)
+        actions.grid(row=4, column=0, columnspan=2, sticky="w", pady=16)
+        ttk.Button(actions, text="Create Project", command=self.create_project).pack(side="left")
+        ttk.Button(actions, text="Open Existing Project", command=self.open_project).pack(side="left", padx=(8, 0))
+
+        ttk.Label(frame, text="Current project state", font=("Segoe UI", 11, "bold")).grid(row=5, column=0, columnspan=2, sticky="w")
+        ttk.Label(frame, textvariable=self.project_summary_text, wraplength=760).grid(row=6, column=0, columnspan=2, sticky="w", pady=(6, 0))
+        ttk.Label(frame, textvariable=self.source_status_text, wraplength=760).grid(row=7, column=0, columnspan=2, sticky="w", pady=(6, 0))
+        ttk.Label(frame, textvariable=self.semantic_status_text, wraplength=760).grid(row=8, column=0, columnspan=2, sticky="w", pady=(6, 0))
+        return frame
+
+    def _build_intake_view(self, parent: ttk.Frame) -> ttk.Frame:
+        frame = ttk.Frame(parent, padding=12)
+        frame.grid(row=0, column=0, sticky="nsew")
+        frame.columnconfigure(0, weight=1)
+        frame.rowconfigure(2, weight=1)
+
+        ttk.Label(frame, text="Source Intake", font=("Segoe UI", 14, "bold")).grid(row=0, column=0, sticky="w")
+        ttk.Label(frame, textvariable=self.source_status_text, wraplength=760).grid(row=1, column=0, sticky="w", pady=(6, 10))
+        self.analysis_text = tk.Text(frame, wrap="word")
+        self.analysis_text.grid(row=2, column=0, sticky="nsew", pady=(0, 12))
+        actions = ttk.Frame(frame)
+        actions.grid(row=3, column=0, sticky="w")
+        ttk.Button(actions, text="Load Text File", command=self.load_source_file).pack(side="left")
+        ttk.Button(actions, text="Save Source and Create Provisional Semantic Blocks", command=self.save_analysis_text).pack(side="left", padx=(8, 0))
+        return frame
+
+    def _build_semantic_view(self, parent: ttk.Frame) -> ttk.Frame:
+        frame = ttk.Frame(parent, padding=12)
+        frame.grid(row=0, column=0, sticky="nsew")
+        frame.columnconfigure(0, weight=1)
+        frame.rowconfigure(2, weight=1)
+
+        ttk.Label(frame, text="Semantic Map Workspace", font=("Segoe UI", 14, "bold")).grid(row=0, column=0, sticky="w")
+        controls = ttk.Frame(frame)
+        controls.grid(row=1, column=0, sticky="ew", pady=(10, 10))
+        ttk.Label(controls, textvariable=self.semantic_status_text).pack(side="left")
+        ttk.Label(controls, text="Review state").pack(side="left", padx=(20, 8))
+        self.review_status_combo = ttk.Combobox(
+            controls,
+            textvariable=self.review_status_var,
+            values=ALLOWED_REVIEW_STATES,
+            state="readonly",
+            width=18,
+        )
+        self.review_status_combo.pack(side="left")
+        self.save_review_button = ttk.Button(controls, text="Save Review State", command=self.save_review_status)
+        self.save_review_button.pack(side="left", padx=(8, 0))
+
+        self.semantic_list = tk.Listbox(frame, activestyle="none")
+        self.semantic_list.grid(row=2, column=0, sticky="nsew")
+        self.semantic_list.bind("<<ListboxSelect>>", self.on_block_selected)
+        return frame
+
+    def _switch_view(self, name: str) -> None:
+        for frame in self.views.values():
+            frame.grid_remove()
+        self.views[name].grid()
 
     def create_project(self) -> None:
-        title = self.project_name_var.get().strip()
         try:
             project = self.store.create_project(
-                title=title,
+                self.project_name_var.get(),
                 film_title=self.film_title_var.get(),
                 language=self.language_var.get(),
             )
@@ -125,26 +192,42 @@ class DNAFilmApp(DNAFilmAppLayoutMixin, DNAFilmAppPresentationMixin):
             messagebox.showerror("Project creation", str(exc))
             return
         except FileExistsError:
-            messagebox.showerror("Project creation", "A project folder with the same generated name already exists.")
+            messagebox.showerror("Project creation", "A project package with the same generated name already exists.")
             return
 
-        self.focus_mode_var.set(FOCUS_MODES[0])
+        self.current_source_label = "analysis.txt"
         self._load_project_into_ui(project)
         self._switch_view("Source Intake")
         messagebox.showinfo("Project created", f"Project package created at:\n{project.project_dir}")
 
     def open_project(self) -> None:
-        selected = filedialog.askdirectory(initialdir=self.workspace_root, title="Open project directory")
+        selected = filedialog.askdirectory(initialdir=self.workspace_root, title="Open DNA project package")
         if not selected:
             return
+        self.load_project_from_path(Path(selected))
+
+    def load_project_from_path(self, project_dir: Path) -> None:
         try:
-            project = self.store.load_project(Path(selected))
+            project = self.store.load_project(project_dir)
         except FileNotFoundError:
             messagebox.showerror("Open project", "Selected folder does not look like a DNA project package.")
             return
-        self.focus_mode_var.set(FOCUS_MODES[0])
         self._load_project_into_ui(project)
         self._switch_view("Project Home")
+
+    def load_source_file(self) -> None:
+        selected = filedialog.askopenfilename(
+            initialdir=self.workspace_root,
+            title="Load analysis text",
+            filetypes=(("Text files", "*.txt *.md"), ("All files", "*.*")),
+        )
+        if not selected:
+            return
+        path = Path(selected)
+        self.current_source_label = path.name
+        self.analysis_text.delete("1.0", "end")
+        self.analysis_text.insert("1.0", path.read_text(encoding="utf-8"))
+        self.source_status_text.set(f"Source status: loaded text from {path.name} and waiting to save it into the project package.")
 
     def save_analysis_text(self) -> None:
         if self.project is None:
@@ -152,508 +235,14 @@ class DNAFilmApp(DNAFilmAppLayoutMixin, DNAFilmAppPresentationMixin):
             return
         text = self.analysis_text.get("1.0", "end")
         try:
-            project = self.store.save_analysis_text(self.project.project_dir, text)
+            project = self.store.save_analysis_text(self.project.project_dir, text, self.current_source_label)
         except ValueError as exc:
             messagebox.showerror("Source intake", str(exc))
             return
 
-        self.focus_mode_var.set(FOCUS_MODES[0])
-        self._load_project_into_ui(project)
+        self._load_project_into_ui(project, select_block_id=project.semantic_blocks[0]["record_id"] if project.semantic_blocks else None)
         self._switch_view("Semantic Map")
-        if project.semantic_blocks:
-            self._select_block_by_id(project.semantic_blocks[0]["record_id"])
-        messagebox.showinfo("Semantic map ready", f"Saved analysis text and derived {len(project.semantic_blocks)} semantic blocks.")
-
-    def on_block_selected(self, _event: object) -> None:
-        if self.project is None:
-            return
-        selection = self.semantic_list.curselection()
-        if not selection:
-            self.selected_block_id = None
-            self._set_editor_enabled(False)
-            self._set_structure_enabled(False, False, False, False, False)
-            self._set_focus_navigation_enabled(False, False)
-            self.focus_position_text.set("Focused item: 0 of 0")
-            self.focus_span_text.set("Focus span: no matching blocks")
-            self.previous_context_text.set("Previous: No previous semantic block")
-            self.next_context_text.set("Next: No next semantic block")
-            self.block_issues_text.set("Block issues: none")
-            return
-        block = self.visible_blocks[selection[0]]
-        self._show_block(block)
-
-    def navigate_focus(self, direction: str) -> None:
-        if not self.visible_blocks or self.selected_block_id is None:
-            return
-        current_index = next((index for index, block in enumerate(self.visible_blocks) if block["record_id"] == self.selected_block_id), None)
-        if current_index is None:
-            return
-        if direction == "previous":
-            target_index = current_index - 1
-        elif direction == "next":
-            target_index = current_index + 1
-        else:
-            raise ValueError("Navigation direction must be 'previous' or 'next'.")
-        if target_index < 0 or target_index >= len(self.visible_blocks):
-            self._update_focus_navigation_state()
-            return
-        self._select_block_by_id(self.visible_blocks[target_index]["record_id"])
-
-    def save_selected_block(self) -> None:
-        if self.project is None or self.selected_block_id is None:
-            messagebox.showerror("Semantic map", "Select a semantic block first.")
-            return
-        notes = self.notes_text.get("1.0", "end").strip()
-        output_suitability = {
-            "long_video": self.long_video_var.get(),
-            "shorts_reels": self.shorts_reels_var.get(),
-            "carousel": self.carousel_var.get(),
-            "packaging": self.packaging_var.get(),
-        }
-        try:
-            project = self.store.update_semantic_block(
-                self.project.project_dir,
-                self.selected_block_id,
-                self.block_title_var.get(),
-                self.block_role_var.get(),
-                notes,
-                output_suitability=output_suitability,
-            )
-        except ValueError as exc:
-            messagebox.showerror("Semantic map", str(exc))
-            return
-        self._load_project_into_ui(project, select_block_id=self.selected_block_id)
-        self._switch_view("Semantic Map")
-        self.block_status_var.set("Block review changes saved to the local project package.")
-        messagebox.showinfo("Semantic map", "Selected block review changes were saved.")
-
-    def reorder_selected_block(self, direction: str) -> None:
-        if self.project is None or self.selected_block_id is None:
-            messagebox.showerror("Semantic map", "Select a semantic block first.")
-            return
-        try:
-            project = self.store.reorder_semantic_block(self.project.project_dir, self.selected_block_id, direction)
-        except ValueError as exc:
-            messagebox.showerror("Semantic map", str(exc))
-            return
-        self._load_project_into_ui(project, select_block_id=self.selected_block_id)
-        self._switch_view("Semantic Map")
-        self.block_status_var.set(f"Block order updated: moved {direction} and persisted to disk.")
-
-    def split_selected_block(self) -> None:
-        if self.project is None or self.selected_block_id is None:
-            messagebox.showerror("Semantic map", "Select a semantic block first.")
-            return
-        try:
-            split_after_sentence = int(self.split_sentence_var.get().strip())
-        except ValueError:
-            messagebox.showerror("Semantic map", "Split after sentence # must be a whole number.")
-            return
-        try:
-            project = self.store.split_semantic_block(self.project.project_dir, self.selected_block_id, split_after_sentence)
-        except ValueError as exc:
-            messagebox.showerror("Semantic map", str(exc))
-            return
-        self._load_project_into_ui(project, select_block_id=self.selected_block_id)
-        self._switch_view("Semantic Map")
-        self.block_status_var.set("Selected block was split and the new semantic structure was persisted to disk.")
-        messagebox.showinfo("Semantic map", "Selected block was split into two semantic blocks.")
-
-    def merge_selected_block(self, direction: str) -> None:
-        if self.project is None or self.selected_block_id is None:
-            messagebox.showerror("Semantic map", "Select a semantic block first.")
-            return
-        try:
-            project = self.store.merge_semantic_block(self.project.project_dir, self.selected_block_id, direction)
-        except ValueError as exc:
-            messagebox.showerror("Semantic map", str(exc))
-            return
-        self._load_project_into_ui(project, select_block_id=self.selected_block_id)
-        self._switch_view("Semantic Map")
-        self.block_status_var.set(f"Selected block was merged {direction} and the semantic structure was persisted to disk.")
-        messagebox.showinfo("Semantic map", f"Selected block was merged {direction} with its adjacent neighbor.")
-
-    def add_matching_prep_asset(self) -> None:
-        if self.project is None:
-            messagebox.showerror("Matching Prep", "Create or open a project first.")
-            return
-        try:
-            project = self.store.add_matching_prep_asset(
-                self.project.project_dir,
-                self.asset_label_var.get(),
-                self.asset_type_var.get(),
-                self.asset_reference_var.get(),
-                self.asset_notes_text.get("1.0", "end").strip(),
-            )
-        except ValueError as exc:
-            messagebox.showerror("Matching Prep", str(exc))
-            return
-
-        current_block_id = self.selected_block_id
-        self._load_project_into_ui(project, select_block_id=current_block_id)
-        self._switch_view("Matching Prep")
-        self.asset_label_var.set("")
-        self.asset_type_var.set(ALLOWED_MATCHING_ASSET_TYPES[0])
-        self.asset_reference_var.set("")
-        self.asset_notes_text.delete("1.0", "end")
-        messagebox.showinfo("Matching Prep", "Film-side prep input was registered in the local project package.")
-
-    def add_matching_candidate_stub(self) -> None:
-        if self.project is None:
-            messagebox.showerror("Matching Prep", "Create or open a project first.")
-            return
-        block_id = self.candidate_block_options.get(self.candidate_block_var.get(), "")
-        asset_id = self.candidate_asset_options.get(self.candidate_asset_var.get(), "")
-        try:
-            project = self.store.add_matching_candidate_stub(
-                self.project.project_dir,
-                block_id,
-                asset_id,
-                self.candidate_note_var.get(),
-            )
-        except ValueError as exc:
-            messagebox.showerror("Matching Prep", str(exc))
-            return
-
-        current_block_id = self.selected_block_id
-        self._load_project_into_ui(project, select_block_id=current_block_id)
-        self._switch_view("Matching Prep")
-        latest_stub = project.matching_candidate_stubs[-1] if project.matching_candidate_stubs else None
-        if latest_stub is not None:
-            latest_label = self._candidate_stub_option_label(project, latest_stub)
-            if latest_label in self.candidate_stub_options:
-                self.candidate_stub_var.set(latest_label)
-                self.candidate_status_var.set(latest_stub.get("review_status", ALLOWED_CANDIDATE_REVIEW_STATUSES[0]))
-                self.candidate_rationale_var.set(latest_stub.get("preferred_rationale", ""))
-        self.candidate_note_var.set("")
-        messagebox.showinfo("Matching Prep", "Manual candidate stub was saved in the local project package.")
-
-    def save_matching_candidate_status(self) -> None:
-        if self.project is None:
-            messagebox.showerror("Matching Prep", "Create or open a project first.")
-            return
-        candidate_stub_id = self.candidate_stub_options.get(self.candidate_stub_var.get(), "")
-        try:
-            project = self.store.update_matching_candidate_stub_status(
-                self.project.project_dir,
-                candidate_stub_id,
-                self.candidate_status_var.get(),
-            )
-        except ValueError as exc:
-            messagebox.showerror("Matching Prep", str(exc))
-            return
-
-        current_block_id = self.selected_block_id
-        current_candidate_id = candidate_stub_id
-        self._load_project_into_ui(project, select_block_id=current_block_id)
-        self._switch_view("Matching Prep")
-        updated_stub = next((entry for entry in project.matching_candidate_stubs if entry["record_id"] == current_candidate_id), None)
-        if updated_stub is not None:
-            updated_label = self._candidate_stub_option_label(project, updated_stub)
-            if updated_label in self.candidate_stub_options:
-                self.candidate_stub_var.set(updated_label)
-                self.candidate_status_var.set(updated_stub.get("review_status", ALLOWED_CANDIDATE_REVIEW_STATUSES[0]))
-                self.candidate_rationale_var.set(updated_stub.get("preferred_rationale", ""))
-        messagebox.showinfo("Matching Prep", "Manual candidate review status was saved in the local project package.")
-
-    def save_matching_candidate_rationale(self) -> None:
-        if self.project is None:
-            messagebox.showerror("Matching Prep", "Create or open a project first.")
-            return
-        candidate_stub_id = self.candidate_stub_options.get(self.candidate_stub_var.get(), "")
-        try:
-            project = self.store.update_matching_candidate_stub_rationale(
-                self.project.project_dir,
-                candidate_stub_id,
-                self.candidate_rationale_var.get(),
-            )
-        except ValueError as exc:
-            messagebox.showerror("Matching Prep", str(exc))
-            return
-
-        current_block_id = self.selected_block_id
-        current_candidate_id = candidate_stub_id
-        self._load_project_into_ui(project, select_block_id=current_block_id)
-        self._switch_view("Matching Prep")
-        updated_stub = next((entry for entry in project.matching_candidate_stubs if entry["record_id"] == current_candidate_id), None)
-        if updated_stub is not None:
-            updated_label = self._candidate_stub_option_label(project, updated_stub)
-            if updated_label in self.candidate_stub_options:
-                self.candidate_stub_var.set(updated_label)
-                self.candidate_status_var.set(updated_stub.get("review_status", ALLOWED_CANDIDATE_REVIEW_STATUSES[0]))
-                self.candidate_rationale_var.set(updated_stub.get("preferred_rationale", ""))
-        messagebox.showinfo("Matching Prep", "Manual candidate preferred rationale was saved in the local project package.")
-
-    def promote_matching_candidate_to_accepted_reference(self) -> None:
-        if self.project is None:
-            messagebox.showerror("Matching Prep", "Create or open a project first.")
-            return
-        candidate_stub_id = self.candidate_stub_options.get(self.candidate_stub_var.get(), "")
-        try:
-            project = self.store.promote_matching_candidate_stub_to_accepted_reference(
-                self.project.project_dir,
-                candidate_stub_id,
-            )
-        except ValueError as exc:
-            messagebox.showerror("Matching Prep", str(exc))
-            return
-
-        current_block_id = self.selected_block_id
-        current_candidate_id = candidate_stub_id
-        self._load_project_into_ui(project, select_block_id=current_block_id)
-        self._switch_view("Matching Prep")
-        accepted_stub = next((entry for entry in project.matching_candidate_stubs if entry["record_id"] == current_candidate_id), None)
-        if accepted_stub is not None:
-            accepted_label = self._candidate_stub_option_label(project, accepted_stub)
-            if accepted_label in self.candidate_stub_options:
-                self.candidate_stub_var.set(accepted_label)
-                self.candidate_status_var.set(accepted_stub.get("review_status", ALLOWED_CANDIDATE_REVIEW_STATUSES[0]))
-                self.candidate_rationale_var.set(accepted_stub.get("preferred_rationale", ""))
-        messagebox.showinfo("Matching Prep", "Selected manual candidate stub was promoted to the current accepted reference for later matching work.")
-
-    def remove_matching_candidate_stub(self) -> None:
-        if self.project is None:
-            messagebox.showerror("Matching Prep", "Create or open a project first.")
-            return
-        candidate_stub_id = self.candidate_stub_options.get(self.candidate_stub_var.get(), "")
-        try:
-            project = self.store.remove_matching_candidate_stub(
-                self.project.project_dir,
-                candidate_stub_id,
-            )
-        except ValueError as exc:
-            messagebox.showerror("Matching Prep", str(exc))
-            return
-
-        current_block_id = self.selected_block_id
-        self._load_project_into_ui(project, select_block_id=current_block_id)
-        self._switch_view("Matching Prep")
-        self.candidate_rationale_var.set("")
-        messagebox.showinfo("Matching Prep", "Manual candidate stub was removed from the local project package.")
-
-    def save_accepted_scene_reference_stub(self) -> None:
-        if self.project is None:
-            messagebox.showerror("Scene Matching", "Create or open a project first.")
-            return
-        try:
-            project = self.store.save_accepted_scene_reference_stub(
-                self.project.project_dir,
-                self.scene_reference_label_var.get(),
-            )
-        except ValueError as exc:
-            messagebox.showerror("Scene Matching", str(exc))
-            return
-
-        current_block_id = self.selected_block_id
-        self._load_project_into_ui(project, select_block_id=current_block_id)
-        self._switch_view("Scene Matching")
-        self.scene_reference_label_var.set((project.accepted_scene_reference_stub or {}).get("scene_reference_label", ""))
-        messagebox.showinfo("Scene Matching", "Accepted scene reference stub was saved in the local project package.")
-
-    def save_timecode_range_stub(self) -> None:
-        if self.project is None:
-            messagebox.showerror("Scene Matching", "Create or open a project first.")
-            return
-        try:
-            project = self.store.save_timecode_range_stub(
-                self.project.project_dir,
-                self.timecode_start_var.get(),
-                self.timecode_end_var.get(),
-            )
-        except ValueError as exc:
-            messagebox.showerror("Scene Matching", str(exc))
-            return
-
-        current_block_id = self.selected_block_id
-        self._load_project_into_ui(project, select_block_id=current_block_id)
-        self._switch_view("Scene Matching")
-        self.timecode_start_var.set((project.timecode_range_stub or {}).get("start_timecode", ""))
-        self.timecode_end_var.set((project.timecode_range_stub or {}).get("end_timecode", ""))
-        messagebox.showinfo("Scene Matching", "Timecode range stub was saved in the local project package.")
-
-    def save_rough_cut_segment_stub(self) -> None:
-        if self.project is None:
-            messagebox.showerror("Rough Cut", "Create or open a project first.")
-            return
-        try:
-            project = self.store.save_rough_cut_segment_stub(
-                self.project.project_dir,
-                self.rough_cut_segment_label_var.get(),
-            )
-        except ValueError as exc:
-            messagebox.showerror("Rough Cut", str(exc))
-            return
-
-        current_block_id = self.selected_block_id
-        newest_segment_id = project.rough_cut_segment_stubs[-1]["record_id"] if project.rough_cut_segment_stubs else None
-        self._load_project_into_ui(project, select_block_id=current_block_id)
-        self._select_rough_cut_segment_by_id(newest_segment_id)
-        self._switch_view("Rough Cut")
-        self.rough_cut_segment_label_var.set("")
-        messagebox.showinfo("Rough Cut", "Rough-cut segment stub was added to the local rough-cut set.")
-
-    def build_packaging_script_bundle(self) -> None:
-        if self.project is None:
-            messagebox.showerror("Output Tracks", "Create or open a project first.")
-            return
-        try:
-            project = self.store.build_packaging_script_bundle(self.project.project_dir)
-        except ValueError as exc:
-            messagebox.showerror("Output Tracks", str(exc))
-            return
-
-        current_block_id = self.selected_block_id
-        self._load_project_into_ui(project, select_block_id=current_block_id)
-        self._switch_view("Output Tracks")
-        messagebox.showinfo("Output Tracks", "Packaging-ready script bundle was built and saved in the project package.")
-
-    def build_shorts_reels_script(self) -> None:
-        if self.project is None:
-            messagebox.showerror("Output Tracks", "Create or open a project first.")
-            return
-        try:
-            project = self.store.build_shorts_reels_script(self.project.project_dir)
-        except ValueError as exc:
-            messagebox.showerror("Output Tracks", str(exc))
-            return
-
-        current_block_id = self.selected_block_id
-        self._load_project_into_ui(project, select_block_id=current_block_id)
-        self._switch_view("Output Tracks")
-        messagebox.showinfo("Output Tracks", "Shorts/Reels script was built and saved in the project package.")
-
-    def build_long_video_script(self) -> None:
-        if self.project is None:
-            messagebox.showerror("Output Tracks", "Create or open a project first.")
-            return
-        try:
-            project = self.store.build_long_video_script(self.project.project_dir)
-        except ValueError as exc:
-            messagebox.showerror("Output Tracks", str(exc))
-            return
-
-        current_block_id = self.selected_block_id
-        self._load_project_into_ui(project, select_block_id=current_block_id)
-        self._switch_view("Output Tracks")
-        messagebox.showinfo("Output Tracks", "Long-video script was built and saved in the project package.")
-
-    def build_carousel_script(self) -> None:
-        if self.project is None:
-            messagebox.showerror("Output Tracks", "Create or open a project first.")
-            return
-        try:
-            project = self.store.build_carousel_script(self.project.project_dir)
-        except ValueError as exc:
-            messagebox.showerror("Output Tracks", str(exc))
-            return
-
-        current_block_id = self.selected_block_id
-        self._load_project_into_ui(project, select_block_id=current_block_id)
-        self._switch_view("Output Tracks")
-        messagebox.showinfo("Output Tracks", "Carousel script was built and saved in the project package.")
-
-    def on_rough_cut_segment_selected(self, _event: object | None = None) -> None:
-        if self.project is None:
-            self.rough_cut_segment_var.set("")
-            return
-        self._refresh_rough_cut_controls(self.project)
-        self._update_rough_cut_surface(self.project)
-
-    def on_rough_cut_focus_changed(self) -> None:
-        if self.project is None:
-            return
-        self._refresh_rough_cut_controls(self.project)
-        self._update_rough_cut_surface(self.project)
-
-    def reorder_selected_rough_cut_segment(self, direction: str) -> None:
-        if self.project is None:
-            messagebox.showerror("Rough Cut", "Create or open a project first.")
-            return
-        segment_id = self.rough_cut_segment_options.get(self.rough_cut_segment_var.get(), "")
-        try:
-            project = self.store.reorder_rough_cut_segment_stub(self.project.project_dir, segment_id, direction)
-        except ValueError as exc:
-            messagebox.showerror("Rough Cut", str(exc))
-            return
-
-        current_block_id = self.selected_block_id
-        selected_segment_id = segment_id
-        self._load_project_into_ui(project, select_block_id=current_block_id)
-        self._select_rough_cut_segment_by_id(selected_segment_id)
-        self._switch_view("Rough Cut")
-
-    def include_selected_rough_cut_segment(self) -> None:
-        self._update_selected_rough_cut_subset_status("selected_for_current_rough_cut", "Selected rough-cut segment was included in the current preferred rough-cut subset.")
-
-    def remove_selected_rough_cut_segment(self) -> None:
-        self._update_selected_rough_cut_subset_status("saved_only", "Selected rough-cut segment was returned to the saved-only rough-cut set.")
-
-    def remove_selected_saved_rough_cut_segment(self) -> None:
-        if self.project is None:
-            messagebox.showerror("Rough Cut", "Create or open a project first.")
-            return
-        segment_id = self.rough_cut_segment_options.get(self.rough_cut_segment_var.get(), "")
-        current_ids = [entry["record_id"] for entry in self.project.rough_cut_segment_stubs]
-        try:
-            current_index = current_ids.index(segment_id)
-        except ValueError:
-            current_index = -1
-        try:
-            project = self.store.remove_rough_cut_segment_stub(self.project.project_dir, segment_id)
-        except ValueError as exc:
-            messagebox.showerror("Rough Cut", str(exc))
-            return
-
-        current_block_id = self.selected_block_id
-        self._load_project_into_ui(project, select_block_id=current_block_id)
-        remaining_entries = project.rough_cut_segment_stubs
-        next_segment_id = None
-        if remaining_entries:
-            fallback_index = current_index
-            if fallback_index < 0:
-                fallback_index = 0
-            if fallback_index >= len(remaining_entries):
-                fallback_index = len(remaining_entries) - 1
-            next_segment_id = remaining_entries[fallback_index]["record_id"]
-        self._select_rough_cut_segment_by_id(next_segment_id)
-        self._switch_view("Rough Cut")
-        messagebox.showinfo("Rough Cut", "Selected rough-cut segment stub was removed from the local rough-cut set.")
-
-    def _update_selected_rough_cut_subset_status(self, subset_status: str, success_message: str) -> None:
-        if self.project is None:
-            messagebox.showerror("Rough Cut", "Create or open a project first.")
-            return
-        segment_id = self.rough_cut_segment_options.get(self.rough_cut_segment_var.get(), "")
-        try:
-            project = self.store.update_rough_cut_segment_subset_status(self.project.project_dir, segment_id, subset_status)
-        except ValueError as exc:
-            messagebox.showerror("Rough Cut", str(exc))
-            return
-
-        current_block_id = self.selected_block_id
-        self._load_project_into_ui(project, select_block_id=current_block_id)
-        self._select_rough_cut_segment_by_id(segment_id)
-        self._switch_view("Rough Cut")
-        messagebox.showinfo("Rough Cut", success_message)
-
-    def on_candidate_stub_selected(self, _event: object | None = None) -> None:
-        if self.project is None:
-            self.candidate_status_var.set(ALLOWED_CANDIDATE_REVIEW_STATUSES[0])
-            self.candidate_rationale_var.set("")
-            self.promote_accepted_reference_button.configure(state="disabled")
-            return
-        candidate_stub_id = self.candidate_stub_options.get(self.candidate_stub_var.get(), "")
-        selected_stub = next((entry for entry in self.project.matching_candidate_stubs if entry["record_id"] == candidate_stub_id), None)
-        self.candidate_status_var.set((selected_stub or {}).get("review_status", ALLOWED_CANDIDATE_REVIEW_STATUSES[0]))
-        self.candidate_rationale_var.set((selected_stub or {}).get("preferred_rationale", ""))
-        gate_state, _ = self._matching_prep_gate(self.project)
-        can_promote = gate_state == "ready" and (selected_stub or {}).get("review_status", ALLOWED_CANDIDATE_REVIEW_STATUSES[0]) == "selected"
-        self.promote_accepted_reference_button.configure(state="normal" if can_promote else "disabled")
-
-    def on_candidate_focus_changed(self, _event: object | None = None) -> None:
-        if self.project is None:
-            return
-        self._update_matching_prep_surface(self.project)
+        messagebox.showinfo("Semantic map ready", f"Saved source and created {len(project.semantic_blocks)} provisional semantic blocks.")
 
     def save_review_status(self) -> None:
         if self.project is None:
@@ -664,11 +253,150 @@ class DNAFilmApp(DNAFilmAppLayoutMixin, DNAFilmAppPresentationMixin):
         except ValueError as exc:
             messagebox.showerror("Semantic review", str(exc))
             return
-        current_block_id = self.selected_block_id
-        self._load_project_into_ui(project, select_block_id=current_block_id)
+        self._load_project_into_ui(project, select_block_id=self.selected_block_id)
         self._switch_view("Semantic Map")
-        if project.semantic_review_record.get("approval_block_reason") and project.semantic_review_record["review_status"] != "approved":
-            messagebox.showinfo("Semantic review", project.semantic_review_record["approval_block_reason"])
-        else:
-            messagebox.showinfo("Semantic review", "Project-level semantic review status was saved.")
+        messagebox.showinfo("Semantic review", "Semantic review state was saved.")
 
+    def on_block_selected(self, _event: object | None = None) -> None:
+        if self.project is None:
+            return
+        selection = self.semantic_list.curselection()
+        if not selection:
+            self.selected_block_id = None
+            self._clear_block_editor()
+            self._set_block_editor_enabled(False)
+            return
+        block = self.project.semantic_blocks[selection[0]]
+        self._show_block(block)
+
+    def save_selected_block(self) -> None:
+        if self.project is None or self.selected_block_id is None:
+            messagebox.showerror("Semantic Map", "Select a semantic block first.")
+            return
+        try:
+            project = self.store.update_semantic_block(
+                self.project.project_dir,
+                self.selected_block_id,
+                self.block_title_var.get(),
+                self.block_role_var.get(),
+                self.notes_text.get("1.0", "end").strip(),
+                self.block_suitability_var.get(),
+            )
+        except ValueError as exc:
+            messagebox.showerror("Semantic Map", str(exc))
+            return
+        self._load_project_into_ui(project, select_block_id=self.selected_block_id)
+        self._switch_view("Semantic Map")
+        self.block_status_text.set("Selected semantic block was saved to the local project package.")
+        messagebox.showinfo("Semantic Map", "Selected semantic block changes were saved.")
+
+    def _load_project_into_ui(self, project: ProjectSlice, select_block_id: str | None = None) -> None:
+        self.project = project
+        self.header_title.set(
+            f"{project.project_record['title']} | {project.project_record.get('film_title') or 'Film title optional'} | {project.project_record.get('language', 'en')}"
+        )
+        self.header_status.set(project.project_record["current_readiness_summary"])
+        self.next_action.set(self._next_action_label(project))
+        self.package_path_text.set(f"Project package: {project.project_dir}")
+        self.project_summary_text.set(
+            f"Project status: {project.project_record['project_status']} | Intake: {project.intake_record['intake_readiness']} | Last saved: {project.status_record['last_saved_at']}"
+        )
+        self.source_status_text.set(self._source_status_label(project))
+        self.semantic_status_text.set(
+            f"Semantic status: {len(project.semantic_blocks)} block(s) | Review state: {project.semantic_review_record['review_status']} | Edit state: {project.status_record['current_edit_state']}"
+        )
+        self.review_status_var.set(project.semantic_review_record["review_status"])
+        self._set_review_controls_enabled(bool(project.semantic_blocks))
+
+        self.analysis_text.delete("1.0", "end")
+        if project.analysis_source_record is not None:
+            self.current_source_label = project.analysis_source_record["source_label"]
+            self.analysis_text.insert("1.0", self.store.read_analysis_text(project.project_dir))
+        else:
+            self.current_source_label = "analysis.txt"
+
+        self._refresh_semantic_list(select_block_id)
+
+    def _refresh_semantic_list(self, select_block_id: str | None = None) -> None:
+        self.semantic_list.delete(0, "end")
+        if self.project is None or not self.project.semantic_blocks:
+            self.selected_block_id = None
+            self._clear_block_editor()
+            self._set_block_editor_enabled(False)
+            return
+
+        for block in self.project.semantic_blocks:
+            self.semantic_list.insert(
+                "end",
+                f"{block['sequence']:02d}. {block['title']} [{block['semantic_role']}] | suitability: {block['output_suitability']}",
+            )
+
+        target_id = select_block_id or self.selected_block_id or self.project.semantic_blocks[0]["record_id"]
+        for index, block in enumerate(self.project.semantic_blocks):
+            if block["record_id"] == target_id:
+                self.semantic_list.selection_clear(0, "end")
+                self.semantic_list.selection_set(index)
+                self.semantic_list.activate(index)
+                self._show_block(block)
+                return
+
+    def _show_block(self, block: dict) -> None:
+        self.selected_block_id = block["record_id"]
+        self.block_title_var.set(block["title"])
+        self.block_role_var.set(block["semantic_role"])
+        self.block_suitability_var.set(block["output_suitability"])
+        self.notes_text.delete("1.0", "end")
+        self.notes_text.insert("1.0", block.get("notes", ""))
+        self.content_text.configure(state="normal")
+        self.content_text.delete("1.0", "end")
+        self.content_text.insert("1.0", block["content"])
+        self.content_text.configure(state="disabled")
+        self.block_status_text.set(
+            f"{block['record_id']} | sequence {block['sequence']} | role {block['semantic_role']} | review {self.project.semantic_review_record['review_status']}"
+        )
+        self._set_block_editor_enabled(True)
+
+    def _clear_block_editor(self) -> None:
+        self.block_title_var.set("")
+        self.block_role_var.set(ALLOWED_SEMANTIC_ROLES[0])
+        self.block_suitability_var.set(ALLOWED_OUTPUT_SUITABILITY[0])
+        self.notes_text.delete("1.0", "end")
+        self.content_text.configure(state="normal")
+        self.content_text.delete("1.0", "end")
+        self.content_text.configure(state="disabled")
+        self.block_status_text.set("Select a semantic block to inspect it here.")
+
+    def _set_block_editor_enabled(self, enabled: bool) -> None:
+        entry_state = "normal" if enabled else "disabled"
+        combo_state = "readonly" if enabled else "disabled"
+        text_state = "normal" if enabled else "disabled"
+        button_state = "normal" if enabled else "disabled"
+        self.block_title_entry.configure(state=entry_state)
+        self.block_role_combo.configure(state=combo_state)
+        self.block_suitability_combo.configure(state=combo_state)
+        self.notes_text.configure(state=text_state)
+        self.save_block_button.configure(state=button_state)
+
+    def _set_review_controls_enabled(self, enabled: bool) -> None:
+        self.review_status_combo.configure(state="readonly" if enabled else "disabled")
+        self.save_review_button.configure(state="normal" if enabled else "disabled")
+
+    def _source_status_label(self, project: ProjectSlice) -> str:
+        source = project.analysis_source_record
+        if source is None:
+            return "Source status: no primary analysis source loaded"
+        return (
+            f"Source status: primary analysis source saved as {source['source_label']} | "
+            f"{source['text_char_count']} chars | canonical record stored"
+        )
+
+    def _next_action_label(self, project: ProjectSlice) -> str:
+        if project.analysis_source_record is None:
+            return "Next action: Load analysis text"
+        if not project.semantic_blocks:
+            return "Next action: Generate provisional semantic blocks"
+        if project.semantic_review_record["review_status"] == "approved":
+            return "Next action: Reopen or continue inspecting the Semantic Map"
+        if project.semantic_review_record["review_status"] == "ready_for_review":
+            return "Next action: Review and approve the semantic map"
+        return "Next action: Inspect and edit semantic blocks"
